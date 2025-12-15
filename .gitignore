@@ -1,0 +1,26 @@
+[Bb]in/
+[Oo]bj/
+*.user
+*.useros
+.idea/
+*.suo
+*.userprefs
+**/packages/
+.nuget/
+TestResults/
+*.trx
+publish/
+**/[Pp]ublish/
+
+.DS_Store
+*.~
+*.bak
+
+.vscode/
+
+# 4. Configuration & Secrets
+appsettings.Development.json
+appsettings.Staging.json
+appsettings.Production.json
+appsettings.local.json
+*.local.config
