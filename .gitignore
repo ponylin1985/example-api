@@ -24,3 +24,8 @@ appsettings.Staging.json
 appsettings.Production.json
 appsettings.local.json
 *.local.config
+
+# Logs and Text files
+*.log
+*.txt
+/logs

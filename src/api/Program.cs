@@ -3,6 +3,7 @@ using Example.Api.Endpoints;
 using Example.Api.Extensions;
 using Example.Api.Repositories;
 using Example.Api.Services;
+using Example.Api.Validators;
 using Ganss.Xss;
 using Serilog;
 using System.Text.Json;
@@ -32,8 +33,7 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 builder.Services.AddApplicationDbContext(builder.Configuration);
 builder.Services.AddRepositories();
 builder.Services.AddServices();
-builder.Services.AddValidation();
-builder.Services.AddSingleton<IHtmlSanitizer, HtmlSanitizer>();
+builder.Services.AddValidators();
 builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen();
 

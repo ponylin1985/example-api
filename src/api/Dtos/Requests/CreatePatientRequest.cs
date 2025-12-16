@@ -1,5 +1,5 @@
+using Example.Api.Validators;
 using System.ComponentModel.DataAnnotations;
-using Ganss.Xss;
 
 namespace Example.Api.Dtos.Requests;
 
@@ -31,34 +31,14 @@ public record CreatePatientRequest : IValidatableObject
     /// <returns></returns>
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
-        var sanitizer = validationContext.GetService<IHtmlSanitizer>();
+        var validator = validationContext.GetRequiredService<SanitizerValidator>();
+        var isValid = validator.IsValid(Name, out var nameError);
 
-        if (sanitizer is null)
-        {
-            throw new InvalidOperationException("IHtmlSanitizer service is not available for DTO validation.");
-        }
-
-        var errors = new List<string>();
-
-        var sanitizedName = sanitizer.Sanitize(Name);
-
-        if (Name != sanitizedName)
-        {
-            errors.Add("Name contains disallowed HTML or scripts.");
-        }
-
-        var sanitizedMessage = sanitizer.Sanitize(OrderMessage);
-
-        if (OrderMessage != sanitizedMessage)
-        {
-            errors.Add("OrderMessage contains disallowed HTML or scripts.");
-        }
-
-        if (errors.Count > 0)
+        if (!isValid)
         {
             yield return new ValidationResult(
-                string.Join(" ", errors),
-                new[] { nameof(Name), nameof(OrderMessage) }
+                nameError,
+                new[] { nameof(Name) }
             );
         }
     }
