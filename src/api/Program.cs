@@ -1,6 +1,7 @@
 using Example.Api.Data;
 using Example.Api.Endpoints;
 using Example.Api.Extensions;
+using Example.Api.Infrastructure;
 using Example.Api.Repositories;
 using Example.Api.Services;
 using Example.Api.Validators;
@@ -31,6 +32,7 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 });
 
 builder.Services.AddApplicationDbContext(builder.Configuration);
+builder.Services.AddInfrastructure();
 builder.Services.AddRepositories();
 builder.Services.AddServices();
 builder.Services.AddValidators();

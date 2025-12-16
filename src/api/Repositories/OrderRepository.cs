@@ -1,4 +1,5 @@
 using Example.Api.Data;
+using Example.Api.Infrastructure;
 using Example.Api.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -17,10 +18,11 @@ public class OrderRepository : IOrderRepository
     /// <summary>
     /// Initializes a new instance of the <see cref="OrderRepository"/> class.
     /// </summary>
-    /// <param name="dbContext"></param>
-    public OrderRepository(ApplicationDbContext dbContext)
+    /// <param name="dbSession"></param>
+    public OrderRepository(IDbSession dbSession)
     {
-        _dbContext = dbContext;
+        _dbContext = dbSession.Context as ApplicationDbContext
+            ?? throw new ArgumentException("Invalid DbContext type in DbSession.");
     }
 
     /// <summary>
@@ -43,7 +45,6 @@ public class OrderRepository : IOrderRepository
     public async Task<Order> CreateOrderAsync(Order order)
     {
         await _dbContext.Orders.AddAsync(order);
-        await _dbContext.SaveChangesAsync();
         return order;
     }
 
@@ -70,8 +71,6 @@ public class OrderRepository : IOrderRepository
         };
 
         _dbContext.Entry(existingOrder).CurrentValues.SetValues(updatedOrder);
-
-        await _dbContext.SaveChangesAsync();
         return updatedOrder;
     }
 }

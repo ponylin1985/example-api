@@ -61,7 +61,7 @@ public static class OrderApiEndpoints
         .WithName("CreateOrder")
         .WithDescription("Create a new order.");
 
-        group.MapPut("/{id}/message", async (
+        group.MapPut("/{id}", async (
             long id,
             [FromBody] UpdateOrderMessageRequest request,
             IOrderService orderService,

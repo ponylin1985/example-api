@@ -1,4 +1,5 @@
 using Example.Api.Data;
+using Example.Api.Infrastructure;
 using Example.Api.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -17,10 +18,11 @@ public class PatientRepository : IPatientRepository
     /// <summary>
     /// Initializes a new instance of the <see cref="PatientRepository"/> class.
     /// </summary>
-    /// <param name="dbContext"></param>
-    public PatientRepository(ApplicationDbContext dbContext)
+    /// <param name="dbSession"></param>
+    public PatientRepository(IDbSession dbSession)
     {
-        _dbContext = dbContext;
+        _dbContext = dbSession.Context as ApplicationDbContext
+            ?? throw new ArgumentException("Invalid DbContext type in DbSession.");
     }
 
     /// <summary>
@@ -101,7 +103,6 @@ public class PatientRepository : IPatientRepository
     public async Task<Patient> CreatePatientAsync(Patient patient)
     {
         await _dbContext.Patients.AddAsync(patient);
-        await _dbContext.SaveChangesAsync();
         return patient;
     }
 }

@@ -2,6 +2,7 @@ using Example.Api.Dtos;
 using Example.Api.Dtos.Requests;
 using Example.Api.Dtos.Responses;
 using Example.Api.Enums;
+using Example.Api.Infrastructure;
 using Example.Api.Mappers;
 using Example.Api.Models;
 using Example.Api.Repositories;
@@ -21,16 +22,24 @@ public class PatientService : BaseService, IPatientService
     private readonly IPatientRepository _repository;
 
     /// <summary>
+    /// Unit of work for managing transactions.
+    /// </summary>
+    private readonly IUnitOfWork _unitOfWork;
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="PatientService"/> class.
     /// </summary>
     /// <param name="logger"></param>
     /// <param name="repository"></param>
+    /// <param name="unitOfWork"></param>
     public PatientService(
         ILogger<PatientService> logger,
-        IPatientRepository repository)
+        IPatientRepository repository,
+        IUnitOfWork unitOfWork)
     {
         _logger = logger;
         _repository = repository;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<ApiResult<PagedResult<PatientDto>>> GetPatientsAsync(GetPatientsRequest request)
@@ -96,15 +105,8 @@ public class PatientService : BaseService, IPatientService
             ],
         };
 
-        // var existingPatient = await _repository.GetPatientByNameAsync(request.Name);
-
-        // if (existingPatient is not null)
-        // {
-        //     _logger.LogInformation("Patient with name {Name} already exists with ID {Id}.", request.Name, existingPatient.Id);
-        //     return BadRequestResult<PatientDto>(default!, $"Patient with name {request.Name} already exists.");
-        // }
-
         var createdPatient = await _repository.CreatePatientAsync(patient);
+        await _unitOfWork.SaveChangesAsync();
 
         if (createdPatient.Id == default)
         {

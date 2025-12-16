@@ -1,6 +1,7 @@
 using Example.Api.Dtos;
 using Example.Api.Dtos.Requests;
 using Example.Api.Dtos.Responses;
+using Example.Api.Infrastructure;
 using Example.Api.Mappers;
 using Example.Api.Models;
 using Example.Api.Repositories;
@@ -30,19 +31,27 @@ public class OrderService : BaseService, IOrderService
     private readonly IPatientRepository _patientRepository;
 
     /// <summary>
+    /// Unit of work for managing transactions.
+    /// </summary>
+    private readonly IUnitOfWork _unitOfWork;
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="OrderService"/> class.
     /// </summary>
     /// <param name="logger">The logger.</param>
     /// <param name="orderRepository">The order repository.</param>
     /// <param name="patientRepository">The patient repository.</param>
+    /// <param name="unitOfWork">The unit of work.</param>
     public OrderService(
         ILogger<OrderService> logger,
         IOrderRepository orderRepository,
-        IPatientRepository patientRepository)
+        IPatientRepository patientRepository,
+        IUnitOfWork unitOfWork)
     {
         _logger = logger;
         _orderRepository = orderRepository;
         _patientRepository = patientRepository;
+        _unitOfWork = unitOfWork;
     }
 
     /// <inheritdoc />
@@ -89,6 +98,7 @@ public class OrderService : BaseService, IOrderService
             };
 
             var createdOrder = await _orderRepository.CreateOrderAsync(order);
+            await _unitOfWork.SaveChangesAsync();
             return SuccessResult(createdOrder.ToDto());
         }
         catch (Exception ex)
@@ -104,6 +114,7 @@ public class OrderService : BaseService, IOrderService
         try
         {
             var updatedOrder = await _orderRepository.UpdateMessageAsync(id, message, DateTimeOffset.UtcNow);
+            await _unitOfWork.SaveChangesAsync();
             return SuccessResult(updatedOrder.ToDto());
         }
         catch (Exception ex) when (ex.Message.Contains("not found"))
