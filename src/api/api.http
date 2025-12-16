@@ -1,6 +1,43 @@
 @LabApi_HostAddress = http://localhost:5000
 
-GET {{LabApi_HostAddress}}/weatherforecast/
+### Patient APIs
+
+### Create a new patient
+POST {{LabApi_HostAddress}}/api/patients
+Content-Type: application/json
+
+{
+  "name": "John Doe",
+  "orderMessage": "First checkup"
+}
+
+### Get patients with pagination and time range
+# Adjust dates as needed
+GET {{LabApi_HostAddress}}/api/patients?startTime=2024-01-01T00:00:00Z&endTime=2025-12-31T23:59:59Z&pageNumber=1&pageSize=10
 Accept: application/json
 
-###
+### Order APIs
+
+### Create a new order for an existing patient
+# Replace patientId with a valid ID from the Create Patient response
+POST {{LabApi_HostAddress}}/api/orders
+Content-Type: application/json
+
+{
+  "patientId": 1,
+  "message": "Follow-up consultation"
+}
+
+### Get an order by ID
+# Replace 1 with a valid order ID
+GET {{LabApi_HostAddress}}/api/orders/1
+Accept: application/json
+
+### Update an order's message
+# Replace 1 with a valid order ID
+PUT {{LabApi_HostAddress}}/api/orders/1/message
+Content-Type: application/json
+
+{
+  "message": "Updated: Patient needs urgent care"
+}

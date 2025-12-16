@@ -1,0 +1,120 @@
+using Example.Api.Dtos;
+using Example.Api.Dtos.Requests;
+using Example.Api.Dtos.Responses;
+using Example.Api.Mappers;
+using Example.Api.Models;
+using Example.Api.Repositories;
+
+namespace Example.Api.Services;
+
+/// <summary>
+/// Service for managing orders.
+/// </summary>
+public class OrderService : BaseService, IOrderService
+{
+    /// <summary>
+    /// Application logger.
+    /// </summary> <summary>
+    /// 
+    /// </summary>
+    private readonly ILogger<OrderService> _logger;
+
+    /// <summary>
+    /// Order data repository.
+    /// </summary>
+    private readonly IOrderRepository _orderRepository;
+
+    /// <summary>
+    /// Patient data repository.
+    /// </summary>
+    private readonly IPatientRepository _patientRepository;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="OrderService"/> class.
+    /// </summary>
+    /// <param name="logger">The logger.</param>
+    /// <param name="orderRepository">The order repository.</param>
+    /// <param name="patientRepository">The patient repository.</param>
+    public OrderService(
+        ILogger<OrderService> logger,
+        IOrderRepository orderRepository,
+        IPatientRepository patientRepository)
+    {
+        _logger = logger;
+        _orderRepository = orderRepository;
+        _patientRepository = patientRepository;
+    }
+
+    /// <inheritdoc />
+    public async Task<ApiResult<OrderDto>> GetOrderAsync(long id)
+    {
+        try
+        {
+            var order = await _orderRepository.GetOrderAsync(id);
+            return SuccessResult(order.ToDto());
+        }
+        catch (InvalidOperationException)
+        {
+            _logger.LogWarning("Order with ID {Id} not found.", id);
+            return NoDataFoundResult<OrderDto>();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving order with ID {Id}.", id);
+            return ErrorResult<OrderDto>("An error occurred while retrieving the order.");
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<ApiResult<OrderDto>> CreateOrderAsync(CreateOrderRequest request)
+    {
+        try
+        {
+            var patientExists = await _patientRepository.IsExistPatientAsync(request.PatientId);
+
+            if (!patientExists)
+            {
+                _logger.LogWarning("Patient with ID {PatientId} not found for order creation.", request.PatientId);
+                return NoDataFoundResult<OrderDto>($"Patient with PatientId {request.PatientId} not found.");
+            }
+
+            var utcNow = DateTimeOffset.UtcNow;
+
+            var order = new Order
+            {
+                PatientId = request.PatientId,
+                Message = request.Message,
+                CreatedAt = utcNow,
+                UpdatedAt = utcNow,
+            };
+
+            var createdOrder = await _orderRepository.CreateOrderAsync(order);
+            return SuccessResult(createdOrder.ToDto());
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating order for Patient ID {PatientId}.", request.PatientId);
+            return ErrorResult<OrderDto>("An error occurred while creating the order.");
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<ApiResult<OrderDto>> UpdateOrderMessageAsync(long id, string message)
+    {
+        try
+        {
+            var updatedOrder = await _orderRepository.UpdateMessageAsync(id, message, DateTimeOffset.UtcNow);
+            return SuccessResult(updatedOrder.ToDto());
+        }
+        catch (Exception ex) when (ex.Message.Contains("not found"))
+        {
+            _logger.LogWarning("Order with ID {Id} not found for update.", id);
+            return NoDataFoundResult<OrderDto>($"Order with ID {id} not found.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating order with ID {Id}.", id);
+            return ErrorResult<OrderDto>("An error occurred while updating the order.");
+        }
+    }
+}
