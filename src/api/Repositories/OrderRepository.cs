@@ -21,15 +21,11 @@ public class OrderRepository : IOrderRepository
     /// <param name="dbSession"></param>
     public OrderRepository(IDbSession dbSession)
     {
-        _dbContext = dbSession.Context as ApplicationDbContext
+        _dbContext = dbSession.DataContext as ApplicationDbContext
             ?? throw new ArgumentException("Invalid DbContext type in DbSession.");
     }
 
-    /// <summary>
-    /// Get patient's order by id.
-    /// </summary>
-    /// <param name="id"></param>
-    /// <returns></returns>
+    /// <inheritdoc />
     public async Task<Order> GetOrderAsync(long id)
     {
         return await _dbContext.Orders
@@ -37,37 +33,23 @@ public class OrderRepository : IOrderRepository
             .FirstAsync(o => o.Id == id);
     }
 
-    /// <summary>
-    /// Creates a new patient's order.
-    /// </summary>
-    /// <param name="order"></param>
-    /// <returns></returns>
+    /// <inheritdoc />
     public async Task<Order> CreateOrderAsync(Order order)
     {
         await _dbContext.Orders.AddAsync(order);
         return order;
     }
 
-    /// <summary>
-    /// Update the message of an existing order by id.
-    /// </summary>
-    /// <param name="orderId"></param>
-    /// <param name="message"></param>
-    /// <param name="updatedAt"></param>
-    /// <returns></returns>
-    public async Task<Order> UpdateMessageAsync(long orderId, string message, DateTimeOffset updatedAt)
+    /// <inheritdoc />
+    public async Task<Order> UpdateMessageAsync(Order order)
     {
-        var existingOrder = await _dbContext.Orders.FindAsync(orderId);
-
-        if (existingOrder is null)
-        {
-            throw new Exception($"Order with ID {orderId} not found.");
-        }
+        var existingOrder = await _dbContext.Orders.FindAsync(order.Id)
+            ?? throw new Exception($"OrderId {order.Id} not found.");
 
         var updatedOrder = existingOrder with
         {
-            Message = message,
-            UpdatedAt = updatedAt,
+            Message = order.Message,
+            UpdatedAt = order.UpdatedAt,
         };
 
         _dbContext.Entry(existingOrder).CurrentValues.SetValues(updatedOrder);

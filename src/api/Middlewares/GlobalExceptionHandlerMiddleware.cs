@@ -1,7 +1,7 @@
-using System.Net;
-using System.Text.Json;
 using Example.Api.Dtos.Responses;
 using Example.Api.Enums;
+using System.Net;
+using System.Text.Json;
 
 namespace Example.Api.Middlewares;
 
@@ -42,6 +42,12 @@ public class GlobalExceptionHandlerMiddleware
         }
     }
 
+    /// <summary>
+    /// Handles exceptions that occur during the request pipeline.
+    /// </summary>
+    /// <param name="context">The HTTP context.</param>
+    /// <param name="exception">The exception that occurred.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
     private static Task HandleExceptionAsync(HttpContext context, Exception exception)
     {
         context.Response.ContentType = "application/json";

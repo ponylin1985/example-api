@@ -1,3 +1,4 @@
+using Example.Api.DateTimeOffsetProviders;
 using Example.Api.Dtos;
 using Example.Api.Dtos.Requests;
 using Example.Api.Dtos.Responses;
@@ -15,10 +16,13 @@ public class OrderService : BaseService, IOrderService
 {
     /// <summary>
     /// Application logger.
-    /// </summary> <summary>
-    /// 
     /// </summary>
     private readonly ILogger<OrderService> _logger;
+
+    /// <summary>
+    /// DateTimeOffset provider for getting current time.
+    /// </summary>
+    private readonly IDateTimeOffsetProvider _dateTimeOffsetProvider;
 
     /// <summary>
     /// Order data repository.
@@ -38,17 +42,20 @@ public class OrderService : BaseService, IOrderService
     /// <summary>
     /// Initializes a new instance of the <see cref="OrderService"/> class.
     /// </summary>
-    /// <param name="logger">The logger.</param>
+    /// <param name="logger">Application logger.</param>
+    /// <param name="dateTimeOffsetProvider">The date time offset provider.</param>
     /// <param name="orderRepository">The order repository.</param>
     /// <param name="patientRepository">The patient repository.</param>
     /// <param name="unitOfWork">The unit of work.</param>
     public OrderService(
         ILogger<OrderService> logger,
+        IDateTimeOffsetProvider dateTimeOffsetProvider,
         IOrderRepository orderRepository,
         IPatientRepository patientRepository,
         IUnitOfWork unitOfWork)
     {
         _logger = logger;
+        _dateTimeOffsetProvider = dateTimeOffsetProvider;
         _orderRepository = orderRepository;
         _patientRepository = patientRepository;
         _unitOfWork = unitOfWork;
@@ -87,7 +94,7 @@ public class OrderService : BaseService, IOrderService
                 return NoDataFoundResult<OrderDto>($"Patient with PatientId {request.PatientId} not found.");
             }
 
-            var utcNow = DateTimeOffset.UtcNow;
+            var utcNow = _dateTimeOffsetProvider.UtcNow;
 
             var order = new Order
             {
@@ -113,7 +120,14 @@ public class OrderService : BaseService, IOrderService
     {
         try
         {
-            var updatedOrder = await _orderRepository.UpdateMessageAsync(id, message, DateTimeOffset.UtcNow);
+            var order = new Order
+            {
+                Id = id,
+                Message = message,
+                UpdatedAt = _dateTimeOffsetProvider.UtcNow,
+            };
+
+            var updatedOrder = await _orderRepository.UpdateMessageAsync(order);
             await _unitOfWork.SaveChangesAsync();
             return SuccessResult(updatedOrder.ToDto());
         }

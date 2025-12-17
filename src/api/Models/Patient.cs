@@ -24,7 +24,7 @@ public record Patient
     /// The date and time when the patient record was last updated.
     /// </summary>
     /// <value></value>
-    public DateTimeOffset? UpdatedAt { get; init; }
+    public DateTimeOffset UpdatedAt { get; init; }
 
     /// <summary>
     /// Gets or sets the collection of orders associated with the patient.

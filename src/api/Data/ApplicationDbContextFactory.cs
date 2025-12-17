@@ -1,6 +1,6 @@
+using Example.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
-using Example.Api.Data;
 
 /// <summary>
 /// A factory for creating derived <see cref="ApplicationDbContext"/> instances.

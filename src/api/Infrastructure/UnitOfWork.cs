@@ -1,4 +1,8 @@
+using Microsoft.EntityFrameworkCore;
+using Npgsql;
+using Polly;
 using System.Data;
+using System.Data.Common;
 
 namespace Example.Api.Infrastructure;
 
@@ -13,12 +17,25 @@ public class UnitOfWork : IUnitOfWork
     private readonly IDbSession _dbSession;
 
     /// <summary>
+    /// The retry policy for handling transient failures.
+    /// </summary>
+    private readonly AsyncPolicy _retryPolicy;
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="UnitOfWork"/> class.
     /// </summary>
     /// <param name="dbSession">The database session.</param>
     public UnitOfWork(IDbSession dbSession)
     {
         _dbSession = dbSession;
+        _retryPolicy = Policy
+            .Handle<DbUpdateConcurrencyException>()
+            .Or<DbUpdateException>()
+            .Or<DbException>()
+            .Or<NpgsqlException>(ex => ex.IsTransient)
+            .Or<NpgsqlException>(ex => ex.SqlState == "40001")
+            .Or<TimeoutException>()
+            .WaitAndRetryAsync(3, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)));
     }
 
     /// <summary>
@@ -27,9 +44,9 @@ public class UnitOfWork : IUnitOfWork
     /// <param name="level"></param>
     /// <param name="ct"></param>
     /// <returns></returns>
-    public Task BeginTransactionAsync(IsolationLevel level = IsolationLevel.ReadCommitted, CancellationToken ct = default)
+    public async Task BeginTransactionAsync(IsolationLevel level = IsolationLevel.ReadCommitted, CancellationToken ct = default)
     {
-        return _dbSession.EnsureTransactionAsync(level, ct);
+        await _dbSession.EnsureTransactionAsync(level, ct);
     }
 
     /// <summary>
@@ -37,14 +54,21 @@ public class UnitOfWork : IUnitOfWork
     /// </summary>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        return _dbSession.SaveChangesAsync(cancellationToken);
+        return await _retryPolicy.ExecuteAsync(() =>
+            _dbSession.SaveChangesAsync(cancellationToken));
     }
 
-    public Task CommitTransactionAsync(CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Commits the underlying database transaction.
+    /// </summary>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    public async Task CommitTransactionAsync(CancellationToken cancellationToken = default)
     {
-        return _dbSession.CommitTransactionAsync(cancellationToken);
+        await _retryPolicy.ExecuteAsync(() =>
+            _dbSession.CommitTransactionAsync(cancellationToken));
     }
 
     /// <summary>
@@ -52,9 +76,9 @@ public class UnitOfWork : IUnitOfWork
     /// </summary>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public Task RollbackTransactionAsync(CancellationToken cancellationToken = default)
+    public async Task RollbackTransactionAsync(CancellationToken cancellationToken = default)
     {
-        return _dbSession.RollbackTransactionAsync(cancellationToken);
+        await _dbSession.RollbackTransactionAsync(cancellationToken);
     }
 
     /// <summary>

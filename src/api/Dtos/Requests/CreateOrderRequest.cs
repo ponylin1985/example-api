@@ -9,7 +9,7 @@ namespace Example.Api.Dtos.Requests;
 public record CreateOrderRequest : IValidatableObject
 {
     /// <summary>
-    /// Gets the identifier of the patient who placed the order.
+    /// The id of the patient related to the order.
     /// </summary>
     [Required]
     public long PatientId { get; init; }

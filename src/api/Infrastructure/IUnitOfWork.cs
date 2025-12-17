@@ -30,7 +30,9 @@ public interface IUnitOfWork : IDisposable
     Task CommitTransactionAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Rolls back the underlying database transaction.
+    /// Rolls back the current database transaction.
     /// </summary>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
     Task RollbackTransactionAsync(CancellationToken cancellationToken = default);
 }

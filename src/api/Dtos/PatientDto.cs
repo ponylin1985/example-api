@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
 namespace Example.Api.Dtos;
 
 /// <summary>
@@ -25,6 +20,12 @@ public record PatientDto
     /// Creation date of the patient record.
     /// </summary>
     public DateTimeOffset CreatedAt { get; init; }
+
+    /// <summary>
+    /// The date and time when the patient record was last updated.
+    /// </summary>
+    /// <value></value>
+    public DateTimeOffset? UpdatedAt { get; init; }
 
     /// <summary>
     /// The patient's orders.

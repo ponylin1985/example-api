@@ -4,8 +4,16 @@ using Example.Api.Services;
 
 namespace Example.Api.Endpoints;
 
+/// <summary>
+/// API endpoints extensions for patients.
+/// </summary>
 public static class PatientApiEndpoints
 {
+    /// <summary>
+    /// Maps patient-related API endpoints.
+    /// </summary>
+    /// <param name="app"></param>
+    /// <returns></returns>
     public static IEndpointRouteBuilder MapPatientApiEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app
@@ -35,6 +43,30 @@ public static class PatientApiEndpoints
         })
         .WithName("GetPatientsByTimeRange")
         .WithDescription("Get patients created within a specified time range.");
+
+        group.MapGet("/{id:long:min(1)}", async (
+            long id,
+            IPatientService patientService,
+            ILoggerFactory loggerFactory) =>
+        {
+            var logger = loggerFactory.CreateLogger("PatientApiEndpoints");
+            logger.LogInformation("Received request to get patient with ID: {PatientId}", id);
+
+            var result = await patientService.GetPatientAsync(id);
+
+            if (!result.Success)
+            {
+                logger.LogWarning("Failed to retrieve patient with ID {PatientId}: {Message}", id, result.Message);
+            }
+            else
+            {
+                logger.LogInformation("Successfully retrieved patient with ID: {PatientId}", id);
+            }
+
+            return result.ToHttpResult();
+        })
+        .WithName("GetPatientById")
+        .WithDescription("Get a patient by their ID.");
 
         group.MapPost("/", async (
             CreatePatientRequest request,

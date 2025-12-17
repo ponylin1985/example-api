@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
 namespace Example.Api.Dtos;
 
 /// <summary>
@@ -12,12 +7,12 @@ namespace Example.Api.Dtos;
 public record OrderDto
 {
     /// <summary>
-    /// Gets the unique identifier for the order.
+    /// The unique identifier for the order.
     /// </summary>
     public long Id { get; init; }
 
     /// <summary>
-    /// Gets the message associated with the order.
+    /// The message associated with the order.
     /// </summary>
     public string Message { get; init; } = string.Empty;
 
@@ -28,7 +23,13 @@ public record OrderDto
     public long PatientId { get; init; }
 
     /// <summary>
-    /// Gets the date and time when the order was created.
+    /// The date and time when the order was created.
     /// </summary>
     public DateTimeOffset CreatedAt { get; init; }
+
+    /// <summary>
+    /// The date and time when the order was last updated.
+    /// </summary>
+    /// <value></value>
+    public DateTimeOffset? UpdatedAt { get; init; }
 }

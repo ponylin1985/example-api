@@ -1,5 +1,5 @@
-using System.ComponentModel.DataAnnotations;
 using Example.Api.Validators;
+using System.ComponentModel.DataAnnotations;
 
 namespace Example.Api.Dtos.Requests;
 
@@ -9,7 +9,7 @@ namespace Example.Api.Dtos.Requests;
 public record UpdateOrderMessageRequest : IValidatableObject
 {
     /// <summary>
-    /// Gets the new message for the order.
+    /// Message to update the order with.
     /// </summary>
     [Required]
     [MaxLength(500)]

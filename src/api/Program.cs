@@ -1,11 +1,11 @@
 using Example.Api.Data;
+using Example.Api.DateTimeOffsetProviders;
 using Example.Api.Endpoints;
 using Example.Api.Extensions;
 using Example.Api.Infrastructure;
 using Example.Api.Repositories;
 using Example.Api.Services;
 using Example.Api.Validators;
-using Ganss.Xss;
 using Serilog;
 using System.Text.Json;
 
@@ -31,8 +31,9 @@ builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
 });
 
+builder.Services.AddDateTimeOffsetProviders();
 builder.Services.AddApplicationDbContext(builder.Configuration);
-builder.Services.AddInfrastructure();
+builder.Services.AddInfrastructures();
 builder.Services.AddRepositories();
 builder.Services.AddServices();
 builder.Services.AddValidators();

@@ -1,3 +1,4 @@
+using Example.Api.DateTimeOffsetProviders;
 using Example.Api.Dtos;
 using Example.Api.Dtos.Requests;
 using Example.Api.Dtos.Responses;
@@ -17,6 +18,11 @@ public class PatientService : BaseService, IPatientService
     private readonly ILogger<PatientService> _logger;
 
     /// <summary>
+    /// DateTimeOffset provider for getting current time.
+    /// </summary>
+    private readonly IDateTimeOffsetProvider _dateTimeOffsetProvider;
+
+    /// <summary>
     /// Patient data repository.
     /// </summary>
     private readonly IPatientRepository _repository;
@@ -29,19 +35,23 @@ public class PatientService : BaseService, IPatientService
     /// <summary>
     /// Initializes a new instance of the <see cref="PatientService"/> class.
     /// </summary>
-    /// <param name="logger"></param>
-    /// <param name="repository"></param>
-    /// <param name="unitOfWork"></param>
+    /// <param name="logger">Application logger.</param>
+    /// <param name="dateTimeOffsetProvider">The date time offset provider.</param>
+    /// <param name="repository">The patient repository.</param>
+    /// <param name="unitOfWork">The unit of work.</param>
     public PatientService(
         ILogger<PatientService> logger,
+        IDateTimeOffsetProvider dateTimeOffsetProvider,
         IPatientRepository repository,
         IUnitOfWork unitOfWork)
     {
         _logger = logger;
+        _dateTimeOffsetProvider = dateTimeOffsetProvider;
         _repository = repository;
         _unitOfWork = unitOfWork;
     }
 
+    /// <inheritdoc />
     public async Task<ApiResult<PagedResult<PatientDto>>> GetPatientsAsync(GetPatientsRequest request)
     {
         var threeYearsLimit = TimeSpan.FromDays(3 * 365 + 1);
@@ -81,14 +91,24 @@ public class PatientService : BaseService, IPatientService
             queryResult.TotalCount);
     }
 
-    /// <summary>
-    /// Creates a new patient record.
-    /// </summary>
-    /// <param name="request"></param>
-    /// <returns></returns>
+    /// <inheritdoc />
+    public async Task<ApiResult<PatientDto>> GetPatientAsync(long id)
+    {
+        var patient = await _repository.GetPatientAsync(id);
+
+        if (patient is null)
+        {
+            _logger.LogInformation("Patient with ID {Id} not found.", id);
+            return NoDataFoundResult<PatientDto>();
+        }
+
+        return SuccessResult(patient.ToDto());
+    }
+
+    /// <inheritdoc />
     public async Task<ApiResult<PatientDto>> CreatePatientAsync(CreatePatientRequest request)
     {
-        var utcNow = DateTimeOffset.UtcNow;
+        var utcNow = _dateTimeOffsetProvider.UtcNow;
 
         var patient = new Patient
         {

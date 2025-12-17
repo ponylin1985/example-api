@@ -1,10 +1,6 @@
-using System;
-using System.Collections.Generic;
+using Microsoft.EntityFrameworkCore;
 using System.Data;
 using System.Data.Common;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
 
 namespace Example.Api.Infrastructure;
 
@@ -14,7 +10,7 @@ public interface IDbSession : IDisposable
     /// Gets the Entity Framework Core DbContext instance for the current session scope.
     /// This is used by Repositories for LINQ querying and entity tracking (CRUD).
     /// </summary>
-    DbContext Context { get; }
+    DbContext DataContext { get; }
 
     /// <summary>
     /// Gets the current database connection.

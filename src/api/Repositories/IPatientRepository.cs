@@ -22,30 +22,30 @@ public interface IPatientRepository
         int pageSize);
 
     /// <summary>
-    /// Checks if a patient exists by their ID.
+    /// Checks if a patient exists by their id.
     /// </summary>
-    /// <param name="id"></param>
-    /// <returns></returns>
+    /// <param name="id">The id of the patient.</param>
+    /// <returns>True if the patient exists, otherwise false.</returns>
     Task<bool> IsExistPatientAsync(long id);
 
     /// <summary>
-    /// Retrieves a patient by their ID.
+    /// Retrieves a patient by their id.
     /// </summary>
-    /// <param name="id">The ID of the patient.</param>
-    /// <returns>The patient with the specified ID, or null if not found.</returns>
+    /// <param name="id">The id of the patient.</param>
+    /// <returns>The patient with the specified id, or null if not found.</returns>
     Task<Patient?> GetPatientAsync(long id);
 
     /// <summary>
     /// Retrieves a patient by their name.
     /// </summary>
-    /// <param name="name"></param>
-    /// <returns></returns>
+    /// <param name="name">The name of the patient.</param>
+    /// <returns>The patient with the specified name, or null if not found.</returns>
     Task<Patient?> GetPatientByNameAsync(string name);
 
     /// <summary>
     /// Creates a new patient record.
     /// </summary>
-    /// <param name="patient"></param>
-    /// <returns></returns>
+    /// <param name="patient">The patient entity to create.</param>
+    /// <returns>The created patient entity.</returns>
     Task<Patient> CreatePatientAsync(Patient patient);
 }

@@ -21,6 +21,7 @@ public static class OrderMapper
             Message = order.Message,
             PatientId = order.PatientId,
             CreatedAt = order.CreatedAt,
+            UpdatedAt = order.UpdatedAt,
         };
     }
 

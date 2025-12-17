@@ -5,15 +5,23 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Example.Api.Endpoints;
 
+/// <summary>
+/// API endpoints extensions for patient's orders.
+/// </summary>
 public static class OrderApiEndpoints
 {
+    /// <summary>
+    /// Maps order-related API endpoints.
+    /// </summary>
+    /// <param name="app"></param>
+    /// <returns></returns>
     public static IEndpointRouteBuilder MapOrderApiEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app
             .MapGroup("/api/orders")
             .WithTags("Orders");
 
-        group.MapGet("/{id}", async (
+        group.MapGet("/{id:long:min(1)}", async (
             long id,
             IOrderService orderService,
             ILoggerFactory loggerFactory) =>
@@ -61,7 +69,7 @@ public static class OrderApiEndpoints
         .WithName("CreateOrder")
         .WithDescription("Create a new order.");
 
-        group.MapPut("/{id}", async (
+        group.MapPut("/{id:long:min(1)}", async (
             long id,
             [FromBody] UpdateOrderMessageRequest request,
             IOrderService orderService,

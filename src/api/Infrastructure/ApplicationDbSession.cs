@@ -33,7 +33,7 @@ public class ApplicationDbSession : IDbSession
     /// <summary>
     /// Gets the Entity Framework Core DbContext instance for the current session scope.
     /// </summary>
-    public DbContext Context => _dbContext;
+    public DbContext DataContext => _dbContext;
 
     /// <summary>
     /// Gets the current database connection.
@@ -85,9 +85,9 @@ public class ApplicationDbSession : IDbSession
     /// </summary>
     /// <param name="ct"></param>
     /// <returns></returns>
-    public Task<int> SaveChangesAsync(CancellationToken ct = default)
+    public async Task<int> SaveChangesAsync(CancellationToken ct = default)
     {
-        return _dbContext.SaveChangesAsync(ct);
+        return await _dbContext.SaveChangesAsync(ct);
     }
 
     /// <summary>
@@ -97,7 +97,7 @@ public class ApplicationDbSession : IDbSession
     /// <returns></returns>
     public async Task CommitTransactionAsync(CancellationToken ct = default)
     {
-        if (_currentTransaction != null)
+        if (_currentTransaction is not null)
         {
             await _currentTransaction.CommitAsync(ct);
         }
