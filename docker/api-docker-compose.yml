@@ -1,0 +1,21 @@
+services:
+  api:
+    image: jubo-example-api:1.0.0
+    build:
+      context: ..
+      dockerfile: docker/dockerfile
+    container_name: jubo-api
+    ports:
+      - "5000:5000"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=5000
+    volumes:
+      - ../src/api/appsettings.json:/app/appsettings.json
+    restart: unless-stopped
+    networks:
+      - jubo-network
+
+networks:
+  jubo-network:
+    external: true

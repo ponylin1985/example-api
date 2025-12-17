@@ -18,8 +18,9 @@ publish/
 
 .vscode/
 
-# 4. Configuration & Secrets
-appsettings.Development.json
+# Configuration & Secrets
+.env
+# appsettings.Development.json
 appsettings.Staging.json
 appsettings.Production.json
 appsettings.local.json
@@ -29,3 +30,7 @@ appsettings.local.json
 *.log
 *.txt
 /logs
+
+# Database
+/db
+

@@ -1,0 +1,22 @@
+version: "3.1"
+
+services:
+  postgres:
+    image: postgres:15.3-alpine3.18
+    container_name: pgsql
+    volumes:
+      - ../db:/var/lib/postgresql/data
+    expose:
+      - 5432
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    networks:
+      - jubo-network
+
+networks:
+  jubo-network:
+    name: jubo-network
+    driver: bridge
