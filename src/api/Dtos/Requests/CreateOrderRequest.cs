@@ -12,6 +12,7 @@ public record CreateOrderRequest : IValidatableObject
     /// The id of the patient related to the order.
     /// </summary>
     [Required]
+    [Range(1, long.MaxValue, ErrorMessage = "PatientId must be greater than 0.")]
     public long PatientId { get; init; }
 
     /// <summary>

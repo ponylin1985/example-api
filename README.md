@@ -19,7 +19,7 @@
 
 ## 如何執行應用程式
 
-### 準備 pg 資料庫
+### 只準備 pg 資料庫
 
 - 可以用任意方式準備 pg 資料庫，或者依照以下的方式在本機產生一個 pg 的 container 當作資料庫。
 
@@ -40,27 +40,36 @@
 - step 3. 初始化資料庫。
   - 在專案根目錄執行 `dotnet ef database update --project src/api/api.csproj`。
 
+-----------
 
-### 方法一: 使用 docker
+### 執行應用程式方法一: 使用 docker
 
 - 必要安裝
   - docker
   - docker-compose
+  - dotnet ef cli
 
-- step 1. 確保資料庫連線正確。
-  - 調整 [appsettings.json](src/api/appsettings.json) 中的連線字串是正確的。
-    - 注意: 
-      - 若是在 docker container 內執行 API，因為已設定共用網路，Host 請直接設定為 `pgsql` (即資料庫 container 名稱)，不需區分作業系統。
-  - 或者你不想使用這一份 [appsettings.json](src/api/appsettings.json) 設定檔，則請自行調整 [api-docker-compose.yml](docker/api-docker-compose.yml) 的設定。
+- step 1. 在專案根目錄建立 `.env` 檔案，填寫 pg 和 redis 的帳號密碼，如範例 [.env.example](.env.example)
 
 - step 2. 啟動應用程式。
-  - 在專案根目錄先執行 `docker-compose -f ./docker/api-docker-compose.yml up -d`
-    - 會在本機跑起一個名稱為 jubo-api 的 container。
+  - 執行根目錄下的 [./run.sh](run.sh) 腳本。
+
+- step 3. 如果你要關閉應用程式。
+  - 執行根目錄下的 [./stop.sh](stop.sh) 腳本。
+  - 注意，此腳本會把 api image 移除掉，但不會移除掉 [./db](db) 目錄下任何檔案。
+
+-----------
 
 ### 方法二: 使用原始碼
 
 - 必要安裝
   - dotnet sdk 10
+  - dotnet ef cli
+
+- step 0. 前置準備
+  - 請先確定你有 pg 和 redis。
+  - 請確定你的 pg 已經有被初始化過。
+  - 請確定 [appsettings.Development.json](src/api/appsettings.Development.json) 中的連線字串是正確的。
 
 - step 1.
   - 在專案根目錄執行 `dotnet build src/jubo-example-api.sln`。

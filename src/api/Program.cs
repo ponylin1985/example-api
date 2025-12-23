@@ -33,7 +33,7 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 
 builder.Services.AddDateTimeOffsetProviders();
 builder.Services.AddApplicationDbContext(builder.Configuration);
-builder.Services.AddInfrastructures();
+builder.Services.AddInfrastructures(builder.Configuration);
 builder.Services.AddRepositories();
 builder.Services.AddServices();
 builder.Services.AddValidators();

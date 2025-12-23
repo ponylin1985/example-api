@@ -1,3 +1,5 @@
+using Example.Api.Repositories.Caches;
+
 namespace Example.Api.Repositories;
 
 /// <summary>
@@ -12,8 +14,12 @@ public static class RepositoriesProvider
     /// <returns>The updated service collection.</returns>
     public static IServiceCollection AddRepositories(this IServiceCollection services)
     {
-        services.AddScoped<IPatientRepository, PatientRepository>();
-        services.AddScoped<IOrderRepository, OrderRepository>();
+        services
+            .AddScoped<IPatientRepository, PatientRepository>()
+            .Decorate<IPatientRepository, CachedPatientRepository>();
+        services
+            .AddScoped<IOrderRepository, OrderRepository>()
+            .Decorate<IOrderRepository, CachedOrderRepository>();
         return services;
     }
 }

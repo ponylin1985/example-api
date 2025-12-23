@@ -26,7 +26,7 @@ public class OrderRepository : IOrderRepository
     }
 
     /// <inheritdoc />
-    public async Task<Order> GetOrderAsync(long id)
+    public async Task<Order?> GetOrderAsync(long id)
     {
         return await _dbContext.Orders
             .AsNoTracking()
@@ -34,14 +34,14 @@ public class OrderRepository : IOrderRepository
     }
 
     /// <inheritdoc />
-    public async Task<Order> CreateOrderAsync(Order order)
+    public async Task<Order?> CreateOrderAsync(Order order)
     {
         await _dbContext.Orders.AddAsync(order);
         return order;
     }
 
     /// <inheritdoc />
-    public async Task<Order> UpdateMessageAsync(Order order)
+    public async Task<Order?> UpdateMessageAsync(Order order)
     {
         var existingOrder = await _dbContext.Orders.FindAsync(order.Id)
             ?? throw new Exception($"OrderId {order.Id} not found.");

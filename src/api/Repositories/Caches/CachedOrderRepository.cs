@@ -1,0 +1,190 @@
+using Example.Api.Models;
+using Microsoft.Extensions.Caching.Distributed;
+using Polly;
+using Polly.Retry;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
+namespace Example.Api.Repositories.Caches;
+
+/// <summary>
+/// Decorator for IOrderRepository that adds caching.
+/// </summary>
+public class CachedOrderRepository : IOrderRepository
+{
+    /// <summary>
+    /// Logger for the CachedOrderRepository.
+    /// </summary>
+    private readonly ILogger<CachedOrderRepository> _logger;
+
+    /// <summary>
+    /// The inner IOrderRepository instance being decorated.
+    /// </summary>
+    private readonly IOrderRepository _inner;
+
+    /// <summary>
+    /// The distributed cache instance used for caching orders.
+    /// </summary>
+    private readonly IDistributedCache _cache;
+
+    /// <summary>
+    /// Options for cache entry expiration.
+    /// </summary>
+    private readonly DistributedCacheEntryOptions _cacheOptions;
+
+    /// <summary>
+    /// Retry policy for cache operations.
+    /// </summary>
+    private readonly AsyncRetryPolicy _retryPolicy;
+
+    /// <summary>
+    /// JSON serializer options to handle reference cycles.
+    /// </summary>
+    /// <returns></returns>
+    private static readonly JsonSerializerOptions _jsonOptions = new()
+    {
+        ReferenceHandler = ReferenceHandler.IgnoreCycles,
+    };
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="CachedOrderRepository"/> class.
+    /// </summary>
+    /// <param name="logger">The logger instance.</param>
+    /// <param name="inner">The inner IOrderRepository instance.</param>
+    /// <param name="cache">The distributed cache instance.</param>
+    public CachedOrderRepository(
+        ILogger<CachedOrderRepository> logger,
+        IOrderRepository inner,
+        IDistributedCache cache)
+    {
+        _logger = logger;
+        _inner = inner;
+        _cache = cache;
+        _cacheOptions = new DistributedCacheEntryOptions
+        {
+            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10),
+        };
+
+        var jitterer = new Random();
+        _retryPolicy = Policy
+            .Handle<Exception>()
+            .WaitAndRetryAsync(
+                3,
+                retryAttempt =>
+                    TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)) +
+                    TimeSpan.FromMilliseconds(jitterer.Next(0, 1000)),
+                (exception, timeSpan, retryCount, context) =>
+                {
+                    _logger.LogWarning(exception,
+                        "Cache write failed. Retrying in {TimeSpan}. Attempt {RetryCount}.",
+                            timeSpan,
+                            retryCount);
+                });
+    }
+
+    /// <inheritdoc />
+    public async Task<Order?> GetOrderAsync(long id)
+    {
+        string key = GetOrderCacheKey(id);
+        var cachedData = await _cache.GetStringAsync(key);
+
+        if (!string.IsNullOrWhiteSpace(cachedData))
+        {
+            return JsonSerializer.Deserialize<Order>(cachedData, _jsonOptions);
+        }
+
+        var order = await _inner.GetOrderAsync(id);
+
+        if (order is not null)
+        {
+            await SaveToCacheAsync(order);
+        }
+
+        return order;
+    }
+
+    /// <inheritdoc />
+    public Task<Order?> CreateOrderAsync(Order order)
+    {
+        return _inner.CreateOrderAsync(order);
+    }
+
+    /// <inheritdoc />
+    public async Task<Order?> UpdateMessageAsync(Order order)
+    {
+        var updatedOrder = await _inner.UpdateMessageAsync(order);
+
+        if (updatedOrder is not null)
+        {
+            await RemoveFromCacheAsync(order.Id, updatedOrder.PatientId);
+        }
+
+        return updatedOrder;
+    }
+
+    /// <summary>
+    /// Gets the cache key for the patient with the specified ID.
+    /// </summary>
+    /// <param name="patientId">The id of the patient.</param>
+    /// <returns>The cache key for the patient.</returns>
+    private static string GetPatientCacheKey(long patientId) =>
+        $"patient:{patientId}";
+
+    /// <summary>
+    /// Gets the cache key for the existence of an order with the specified ID.
+    /// </summary>
+    /// <param name="id">The id of the order.</param>
+    /// <returns>The cache key for the existence of the order.</returns>
+    private static string GetOrderCacheKey(long id) =>
+        $"order:{id}";
+
+    /// <summary>
+    /// Saves the specified order to the cache.
+    /// </summary>
+    /// <param name="order">The order to save to the cache.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
+    private async Task SaveToCacheAsync(Order order)
+    {
+        var key = GetOrderCacheKey(order.Id);
+        var json = JsonSerializer.Serialize(order, _jsonOptions);
+
+        try
+        {
+            await _retryPolicy.ExecuteAsync(async () =>
+            {
+                await _cache.SetStringAsync(key, json, _cacheOptions);
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error occurred while saving order to cache with key {Key} after retries.", key);
+        }
+    }
+
+    /// <summary>
+    /// Removes the specified order from the cache.
+    /// </summary>
+    /// <param name="orderId">The id of the order to remove from the cache.</param>
+    /// <param name="patientId">The id of the patient associated with the order.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
+    private async Task RemoveFromCacheAsync(long orderId, long patientId)
+    {
+        var patientCacheKey = GetPatientCacheKey(patientId);
+        var orderCacheKey = GetOrderCacheKey(orderId);
+
+        try
+        {
+            var removePatientTask = _retryPolicy.ExecuteAsync(async () =>
+                await _cache.RemoveAsync(patientCacheKey));
+
+            var removeOrderTask = _retryPolicy.ExecuteAsync(async () =>
+                await _cache.RemoveAsync(orderCacheKey));
+
+            await Task.WhenAll(removePatientTask, removeOrderTask);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error occurred while removing cache for Order {OrderId} or Patient {PatientId} after retries.", orderId, patientId);
+        }
+    }
+}

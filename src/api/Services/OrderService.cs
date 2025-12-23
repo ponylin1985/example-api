@@ -67,6 +67,13 @@ public class OrderService : BaseService, IOrderService
         try
         {
             var order = await _orderRepository.GetOrderAsync(id);
+
+            if (order is null)
+            {
+                _logger.LogWarning("Order with ID {Id} not found.", id);
+                return NoDataFoundResult<OrderDto>();
+            }
+
             return SuccessResult(order.ToDto());
         }
         catch (InvalidOperationException)
@@ -91,7 +98,7 @@ public class OrderService : BaseService, IOrderService
             if (!patientExists)
             {
                 _logger.LogWarning("Patient with ID {PatientId} not found for order creation.", request.PatientId);
-                return NoDataFoundResult<OrderDto>($"Patient with PatientId {request.PatientId} not found.");
+                return ErrorResult<OrderDto>($"Order with PatientId {request.PatientId} not found.");
             }
 
             var utcNow = _dateTimeOffsetProvider.UtcNow;
@@ -106,6 +113,12 @@ public class OrderService : BaseService, IOrderService
 
             var createdOrder = await _orderRepository.CreateOrderAsync(order);
             await _unitOfWork.SaveChangesAsync();
+
+            if (createdOrder is null)
+            {
+                _logger.LogWarning("Failed to create order for Patient ID {PatientId}.", request.PatientId);
+                return ErrorResult<OrderDto>("Failed to create the order.");
+            }
             return SuccessResult(createdOrder.ToDto());
         }
         catch (Exception ex)
@@ -129,6 +142,13 @@ public class OrderService : BaseService, IOrderService
 
             var updatedOrder = await _orderRepository.UpdateMessageAsync(order);
             await _unitOfWork.SaveChangesAsync();
+
+            if (updatedOrder is null)
+            {
+                _logger.LogWarning("Failed to update order with ID {Id}.", id);
+                return ErrorResult<OrderDto>("Failed to update the order.");
+            }
+
             return SuccessResult(updatedOrder.ToDto());
         }
         catch (Exception ex) when (ex.Message.Contains("not found"))
