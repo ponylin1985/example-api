@@ -30,7 +30,7 @@ public class CachedOrderRepository : IOrderRepository
     /// <summary>
     /// Options for cache entry expiration.
     /// </summary>
-    private readonly DistributedCacheEntryOptions _cacheOptions;
+    private readonly IOptionsMonitor<DistributedCacheEntryOptions> _cacheOptions;
 
     /// <summary>
     /// Retry policy for cache operations.
@@ -55,13 +55,13 @@ public class CachedOrderRepository : IOrderRepository
         ILogger<CachedOrderRepository> logger,
         IOrderRepository innerRepository,
         IDistributedCache cache,
-        IOptions<DistributedCacheEntryOptions> cacheOptions,
+        IOptionsMonitor<DistributedCacheEntryOptions> cacheOptions,
         JsonSerializerOptions jsonOptions)
     {
         _logger = logger;
         _innerRepository = innerRepository;
         _cache = cache;
-        _cacheOptions = cacheOptions.Value;
+        _cacheOptions = cacheOptions;
         _jsonOptions = jsonOptions;
 
         var jitterer = new Random();
@@ -146,7 +146,7 @@ public class CachedOrderRepository : IOrderRepository
         {
             await _retryPolicy.ExecuteAsync(async () =>
             {
-                await _cache.SetStringAsync(key, json, _cacheOptions);
+                await _cache.SetStringAsync(key, json, _cacheOptions.CurrentValue);
             });
         }
         catch (Exception ex)

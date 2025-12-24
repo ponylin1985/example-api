@@ -31,7 +31,7 @@ public class CachedPatientRepository : IPatientRepository
     /// <summary>
     /// The cache entry options used to configure the cache expiration.
     /// </summary>
-    private readonly DistributedCacheEntryOptions _cacheOptions;
+    private readonly IOptionsMonitor<DistributedCacheEntryOptions> _cacheOptions;
 
     /// <summary>
     /// The Redis database instance.
@@ -62,14 +62,14 @@ public class CachedPatientRepository : IPatientRepository
         ILogger<CachedPatientRepository> logger,
         IPatientRepository innerRepository,
         IDistributedCache cache,
-        IOptions<DistributedCacheEntryOptions> cacheOptions,
+        IOptionsMonitor<DistributedCacheEntryOptions> cacheOptions,
         JsonSerializerOptions jsonOptions,
         IConnectionMultiplexer redis)
     {
         _logger = logger;
         _innerRepository = innerRepository;
         _cache = cache;
-        _cacheOptions = cacheOptions.Value;
+        _cacheOptions = cacheOptions;
         _jsonOptions = jsonOptions;
         _redisDb = redis.GetDatabase();
 
@@ -169,7 +169,7 @@ public class CachedPatientRepository : IPatientRepository
         {
             await _retryPolicy.ExecuteAsync(async () =>
             {
-                await _cache.SetStringAsync(key, patientJson, _cacheOptions);
+                await _cache.SetStringAsync(key, patientJson, _cacheOptions.CurrentValue);
             });
         }
         catch (Exception ex)
