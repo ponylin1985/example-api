@@ -7,7 +7,6 @@ using Example.Api.Repositories;
 using Example.Api.Services;
 using Example.Api.Validators;
 using Serilog;
-using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,11 +25,8 @@ builder.Host.UseSerilog((context, services, configuration) => configuration
     .MinimumLevel.Information()
 );
 
-builder.Services.ConfigureHttpJsonOptions(options =>
-{
-    options.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-});
-
+builder.Services.AddCacheOptions(builder.Configuration);
+builder.Services.AddJsonSerializationOptions();
 builder.Services.AddDateTimeOffsetProviders();
 builder.Services.AddApplicationDbContext(builder.Configuration);
 builder.Services.AddInfrastructures(builder.Configuration);

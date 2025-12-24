@@ -24,4 +24,19 @@ public enum ApiCode : byte
     /// No data was found for the request.
     /// </summary>
     NoDataFound = 4,
+
+    /// <summary>
+    /// A data access error occurred.
+    /// </summary>
+    DataAccessError = 5,
+
+    /// <summary>
+    /// The operation failed.
+    /// </summary>
+    OperationFailed = 6,
+
+    /// <summary>
+    /// The operation timedout.
+    /// </summary>
+    OperationTimeout = 7,
 }

@@ -10,7 +10,14 @@ namespace Example.Api.Middlewares;
 /// </summary>
 public class GlobalExceptionHandlerMiddleware
 {
+    /// <summary>
+    /// The next middleware in the pipeline.
+    /// </summary>
     private readonly RequestDelegate _next;
+
+    /// <summary>
+    /// Logger for the GlobalExceptionHandlerMiddleware.
+    /// </summary>
     private readonly ILogger<GlobalExceptionHandlerMiddleware> _logger;
 
     /// <summary>
@@ -57,7 +64,7 @@ public class GlobalExceptionHandlerMiddleware
         {
             Success = false,
             Code = ApiCode.UnknownError,
-            Message = "An internal server error occurred. Please try again later."
+            Message = "An internal server error occurred. Please try again later.",
         };
 
         var jsonOptions = new JsonSerializerOptions
@@ -66,7 +73,6 @@ public class GlobalExceptionHandlerMiddleware
         };
 
         var json = JsonSerializer.Serialize(response, jsonOptions);
-
         return context.Response.WriteAsync(json);
     }
 }

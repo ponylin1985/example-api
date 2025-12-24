@@ -2,6 +2,7 @@ using Example.Api.DateTimeOffsetProviders;
 using Example.Api.Dtos;
 using Example.Api.Dtos.Requests;
 using Example.Api.Dtos.Responses;
+using Example.Api.Enums;
 using Example.Api.Infrastructure;
 using Example.Api.Mappers;
 using Example.Api.Models;
@@ -64,68 +65,47 @@ public class OrderService : BaseService, IOrderService
     /// <inheritdoc />
     public async Task<ApiResult<OrderDto>> GetOrderAsync(long id)
     {
-        try
-        {
-            var order = await _orderRepository.GetOrderAsync(id);
+        var order = await _orderRepository.GetOrderAsync(id);
 
-            if (order is null)
-            {
-                _logger.LogWarning("Order with ID {Id} not found.", id);
-                return NoDataFoundResult<OrderDto>();
-            }
-
-            return SuccessResult(order.ToDto());
-        }
-        catch (InvalidOperationException)
+        if (order is null)
         {
             _logger.LogWarning("Order with ID {Id} not found.", id);
             return NoDataFoundResult<OrderDto>();
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving order with ID {Id}.", id);
-            return ErrorResult<OrderDto>("An error occurred while retrieving the order.");
-        }
+
+        return SuccessResult(order.ToDto());
     }
 
     /// <inheritdoc />
     public async Task<ApiResult<OrderDto>> CreateOrderAsync(CreateOrderRequest request)
     {
-        try
+        var patientExists = await _patientRepository.IsExistPatientAsync(request.PatientId);
+
+        if (!patientExists)
         {
-            var patientExists = await _patientRepository.IsExistPatientAsync(request.PatientId);
-
-            if (!patientExists)
-            {
-                _logger.LogWarning("Patient with ID {PatientId} not found for order creation.", request.PatientId);
-                return ErrorResult<OrderDto>($"Order with PatientId {request.PatientId} not found.");
-            }
-
-            var utcNow = _dateTimeOffsetProvider.UtcNow;
-
-            var order = new Order
-            {
-                PatientId = request.PatientId,
-                Message = request.Message,
-                CreatedAt = utcNow,
-                UpdatedAt = utcNow,
-            };
-
-            var createdOrder = await _orderRepository.CreateOrderAsync(order);
-            await _unitOfWork.SaveChangesAsync();
-
-            if (createdOrder is null)
-            {
-                _logger.LogWarning("Failed to create order for Patient ID {PatientId}.", request.PatientId);
-                return ErrorResult<OrderDto>("Failed to create the order.");
-            }
-            return SuccessResult(createdOrder.ToDto());
+            _logger.LogWarning("Patient with ID {PatientId} not found for order creation.", request.PatientId);
+            return FailureResult<OrderDto>(ApiCode.OperationFailed, $"Order with PatientId {request.PatientId} not found.");
         }
-        catch (Exception ex)
+
+        var utcNow = _dateTimeOffsetProvider.UtcNow;
+
+        var order = new Order
         {
-            _logger.LogError(ex, "Error creating order for Patient ID {PatientId}.", request.PatientId);
-            return ErrorResult<OrderDto>("An error occurred while creating the order.");
+            PatientId = request.PatientId,
+            Message = request.Message,
+            CreatedAt = utcNow,
+            UpdatedAt = utcNow,
+        };
+
+        var createdOrder = await _orderRepository.CreateOrderAsync(order);
+        await _unitOfWork.SaveChangesAsync();
+
+        if (createdOrder.Id == default)
+        {
+            _logger.LogWarning("Failed to create order for Patient ID {PatientId}.", request.PatientId);
+            return FailureResult<OrderDto>(ApiCode.OperationFailed, "Failed to create the order.");
         }
+        return SuccessResult(createdOrder.ToDto());
     }
 
     /// <inheritdoc />
@@ -142,24 +122,12 @@ public class OrderService : BaseService, IOrderService
 
             var updatedOrder = await _orderRepository.UpdateMessageAsync(order);
             await _unitOfWork.SaveChangesAsync();
-
-            if (updatedOrder is null)
-            {
-                _logger.LogWarning("Failed to update order with ID {Id}.", id);
-                return ErrorResult<OrderDto>("Failed to update the order.");
-            }
-
             return SuccessResult(updatedOrder.ToDto());
         }
-        catch (Exception ex) when (ex.Message.Contains("not found"))
+        catch (InvalidOperationException ex) when (ex.Message.Contains("not found"))
         {
             _logger.LogWarning("Order with ID {Id} not found for update.", id);
-            return NoDataFoundResult<OrderDto>($"Order with ID {id} not found.");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error updating order with ID {Id}.", id);
-            return ErrorResult<OrderDto>("An error occurred while updating the order.");
+            return FailureResult<OrderDto>(ApiCode.OperationFailed, $"Order with ID {id} not found.");
         }
     }
 }

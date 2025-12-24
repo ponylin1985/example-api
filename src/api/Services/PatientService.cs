@@ -10,6 +10,9 @@ using Example.Api.Repositories;
 
 namespace Example.Api.Services;
 
+/// <summary>
+/// Service for managing patients.
+/// </summary>
 public class PatientService : BaseService, IPatientService
 {
     /// <summary>
@@ -78,12 +81,10 @@ public class PatientService : BaseService, IPatientService
                 "No patients found for the given date range: {StartTime} to {EndTime}",
                 request.StartTime,
                 request.EndTime);
-
             return NoDataFoundPagedResult<PatientDto>();
         }
 
         var dtos = queryResult.Data.ToDtos();
-
         return SuccessPagedResult(
             dtos,
             request.PageNumber,
@@ -130,7 +131,7 @@ public class PatientService : BaseService, IPatientService
 
         if (createdPatient.Id == default)
         {
-            return FailureResult<PatientDto>(ApiCode.UnknownError, default!, "Failed to create patient.");
+            return FailureResult<PatientDto>(ApiCode.OperationFailed, "Failed to create patient.");
         }
 
         return SuccessResult(createdPatient.ToDto());

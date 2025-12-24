@@ -19,9 +19,12 @@ public static class ApiResultExtensions
         {
             ApiCode.Success => Results.Ok(result),
             ApiCode.InvalidRequest => Results.BadRequest(result),
-            ApiCode.NoDataFound => Results.NotFound(result),
+            ApiCode.NoDataFound => Results.Ok(result),
+            ApiCode.DataAccessError => Results.InternalServerError(result),
+            ApiCode.OperationFailed => Results.Ok(result),
+            ApiCode.OperationTimeout => Results.StatusCode(StatusCodes.Status504GatewayTimeout),
             ApiCode.UnknownError => Results.InternalServerError(result),
-            _ => Results.StatusCode(StatusCodes.Status500InternalServerError)
+            _ => Results.InternalServerError(result),
         };
     }
 }

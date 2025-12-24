@@ -1,4 +1,5 @@
 using Example.Api.Validators;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
 namespace Example.Api.Dtos.Requests;
@@ -13,6 +14,7 @@ public record CreatePatientRequest : IValidatableObject
     /// Name of the patient.
     /// </summary>
     [Required]
+    [DefaultValue("The name of the patient")]
     [MaxLength(50)]
     public string Name { get; init; } = string.Empty;
 
@@ -21,6 +23,7 @@ public record CreatePatientRequest : IValidatableObject
     /// </summary>
     /// <value></value>
     [Required]
+    [DefaultValue("Some order message here...")]
     [MaxLength(500)]
     public string OrderMessage { get; init; } = string.Empty;
 

@@ -60,8 +60,7 @@ public class PatientRepository : IPatientRepository
     /// <inheritdoc />
     public async Task<Patient?> GetPatientAsync(long id)
     {
-        return await _dbContext
-            .Patients
+        return await _dbContext.Patients
             .AsNoTracking()
             .Include(p => p.Orders)
             .FirstOrDefaultAsync(p => p.Id == id);
@@ -70,8 +69,7 @@ public class PatientRepository : IPatientRepository
     /// <inheritdoc />
     public async Task<Patient?> GetPatientByNameAsync(string name)
     {
-        return await _dbContext
-            .Patients
+        return await _dbContext.Patients
             .AsNoTracking()
             .FirstOrDefaultAsync(p => p.Name == name);
     }

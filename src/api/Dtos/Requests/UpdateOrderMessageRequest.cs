@@ -1,4 +1,5 @@
 using Example.Api.Validators;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
 namespace Example.Api.Dtos.Requests;
@@ -12,6 +13,7 @@ public record UpdateOrderMessageRequest : IValidatableObject
     /// Message to update the order with.
     /// </summary>
     [Required]
+    [DefaultValue("Some order message here...")]
     [MaxLength(500)]
     public string Message { get; init; } = string.Empty;
 

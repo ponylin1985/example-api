@@ -30,21 +30,21 @@ public class OrderRepository : IOrderRepository
     {
         return await _dbContext.Orders
             .AsNoTracking()
-            .FirstAsync(o => o.Id == id);
+            .FirstOrDefaultAsync(o => o.Id == id);
     }
 
     /// <inheritdoc />
-    public async Task<Order?> CreateOrderAsync(Order order)
+    public async Task<Order> CreateOrderAsync(Order order)
     {
         await _dbContext.Orders.AddAsync(order);
         return order;
     }
 
     /// <inheritdoc />
-    public async Task<Order?> UpdateMessageAsync(Order order)
+    public async Task<Order> UpdateMessageAsync(Order order)
     {
         var existingOrder = await _dbContext.Orders.FindAsync(order.Id)
-            ?? throw new Exception($"OrderId {order.Id} not found.");
+            ?? throw new InvalidOperationException($"OrderId {order.Id} not found.");
 
         var updatedOrder = existingOrder with
         {

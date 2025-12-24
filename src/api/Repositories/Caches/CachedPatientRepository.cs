@@ -1,9 +1,10 @@
 using Example.Api.Models;
 using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Options;
 using Polly;
 using Polly.Retry;
+using StackExchange.Redis;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace Example.Api.Repositories.Caches;
 
@@ -20,7 +21,7 @@ public class CachedPatientRepository : IPatientRepository
     /// <summary>
     /// The inner patient repository to which calls are delegated.
     /// </summary>
-    private readonly IPatientRepository _inner;
+    private readonly IPatientRepository _innerRepository;
 
     /// <summary>
     /// The distributed cache used to store patient data.
@@ -33,6 +34,11 @@ public class CachedPatientRepository : IPatientRepository
     private readonly DistributedCacheEntryOptions _cacheOptions;
 
     /// <summary>
+    /// The Redis database instance.
+    /// </summary>
+    private readonly IDatabase _redisDb;
+
+    /// <summary>
     /// The retry policy for cache operations.
     /// </summary>
     private readonly AsyncRetryPolicy _retryPolicy;
@@ -41,29 +47,31 @@ public class CachedPatientRepository : IPatientRepository
     /// JSON serializer options to handle reference loops.
     /// </summary>
     /// <returns></returns>
-    private static readonly JsonSerializerOptions _jsonOptions = new()
-    {
-        ReferenceHandler = ReferenceHandler.IgnoreCycles,
-    };
+    private readonly JsonSerializerOptions _jsonOptions;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="CachedPatientRepository"/> class.
     /// </summary>
-    /// <param name="logger">The logger for the CachedPatientRepository.</param>
-    /// <param name="inner">The inner patient repository to which calls are delegated.</param>
+    /// <param name="logger">Logger for the CachedPatientRepository.</param>
+    /// <param name="innerRepository">The inner patient repository to which calls are delegated.</param>
     /// <param name="cache">The distributed cache used to store patient data.</param>
+    /// <param name="cacheOptions">Cache entry options to configure cache expiration.</param>
+    /// <param name="jsonOptions">JSON serializer options to handle reference loops.</param>
+    /// <param name="redis">The Redis connection multiplexer.</param>
     public CachedPatientRepository(
         ILogger<CachedPatientRepository> logger,
-        IPatientRepository inner,
-        IDistributedCache cache)
+        IPatientRepository innerRepository,
+        IDistributedCache cache,
+        IOptions<DistributedCacheEntryOptions> cacheOptions,
+        JsonSerializerOptions jsonOptions,
+        IConnectionMultiplexer redis)
     {
         _logger = logger;
-        _inner = inner;
+        _innerRepository = innerRepository;
         _cache = cache;
-        _cacheOptions = new DistributedCacheEntryOptions
-        {
-            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10),
-        };
+        _cacheOptions = cacheOptions.Value;
+        _jsonOptions = jsonOptions;
+        _redisDb = redis.GetDatabase();
 
         var jitterer = new Random();
         _retryPolicy = Policy
@@ -93,7 +101,7 @@ public class CachedPatientRepository : IPatientRepository
             return JsonSerializer.Deserialize<Patient>(cachedData, _jsonOptions);
         }
 
-        var patient = await _inner.GetPatientAsync(id);
+        var patient = await _innerRepository.GetPatientAsync(id);
 
         if (patient is not null)
         {
@@ -107,33 +115,36 @@ public class CachedPatientRepository : IPatientRepository
     public async Task<bool> IsExistPatientAsync(long id)
     {
         string key = GetExistenceCacheKey(id);
-        var cachedData = await _cache.GetStringAsync(key);
 
-        if (!string.IsNullOrWhiteSpace(cachedData))
+        if (await _redisDb.KeyExistsAsync(key))
         {
             return true;
         }
 
-        var exists = await _inner.IsExistPatientAsync(id);
+        var exists = await _innerRepository.IsExistPatientAsync(id);
         return exists;
     }
 
     /// <inheritdoc />
-    public Task<(IEnumerable<Patient> Data, long TotalCount)> GetPatientsAsync(DateTimeOffset startTime, DateTimeOffset endTime, int pageNumber, int pageSize)
+    public Task<(IEnumerable<Patient> Data, long TotalCount)> GetPatientsAsync(
+        DateTimeOffset startTime,
+        DateTimeOffset endTime,
+        int pageNumber,
+        int pageSize)
     {
-        return _inner.GetPatientsAsync(startTime, endTime, pageNumber, pageSize);
+        return _innerRepository.GetPatientsAsync(startTime, endTime, pageNumber, pageSize);
     }
 
     /// <inheritdoc />
     public Task<Patient?> GetPatientByNameAsync(string name)
     {
-        return _inner.GetPatientByNameAsync(name);
+        return _innerRepository.GetPatientByNameAsync(name);
     }
 
     /// <inheritdoc />
     public Task<Patient> CreatePatientAsync(Patient patient)
     {
-        return _inner.CreatePatientAsync(patient);
+        return _innerRepository.CreatePatientAsync(patient);
     }
 
     /// <summary>

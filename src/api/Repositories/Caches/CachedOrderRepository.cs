@@ -1,9 +1,9 @@
 using Example.Api.Models;
 using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Options;
 using Polly;
 using Polly.Retry;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace Example.Api.Repositories.Caches;
 
@@ -20,7 +20,7 @@ public class CachedOrderRepository : IOrderRepository
     /// <summary>
     /// The inner IOrderRepository instance being decorated.
     /// </summary>
-    private readonly IOrderRepository _inner;
+    private readonly IOrderRepository _innerRepository;
 
     /// <summary>
     /// The distributed cache instance used for caching orders.
@@ -41,29 +41,28 @@ public class CachedOrderRepository : IOrderRepository
     /// JSON serializer options to handle reference cycles.
     /// </summary>
     /// <returns></returns>
-    private static readonly JsonSerializerOptions _jsonOptions = new()
-    {
-        ReferenceHandler = ReferenceHandler.IgnoreCycles,
-    };
+    private readonly JsonSerializerOptions _jsonOptions;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="CachedOrderRepository"/> class.
     /// </summary>
-    /// <param name="logger">The logger instance.</param>
-    /// <param name="inner">The inner IOrderRepository instance.</param>
-    /// <param name="cache">The distributed cache instance.</param>
+    /// <param name="logger">Logger for the CachedOrderRepository.</param>
+    /// <param name="innerRepository">The inner IOrderRepository instance being decorated.</param>
+    /// <param name="cache">The distributed cache instance used for caching orders.</param>
+    /// <param name="cacheOptions">Cache entry options to configure cache expiration.</param>
+    /// <param name="jsonOptions">JSON serializer options to handle reference cycles.</param>
     public CachedOrderRepository(
         ILogger<CachedOrderRepository> logger,
-        IOrderRepository inner,
-        IDistributedCache cache)
+        IOrderRepository innerRepository,
+        IDistributedCache cache,
+        IOptions<DistributedCacheEntryOptions> cacheOptions,
+        JsonSerializerOptions jsonOptions)
     {
         _logger = logger;
-        _inner = inner;
+        _innerRepository = innerRepository;
         _cache = cache;
-        _cacheOptions = new DistributedCacheEntryOptions
-        {
-            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10),
-        };
+        _cacheOptions = cacheOptions.Value;
+        _jsonOptions = jsonOptions;
 
         var jitterer = new Random();
         _retryPolicy = Policy
@@ -93,7 +92,7 @@ public class CachedOrderRepository : IOrderRepository
             return JsonSerializer.Deserialize<Order>(cachedData, _jsonOptions);
         }
 
-        var order = await _inner.GetOrderAsync(id);
+        var order = await _innerRepository.GetOrderAsync(id);
 
         if (order is not null)
         {
@@ -104,22 +103,17 @@ public class CachedOrderRepository : IOrderRepository
     }
 
     /// <inheritdoc />
-    public Task<Order?> CreateOrderAsync(Order order)
+    public Task<Order> CreateOrderAsync(Order order)
     {
-        return _inner.CreateOrderAsync(order);
+        return _innerRepository.CreateOrderAsync(order);
     }
 
     /// <inheritdoc />
-    public async Task<Order?> UpdateMessageAsync(Order order)
+    public async Task<Order> UpdateMessageAsync(Order order)
     {
-        var updatedOrder = await _inner.UpdateMessageAsync(order);
-
-        if (updatedOrder is not null)
-        {
-            await RemoveFromCacheAsync(order.Id, updatedOrder.PatientId);
-        }
-
-        return updatedOrder;
+        var updatedOrder = await _innerRepository.UpdateMessageAsync(order);
+        await RemoveFromCacheAsync(order.Id, updatedOrder.PatientId);
+        return updatedOrder!;
     }
 
     /// <summary>

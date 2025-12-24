@@ -128,6 +128,24 @@ public abstract class BaseService
     /// Creates a failure API result with data.
     /// </summary>
     /// <param name="code">The error code.</param>
+    /// <param name="message">Optional error message.</param>
+    /// <typeparam name="T">The type of the data.</typeparam>
+    /// <returns>A failure ApiResult instance containing the data.</returns>
+    protected ApiResult<T> FailureResult<T>(ApiCode code, string? message = default)
+    {
+        return new ApiResult<T>
+        {
+            Success = false,
+            Code = code,
+            Message = message,
+            Data = default,
+        };
+    }
+
+    /// <summary>
+    /// Creates a failure API result with data.
+    /// </summary>
+    /// <param name="code">The error code.</param>
     /// <param name="data">The data to include in the result.</param>
     /// <param name="message">Optional error message.</param>
     /// <typeparam name="T">The type of the data.</typeparam>

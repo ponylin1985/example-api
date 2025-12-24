@@ -1,4 +1,5 @@
 using Example.Api.Validators;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
 namespace Example.Api.Dtos.Requests;
@@ -12,6 +13,7 @@ public record CreateOrderRequest : IValidatableObject
     /// The id of the patient related to the order.
     /// </summary>
     [Required]
+    [DefaultValue(1L)]
     [Range(1, long.MaxValue, ErrorMessage = "PatientId must be greater than 0.")]
     public long PatientId { get; init; }
 
@@ -19,6 +21,7 @@ public record CreateOrderRequest : IValidatableObject
     /// Gets the message associated with the order.
     /// </summary>
     [Required]
+    [DefaultValue("Some order message here...")]
     [MaxLength(500)]
     public string Message { get; init; } = string.Empty;
 
