@@ -74,10 +74,11 @@ public class CachedOrderRepository : IOrderRepository
                     TimeSpan.FromMilliseconds(jitterer.Next(0, 1000)),
                 (exception, timeSpan, retryCount, context) =>
                 {
-                    _logger.LogWarning(exception,
+                    _logger.LogWarning(
+                        exception,
                         "Cache write failed. Retrying in {TimeSpan}. Attempt {RetryCount}.",
-                            timeSpan,
-                            retryCount);
+                        timeSpan,
+                        retryCount);
                 });
     }
 
@@ -103,9 +104,11 @@ public class CachedOrderRepository : IOrderRepository
     }
 
     /// <inheritdoc />
-    public Task<Order> CreateOrderAsync(Order order)
+    public async Task<Order> CreateOrderAsync(Order order)
     {
-        return _innerRepository.CreateOrderAsync(order);
+        var createdOrder = await _innerRepository.CreateOrderAsync(order);
+        await RemoveFromCacheAsync(default, createdOrder.PatientId);
+        return createdOrder;
     }
 
     /// <inheritdoc />
@@ -145,13 +148,13 @@ public class CachedOrderRepository : IOrderRepository
         try
         {
             await _retryPolicy.ExecuteAsync(async () =>
-            {
-                await _cache.SetStringAsync(key, json, _cacheOptions.CurrentValue);
-            });
+                await _cache.SetStringAsync(key, json, _cacheOptions.CurrentValue));
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error occurred while saving order to cache with key {Key} after retries.", key);
+            _logger.LogError(
+                ex,
+                "Error occurred while saving order to cache with key {Key} after retries.", key);
         }
     }
 
@@ -161,24 +164,41 @@ public class CachedOrderRepository : IOrderRepository
     /// <param name="orderId">The id of the order to remove from the cache.</param>
     /// <param name="patientId">The id of the patient associated with the order.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
-    private async Task RemoveFromCacheAsync(long orderId, long patientId)
+    private async ValueTask RemoveFromCacheAsync(long orderId, long patientId)
     {
         var patientCacheKey = GetPatientCacheKey(patientId);
         var orderCacheKey = GetOrderCacheKey(orderId);
 
         try
         {
-            var removePatientTask = _retryPolicy.ExecuteAsync(async () =>
-                await _cache.RemoveAsync(patientCacheKey));
+            var tasks = new List<Task>(2);
 
-            var removeOrderTask = _retryPolicy.ExecuteAsync(async () =>
-                await _cache.RemoveAsync(orderCacheKey));
+            if (orderId > 0)
+            {
+                var removeOrderTask = _retryPolicy.ExecuteAsync(async () =>
+                    await _cache.RemoveAsync(orderCacheKey));
+                tasks.Add(removeOrderTask);
+            }
 
-            await Task.WhenAll(removePatientTask, removeOrderTask);
+            if (patientId > 0)
+            {
+                var removePatientTask = _retryPolicy.ExecuteAsync(async () =>
+                    await _cache.RemoveAsync(patientCacheKey));
+                tasks.Add(removePatientTask);
+            }
+
+            if (tasks.Count > 0)
+            {
+                await Task.WhenAll(tasks);
+            }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error occurred while removing cache for Order {OrderId} or Patient {PatientId} after retries.", orderId, patientId);
+            _logger.LogError(
+                ex,
+                "Error occurred while removing cache for Order {OrderId} or Patient {PatientId} after retries.",
+                orderId,
+                patientId);
         }
     }
 }

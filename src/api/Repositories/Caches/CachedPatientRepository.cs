@@ -83,10 +83,11 @@ public class CachedPatientRepository : IPatientRepository
                     TimeSpan.FromMilliseconds(jitterer.Next(0, 1000)),
                 (exception, timeSpan, retryCount, context) =>
                 {
-                    _logger.LogWarning(exception,
+                    _logger.LogWarning(
+                        exception,
                         "Cache write failed. Retrying in {TimeSpan}. Attempt {RetryCount}.",
-                            timeSpan,
-                            retryCount);
+                        timeSpan,
+                        retryCount);
                 });
     }
 

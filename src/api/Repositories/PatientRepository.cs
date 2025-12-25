@@ -39,7 +39,7 @@ public class PatientRepository : IPatientRepository
         var totalCount = await query.LongCountAsync();
 
         var data = await query
-            .Include(p => p.Orders)
+            .Include(p => p.Orders.OrderByDescending(o => o.Id))
             .OrderByDescending(p => p.Id)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
@@ -62,7 +62,7 @@ public class PatientRepository : IPatientRepository
     {
         return await _dbContext.Patients
             .AsNoTracking()
-            .Include(p => p.Orders)
+            .Include(p => p.Orders.OrderByDescending(o => o.Id))
             .FirstOrDefaultAsync(p => p.Id == id);
     }
 
@@ -71,6 +71,7 @@ public class PatientRepository : IPatientRepository
     {
         return await _dbContext.Patients
             .AsNoTracking()
+            .Include(p => p.Orders.OrderByDescending(o => o.Id))
             .FirstOrDefaultAsync(p => p.Name == name);
     }
 
