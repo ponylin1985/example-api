@@ -3,6 +3,7 @@ using Example.Api.DateTimeOffsetProviders;
 using Example.Api.Endpoints;
 using Example.Api.Extensions;
 using Example.Api.Infrastructure;
+using Example.Api.Options;
 using Example.Api.Repositories;
 using Example.Api.Services;
 using Example.Api.Validators;
@@ -16,15 +17,9 @@ builder.Host.UseSerilog((context, services, configuration) => configuration
     .Enrich.FromLogContext()
     .Enrich.WithMachineName()
     .Enrich.WithEnvironmentUserName()
-    .WriteTo.Console(outputTemplate:
-        "[{Timestamp:yyyy-MM-dd HH:mm:ss.ffffff} {Level:u3}] {Message:lj}{NewLine}{Exception}")
-    .WriteTo.File(
-        path: "logs/log-.txt",
-        rollingInterval: RollingInterval.Day,
-        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}")
-    .MinimumLevel.Information()
 );
 
+builder.Services.AddOptions(builder.Configuration);
 builder.Services.AddCacheOptions(builder.Configuration);
 builder.Services.AddJsonSerializationOptions();
 builder.Services.AddDateTimeOffsetProviders();
@@ -37,6 +32,8 @@ builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+app.UseTraceId();
+app.UseRequestResponseLogging();
 
 if (app.Environment.IsDevelopment())
 {
