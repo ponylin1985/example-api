@@ -6,10 +6,11 @@
 
 ```
 example-api/
-├── csharp/          # C# ASP.NET Core 10 實作
-├── nodejs/          # Node.js + Express + TypeScript 實作 (開發中)
-├── docker/          # Docker 相關檔案
-└── Scripts          # 執行腳本
+├── src/
+│   ├── csharp/             # C# ASP.NET Core 10 實作
+│   └── nodejs/             # Node.js + Express + TypeScript 實作 (開發中)
+├── docker/                 # Docker 相關檔案
+└── Scripts                 # 執行腳本
 ```
 
 ## 🎯 API 功能
@@ -28,7 +29,7 @@ example-api/
 
 ## 🚀 C# ASP.NET Core 版本
 
-請參考 [csharp/README.md](csharp/README.md)
+請參考 [src/csharp/README.md](src/csharp/README.md)
 
 ### 快速啟動
 
@@ -41,7 +42,7 @@ open http://localhost:5000/swagger
 
 ## 🚀 Node.js Express 版本
 
-請參考 [nodejs/README.md](nodejs/README.md)
+請參考 [src/nodejs/README.md](src/nodejs/README.md)
 
 ### 快速啟動
 
@@ -72,7 +73,7 @@ docker-compose --env-file .env -f ./docker/pg-docker-compose. yml up -d
 ## 🛑 停止所有服務
 
 ```bash
-./stop.sh
+./stop-csharp.sh
 ```
 
 ---

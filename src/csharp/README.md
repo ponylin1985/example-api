@@ -45,7 +45,7 @@
 
 4. 停止服務：
    ```bash
-   ./stop.sh
+   ./stop-csharp.sh
    ```
 
 ---
@@ -59,23 +59,23 @@
 **前置準備:**
 - 請先確定你有 pg 和 redis
 - 請確定你的 pg 已經有被初始化過
-- 請確定 `src/api/appsettings. Development.json` 中的連線字串是正確的
+- 請確定 [src/csharp/api/appsettings.Development.json](api/appsettings.Development.json) 中的連線字串是正確的
 
 **步驟:**
 
 1. 初始化資料庫：
    ```bash
-   dotnet ef database update --project src/api/api.csproj
+   dotnet ef database update --project src/csharp/api/api.csproj
    ```
 
 2. 建置專案：
    ```bash
-   dotnet build src/jubo-dotnet-api. sln
+   dotnet build src/csharp/jubo-example-api.sln
    ```
 
 3. 執行應用程式：
    ```bash
-   dotnet run --project ./src/api/api.csproj
+   dotnet run --project src/csharp/api/api.csproj
    ```
 
 4. 存取 API：
@@ -86,7 +86,7 @@
 ## 專案結構
 
 ```
-src/
+src/csharp/
 ├── api/
 │   ├── ApiEndpoints/      # API 端點定義
 │   ├── Data/              # EF Core DbContext
