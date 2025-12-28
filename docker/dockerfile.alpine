@@ -6,10 +6,10 @@ EXPOSE 5000
 FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["csharp/src/api/api.csproj", "csharp/src/api/"]
-RUN dotnet restore "csharp/src/api/api.csproj"
+COPY ["src/csharp/api/api.csproj", "src/csharp/api/"]
+RUN dotnet restore "src/csharp/api/api.csproj"
 COPY . .
-WORKDIR "/src/csharp/src/api"
+WORKDIR "/src/src/csharp/api"
 RUN dotnet publish "api.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 FROM base AS final

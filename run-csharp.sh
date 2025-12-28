@@ -47,7 +47,7 @@ export $(grep -v '^#' .env | xargs)
 # 設定 User Secrets
 echo -e "${YELLOW}Configuring User Secrets for database migration...${NC}"
 CONNECTION_STRING="Host=localhost;Database=${POSTGRES_USER};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Pooling=true;MinPoolSize=10;MaxPoolSize=100"
-dotnet user-secrets set "ConnectionStrings:DefaultConnection" "$CONNECTION_STRING" --project csharp/src/api/api.csproj
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "$CONNECTION_STRING" --project src/csharp/api/api.csproj
 
 if [ $? -ne 0 ]; then
     echo -e "${RED}Failed to set User Secrets.${NC}"
@@ -56,7 +56,7 @@ fi
 
 # 執行 EF Core Migration
 echo -e "${YELLOW}Applying database migrations...${NC}"
-dotnet ef database update --project csharp/src/api/api.csproj
+dotnet ef database update --project src/csharp/api/api.csproj
 
 if [ $? -ne 0 ]; then
     echo -e "${RED}Failed to apply database migrations.${NC}"

@@ -13,7 +13,7 @@ services:
       - ConnectionStrings__DefaultConnection=Host=pgsql;Database=${POSTGRES_USER};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Pooling=true;MinPoolSize=10;MaxPoolSize=100
       - ConnectionStrings__DefaultRedisConnection=redis-cache:6379,password=${REDIS_PASSWORD},defaultDatabase=0,keepAlive=15,connectTimeout=3000,syncTimeout=3000
     volumes:
-      - ../csharp/src/api/appsettings.json:/app/appsettings.json
+      - ../src/csharp/api/appsettings.json:/app/appsettings.json
     restart: unless-stopped
     networks:
       - jubo-network
