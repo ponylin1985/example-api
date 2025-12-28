@@ -8,16 +8,26 @@ using Example.Api.Repositories;
 using Example.Api.Services;
 using Example.Api.Validators;
 using Serilog;
+using Serilog.Formatting.Compact;
+using Serilog.Settings.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Host.UseSerilog((context, services, configuration) => configuration
-    .ReadFrom.Configuration(context.Configuration)
-    .ReadFrom.Services(services)
-    .Enrich.FromLogContext()
-    .Enrich.WithMachineName()
-    .Enrich.WithEnvironmentUserName()
-);
+builder.Host.UseSerilog((context, services, configuration) =>
+{
+    var options = new ConfigurationReaderOptions(
+        typeof(ConsoleLoggerConfigurationExtensions).Assembly,
+        typeof(FileLoggerConfigurationExtensions).Assembly,
+        typeof(CompactJsonFormatter).Assembly
+    );
+
+    configuration
+        .ReadFrom.Configuration(context.Configuration, options)
+        .ReadFrom.Services(services)
+        .Enrich.FromLogContext()
+        .Enrich.WithMachineName()
+        .Enrich.WithEnvironmentUserName();
+});
 
 builder.Services.AddOptions(builder.Configuration);
 builder.Services.AddCacheOptions(builder.Configuration);
