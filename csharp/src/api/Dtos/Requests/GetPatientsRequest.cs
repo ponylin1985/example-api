@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Example.Api.Dtos.Requests;
 
@@ -13,6 +14,7 @@ public record GetPatientsRequest : PagedRequest, IValidatableObject
     /// </summary>
     /// <value></value>
     [Required]
+    [FromQuery(Name = "startTime")]
     public required DateTimeOffset StartTime { get; init; }
 
     /// <summary>
@@ -20,6 +22,7 @@ public record GetPatientsRequest : PagedRequest, IValidatableObject
     /// </summary>
     /// <value></value>
     [Required]
+    [FromQuery(Name = "endTime")]
     public required DateTimeOffset EndTime { get; init; }
 
     /// <summary>

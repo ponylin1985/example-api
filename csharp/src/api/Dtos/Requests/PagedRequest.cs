@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Example.Api.Dtos.Requests;
 
@@ -14,6 +15,7 @@ public record PagedRequest
     [Required]
     [DefaultValue(1)]
     [Range(1, int.MaxValue, ErrorMessage = "PageNumber must be greater than 0.")]
+    [FromQuery(Name = "pageNumber")]
     public int PageNumber { get; init; } = 1;
 
     /// <summary>
@@ -22,5 +24,6 @@ public record PagedRequest
     [Required]
     [DefaultValue(10)]
     [Range(1, 100, ErrorMessage = "PageSize must be between 1 and 100.")]
+    [FromQuery(Name = "pageSize")]
     public int PageSize { get; init; } = 10;
 }
