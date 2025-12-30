@@ -36,18 +36,6 @@ public class ApplicationDbSession : IDbSession
     public DbContext DataContext => _dbContext;
 
     /// <summary>
-    /// Gets the current database connection.
-    /// </summary>
-    /// <returns></returns>
-    public DbConnection? CurrentConnection => _dbContext.Database.GetDbConnection();
-
-    /// <summary>
-    /// Gets the current database transaction.
-    /// </summary>
-    /// <returns></returns>
-    public DbTransaction? CurrentTransaction => _currentTransaction?.GetDbTransaction();
-
-    /// <summary>
     /// Gets an open database connection asynchronously.
     /// </summary>
     /// <param name="ct"></param>
@@ -70,14 +58,16 @@ public class ApplicationDbSession : IDbSession
     /// <param name="level"></param>
     /// <param name="ct"></param>
     /// <returns></returns>
-    public async Task EnsureTransactionAsync(IsolationLevel level = IsolationLevel.ReadCommitted, CancellationToken ct = default)
+    public async Task<DbTransaction> EnsureTransactionAsync(
+        IsolationLevel level = IsolationLevel.ReadCommitted,
+        CancellationToken ct = default)
     {
-        if (_currentTransaction is not null)
+        if (_currentTransaction is null)
         {
-            return;
+            _currentTransaction = await _dbContext.Database.BeginTransactionAsync(level, ct);
         }
 
-        _currentTransaction = await _dbContext.Database.BeginTransactionAsync(level, ct);
+        return _currentTransaction.GetDbTransaction();
     }
 
     /// <summary>
@@ -97,9 +87,19 @@ public class ApplicationDbSession : IDbSession
     /// <returns></returns>
     public async Task CommitTransactionAsync(CancellationToken ct = default)
     {
-        if (_currentTransaction is not null)
+        if (_currentTransaction is null)
+        {
+            return;
+        }
+
+        try
         {
             await _currentTransaction.CommitAsync(ct);
+        }
+        finally
+        {
+            await _currentTransaction.DisposeAsync();
+            _currentTransaction = default;
         }
     }
 
@@ -110,9 +110,19 @@ public class ApplicationDbSession : IDbSession
     /// <returns></returns>
     public async Task RollbackTransactionAsync(CancellationToken ct = default)
     {
-        if (_currentTransaction != null)
+        if (_currentTransaction is null)
+        {
+            return;
+        }
+
+        try
         {
             await _currentTransaction.RollbackAsync(ct);
+        }
+        finally
+        {
+            await _currentTransaction.DisposeAsync();
+            _currentTransaction = default;
         }
     }
 

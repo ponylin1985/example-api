@@ -93,11 +93,9 @@ public class OrderService : BaseService, IOrderService
         {
             PatientId = request.PatientId,
             Message = request.Message,
-            CreatedAt = utcNow,
-            UpdatedAt = utcNow,
         };
 
-        var createdOrder = await _orderRepository.CreateOrderAsync(order);
+        var createdOrder = await _orderRepository.AddAsync(order);
         await _unitOfWork.SaveChangesAsync();
 
         if (createdOrder.Id == default)
@@ -105,29 +103,25 @@ public class OrderService : BaseService, IOrderService
             _logger.LogWarning("Failed to create order for Patient ID {PatientId}.", request.PatientId);
             return FailureResult<OrderDto>(ApiCode.OperationFailed, "Failed to create the order.");
         }
+
         return SuccessResult(createdOrder.ToDto());
     }
 
     /// <inheritdoc />
-    public async Task<ApiResult<OrderDto>> UpdateOrderMessageAsync(long id, string message)
+    public async Task<ApiResult<OrderDto>> UpdateMessageAsync(long id, string message)
     {
-        try
-        {
-            var order = new Order
-            {
-                Id = id,
-                Message = message,
-                UpdatedAt = _dateTimeOffsetProvider.UtcNow,
-            };
+        await using var _ = await _unitOfWork.BeginTransactionAsync();
 
-            var updatedOrder = await _orderRepository.UpdateMessageAsync(order);
-            await _unitOfWork.SaveChangesAsync();
-            return SuccessResult(updatedOrder.ToDto());
-        }
-        catch (InvalidOperationException ex) when (ex.Message.Contains("not found"))
+        var utcNow = _dateTimeOffsetProvider.UtcNow;
+        var updatedOrder = await _orderRepository.UpdateAsync(id, message, utcNow);
+
+        if (updatedOrder is null)
         {
             _logger.LogWarning("Order with ID {Id} not found for update.", id);
             return FailureResult<OrderDto>(ApiCode.OperationFailed, $"Order with ID {id} not found.");
         }
+
+        await _unitOfWork.CommitTransactionAsync();
+        return SuccessResult(updatedOrder.ToDto());
     }
 }

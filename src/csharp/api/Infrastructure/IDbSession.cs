@@ -13,16 +13,6 @@ public interface IDbSession : IDisposable
     DbContext DataContext { get; }
 
     /// <summary>
-    /// Gets the current database connection.
-    /// </summary>
-    DbConnection? CurrentConnection { get; }
-
-    /// <summary>
-    /// Gets the current database transaction.
-    /// </summary>
-    DbTransaction? CurrentTransaction { get; }
-
-    /// <summary>
     /// Gets an open database connection.<para/>
     /// * This method is implemented to retrieve the connection managed by the underlying DbContext.<para/>
     /// </summary>
@@ -32,7 +22,8 @@ public interface IDbSession : IDisposable
     /// Ensures that a database transaction is started.<para/>
     /// * This operation utilizes the DbContext's built-in transaction manager.
     /// </summary>
-    Task EnsureTransactionAsync(IsolationLevel level = IsolationLevel.ReadCommitted, CancellationToken ct = default);
+    Task<DbTransaction> EnsureTransactionAsync(
+        IsolationLevel level = IsolationLevel.ReadCommitted, CancellationToken ct = default);
 
     /// <summary>
     /// Saves all changes made in this context to the database.

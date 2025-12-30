@@ -114,19 +114,16 @@ public class PatientService : BaseService, IPatientService
         var patient = new Patient
         {
             Name = request.Name,
-            CreatedAt = utcNow,
             Orders =
             [
-                new Order
+                new()
                 {
                     Message = request.OrderMessage,
-                    CreatedAt = utcNow,
-                    UpdatedAt = utcNow,
-                }
+                },
             ],
         };
 
-        var createdPatient = await _repository.CreatePatientAsync(patient);
+        var createdPatient = await _repository.AddAsync(patient);
         await _unitOfWork.SaveChangesAsync();
 
         if (createdPatient.Id == default)

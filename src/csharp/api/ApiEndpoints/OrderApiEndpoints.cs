@@ -78,7 +78,7 @@ public static class OrderApiEndpoints
             var logger = loggerFactory.CreateLogger("OrderApiEndpoints");
             logger.LogInformation("Received request to update message for order with ID: {OrderId}", id);
 
-            var result = await orderService.UpdateOrderMessageAsync(id, request.Message);
+            var result = await orderService.UpdateMessageAsync(id, request.Message);
 
             if (!result.Success)
             {

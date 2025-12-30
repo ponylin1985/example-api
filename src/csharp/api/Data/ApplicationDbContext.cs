@@ -1,3 +1,4 @@
+using Example.Api.DateTimeOffsetProviders;
 using Example.Api.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,11 +10,19 @@ namespace Example.Api.Data;
 public class ApplicationDbContext : DbContext
 {
     /// <summary>
+    /// The date time offset provider.
+    /// </summary>
+    private readonly IDateTimeOffsetProvider _dateTimeOffsetProvider;
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="ApplicationDbContext"/> class.
     /// </summary>
     /// <param name="options">The options for this context.</param>
-    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
+    public ApplicationDbContext(
+        DbContextOptions<ApplicationDbContext> options,
+        IDateTimeOffsetProvider dateTimeOffsetProvider) : base(options)
     {
+        _dateTimeOffsetProvider = dateTimeOffsetProvider;
     }
 
     /// <summary>
@@ -121,5 +130,32 @@ public class ApplicationDbContext : DbContext
         });
 
         base.OnModelCreating(modelBuilder);
+    }
+
+    /// <summary>
+    /// Saves all changes made in this context to the database.
+    /// </summary>
+    /// <param name="ct"></param>
+    /// <returns></returns>
+    public override Task<int> SaveChangesAsync(CancellationToken ct = default)
+    {
+        var entries =
+            ChangeTracker
+                .Entries<BaseEntity>()
+                .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified);
+
+        var utcNow = _dateTimeOffsetProvider.UtcNow;
+
+        foreach (var entry in entries)
+        {
+            entry.Entity.UpdatedAt = utcNow;
+
+            if (entry.State == EntityState.Added)
+            {
+                entry.Entity.CreatedAt = utcNow;
+            }
+        }
+
+        return base.SaveChangesAsync(ct);
     }
 }

@@ -1,3 +1,4 @@
+using Dapper;
 using Example.Api.Data;
 using Example.Api.Infrastructure;
 using Example.Api.Models;
@@ -11,6 +12,11 @@ namespace Example.Api.Repositories;
 public class OrderRepository : IOrderRepository
 {
     /// <summary>
+    /// Database session for database operations.
+    /// </summary>
+    private readonly IDbSession _dbSession;
+
+    /// <summary>
     /// DbContext for database operations.
     /// </summary>
     private readonly ApplicationDbContext _dbContext;
@@ -21,6 +27,7 @@ public class OrderRepository : IOrderRepository
     /// <param name="dbSession"></param>
     public OrderRepository(IDbSession dbSession)
     {
+        _dbSession = dbSession;
         _dbContext = dbSession.DataContext as ApplicationDbContext
             ?? throw new ArgumentException("Invalid DbContext type in DbSession.");
     }
@@ -34,7 +41,7 @@ public class OrderRepository : IOrderRepository
     }
 
     /// <inheritdoc />
-    public async Task<Order> CreateOrderAsync(Order order)
+    public async Task<Order> AddAsync(Order order)
     {
         await _dbContext.Orders.AddAsync(order);
         return order;
@@ -45,14 +52,42 @@ public class OrderRepository : IOrderRepository
     {
         var existingOrder = await _dbContext.Orders.FindAsync(order.Id)
             ?? throw new InvalidOperationException($"OrderId {order.Id} not found.");
+        existingOrder.Message = order.Message;
+        return existingOrder;
+    }
 
-        var updatedOrder = existingOrder with
+    /// <inheritdoc />
+    public async Task<Order?> UpdateAsync(long id, string message, DateTimeOffset updatedAt)
+    {
+        var sql = @"
+            UPDATE ""order""
+            SET message = @Message,
+                updated_at = @UpdatedAt
+            WHERE id = @Id
+            RETURNING patient_id, created_at; ";
+
+        var conn = await _dbSession.GetOpenConnectionAsync();
+        var trans = await _dbSession.EnsureTransactionAsync();
+
+        var result = await conn.QueryFirstOrDefaultAsync(sql, new
         {
-            Message = order.Message,
-            UpdatedAt = order.UpdatedAt,
-        };
+            Message = message,
+            UpdatedAt = updatedAt,
+            Id = id,
+        }, trans);
 
-        _dbContext.Entry(existingOrder).CurrentValues.SetValues(updatedOrder);
-        return updatedOrder;
+        if (result is null)
+        {
+            return default;
+        }
+
+        return new Order
+        {
+            Id = id,
+            Message = message,
+            PatientId = (long)result.patient_id,
+            CreatedAt = (DateTimeOffset)result.created_at,
+            UpdatedAt = updatedAt,
+        };
     }
 }

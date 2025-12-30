@@ -29,5 +29,5 @@ public interface IOrderService
     /// <param name="id">The unique identifier of the order.</param>
     /// <param name="message">The new message.</param>
     /// <returns>The updated order DTO.</returns>
-    Task<ApiResult<OrderDto>> UpdateOrderMessageAsync(long id, string message);
+    Task<ApiResult<OrderDto>> UpdateMessageAsync(long id, string message);
 }
