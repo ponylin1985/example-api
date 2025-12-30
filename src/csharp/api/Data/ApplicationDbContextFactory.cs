@@ -1,4 +1,5 @@
 using Example.Api.Data;
+using Example.Api.DateTimeOffsetProviders;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 
@@ -37,6 +38,6 @@ public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<Applicati
             connectionString,
             options => options.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName));
 
-        return new ApplicationDbContext(optionsBuilder.Options);
+        return new ApplicationDbContext(optionsBuilder.Options, new DefaultDateTimeOffsetProvider());
     }
 }

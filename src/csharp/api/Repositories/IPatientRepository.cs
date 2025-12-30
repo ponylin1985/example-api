@@ -47,5 +47,5 @@ public interface IPatientRepository
     /// </summary>
     /// <param name="patient">The patient entity to create.</param>
     /// <returns>The created patient entity.</returns>
-    Task<Patient> CreatePatientAsync(Patient patient);
+    Task<Patient> AddAsync(Patient patient);
 }

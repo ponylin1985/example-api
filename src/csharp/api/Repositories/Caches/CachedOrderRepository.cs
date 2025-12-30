@@ -104,9 +104,9 @@ public class CachedOrderRepository : IOrderRepository
     }
 
     /// <inheritdoc />
-    public async Task<Order> CreateOrderAsync(Order order)
+    public async Task<Order> AddAsync(Order order)
     {
-        var createdOrder = await _innerRepository.CreateOrderAsync(order);
+        var createdOrder = await _innerRepository.AddAsync(order);
         await RemoveFromCacheAsync(default, createdOrder.PatientId);
         return createdOrder;
     }
@@ -118,6 +118,21 @@ public class CachedOrderRepository : IOrderRepository
         await RemoveFromCacheAsync(order.Id, updatedOrder.PatientId);
         return updatedOrder!;
     }
+
+    /// <inheritdoc />
+    public async Task<Order?> UpdateAsync(long id, string message, DateTimeOffset updatedAt)
+    {
+        var updatedOrder = await _innerRepository.UpdateAsync(id, message, updatedAt);
+
+        if (updatedOrder is null)
+        {
+            return default;
+        }
+
+        await RemoveFromCacheAsync(id, updatedOrder.PatientId);
+        return updatedOrder;
+    }
+
 
     /// <summary>
     /// Gets the cache key for the patient with the specified ID.

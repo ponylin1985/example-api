@@ -76,7 +76,7 @@ public class PatientRepository : IPatientRepository
     }
 
     /// <inheritdoc />
-    public async Task<Patient> CreatePatientAsync(Patient patient)
+    public async Task<Patient> AddAsync(Patient patient)
     {
         await _dbContext.Patients.AddAsync(patient);
         return patient;

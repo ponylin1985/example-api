@@ -143,9 +143,9 @@ public class CachedPatientRepository : IPatientRepository
     }
 
     /// <inheritdoc />
-    public Task<Patient> CreatePatientAsync(Patient patient)
+    public Task<Patient> AddAsync(Patient patient)
     {
-        return _innerRepository.CreatePatientAsync(patient);
+        return _innerRepository.AddAsync(patient);
     }
 
     /// <summary>

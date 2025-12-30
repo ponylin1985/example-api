@@ -22,5 +22,6 @@
     <PackageReference Include="Polly" Version="8.6.5"/>
     <PackageReference Include="Scrutor" Version="7.0.0"/>
     <PackageReference Include="Serilog.Formatting.Compact" Version="3.0.0"/>
+    <PackageReference Include="Dapper" Version="2.1.66"/>
   </ItemGroup>
 </Project>
