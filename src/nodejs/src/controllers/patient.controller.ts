@@ -8,6 +8,7 @@ export class PatientController {
   static getPatientAsync = async (req: Request, res: Response) => {
     const patientId = req.params.id;
     res.status(200).json({ message: `Get patient with ID: ${patientId}` });
+    // ddd
   }
 
   static createPatientAsync = async (req: Request, res: Response) => {
