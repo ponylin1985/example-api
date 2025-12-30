@@ -34,3 +34,10 @@ appsettings.local.json
 # Database
 /db
 
+# Node.js
+node_modules/
+dist/
+coverage/
+.npm/
+*.tsbuildinfo
+
