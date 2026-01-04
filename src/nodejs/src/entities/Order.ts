@@ -2,18 +2,18 @@ import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from "t
 import { BaseEntity } from "./BaseEntity";
 import { Patient } from "./Patient";
 
-@Entity()
+@Entity("order")
 export class Order extends BaseEntity {
-  @PrimaryGeneratedColumn({ type: "bigint" })
-  id!: string;
+  @PrimaryGeneratedColumn({ type: "bigint", name: "id" })
+  id!: number;
 
-  @Column()
+  @Column({ type: "varchar", name: "message", length: 500 })
   message!: string;
 
-  @Column({ type: "bigint" })
-  patientId!: string;
-
+  @Column({ type: "bigint", name: "patient_id" })
+  patientId!: number;
+  
   @ManyToOne(() => Patient, (patient) => patient.orders)
-  @JoinColumn({ name: "patientId" })
+  @JoinColumn({ name: "patient_id" })
   patient!: Patient;
 }
