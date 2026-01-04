@@ -11,7 +11,7 @@ export const AppDataSource = new DataSource({
   port: parseInt(process.env.DB_PORT || "5432"),
   username: process.env.POSTGRES_USER || "postgres",
   password: process.env.POSTGRES_PASSWORD || "postgres",
-  database: process.env.POSTGRES_DB || "postgres",
+  database: process.env.POSTGRES_DB || process.env.POSTGRES_USER || "postgres",
   synchronize: false, // Set to true only for dev if you want auto-schema sync, but better to use migrations
   logging: process.env.NODE_ENV === "development",
   entities: [path.join(__dirname, "entities/**/*.{ts,js}")],

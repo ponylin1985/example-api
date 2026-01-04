@@ -5,11 +5,14 @@ import swaggerUi from "swagger-ui-express";
 import swaggerJsdoc from "swagger-jsdoc";
 import { AppDataSource } from "./data-source";
 import routes from "./routes";
+import { errorHandler } from "./middlewares/errorHandler";
+import { requestLogger } from "./middlewares/requestLogger";
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use(requestLogger);
 
 // Swagger Setup
 const options = {
@@ -41,12 +44,6 @@ app.get("/health", (req: Request, res: Response) => {
 app.use("/api", routes);
 
 // Global Error Handler
-app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-  console.error(err.stack);
-  res.status(500).json({
-    message: "Internal Server Error",
-    error: process.env.NODE_ENV === "development" ? err.message : undefined,
-  });
-});
+app.use(errorHandler);
 
 export { app };
