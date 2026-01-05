@@ -1,0 +1,55 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "dotnet-api: debug",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/src/csharp/api/bin/Debug/net10.0/api.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/src/csharp/api",
+      "stopAtEntry": false,
+      // "serverReadyAction": {
+      //   "action": "openExternally",
+      //   "pattern": "\\bNow listening on:\\s+(https?://\\S+)",
+      //   "uriFormat": "%s/swagger"
+      // },
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "nodejs-api: debug",
+      "type": "node",
+      "request": "launch",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "program": "${workspaceFolder}/src/nodejs/src/server.ts",
+      "runtimeExecutable": "${workspaceFolder}/src/nodejs/node_modules/.bin/tsx",
+      "cwd": "${workspaceFolder}/src/nodejs",
+      "console": "integratedTerminal",
+      "env": {
+        "NODE_ENV": "development"
+      }
+    },
+    {
+      "name": "dotnet-api: debug (attach)",
+      "type": "coreclr",
+      "request": "attach",
+      "processName": "api"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "dotnet-api: watch + debug",
+      "configurations": [
+        "dotnet-api: debug (attach)"
+      ],
+      "preLaunchTask": "watch",
+      "stopAll": true
+    }
+  ]
+}

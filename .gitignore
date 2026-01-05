@@ -16,7 +16,7 @@ publish/
 *.~
 *.bak
 
-.vscode/
+# .vscode/
 
 # Configuration & Secrets
 .env

@@ -2,6 +2,7 @@ import "../mappers/PatientMapper";
 import { ApiDataResult } from "../dtos/ApiResult";
 import { BaseService } from "./BaseService";
 import { CreatePatientRequest } from "../dtos/CreatePatientRequest";
+import { DateUtils } from "../utils/DateUtils";
 import { IPatientRepository } from "../repositories/IPatientRepository";
 import { IPatientService } from "./IPatientService";
 import { Order } from "../entities/Order";
@@ -10,7 +11,6 @@ import { PagedResult } from "../dtos/PagedResult";
 import { Patient } from "../entities/Patient";
 import { PatientDto } from "../dtos/PatientDto";
 import { toDtos } from "../mappers/PatientMapper";
-import { DateUtils } from "../utils/dateUtils";
 
 /**
  * Service for managing patient-related business logic.
@@ -93,10 +93,10 @@ export class PatientService extends BaseService implements IPatientService {
    */
   async createPatientAsync(request: CreatePatientRequest): Promise<ApiDataResult<PatientDto>> {
     const newOrder = new Order();
-    newOrder.message = request.orderMessage;
+    newOrder.message = request.orderMessage.trim();
 
     const newPatient = new Patient();
-    newPatient.name = request.name;
+    newPatient.name = request.name.trim();
     newPatient.orders = [newOrder];
 
     const savedPatient = await this.patientRepository.addAsync(newPatient);

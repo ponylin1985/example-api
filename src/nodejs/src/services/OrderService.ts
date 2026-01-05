@@ -3,7 +3,7 @@ import { ApiCode } from "../dtos/ApiCode";
 import { ApiDataResult } from "../dtos/ApiResult";
 import { BaseService } from "./BaseService";
 import { CreateOrderRequest } from "../dtos/CreateOrderRequest";
-import { DateUtils } from "../utils/dateUtils";
+import { DateUtils } from "../utils/DateUtils";
 import { IOrderRepository } from "../repositories/IOrderRepository";
 import { IOrderService } from "./IOrderService";
 import { IPatientRepository } from "../repositories/IPatientRepository";
@@ -59,10 +59,8 @@ export class OrderService extends BaseService implements IOrderService {
 
     const order = new Order();
     order.patientId = request.patientId;
-    order.message = request.message;
+    order.message = request.message.trim();
 
-    // In C#, CreatedAt is set by DB default or manually?
-    // Entity definition has @CreateDateColumn so TypeORM handles it.
     const createdOrder = await this.orderRepository.addAsync(order);
     return super.successDataResult(createdOrder.toDto());
   }
@@ -75,7 +73,7 @@ export class OrderService extends BaseService implements IOrderService {
    */
   async updateMessageAsync(id: number, message: string): Promise<ApiDataResult<OrderDto>> {
     const updatedAt = DateUtils.utcNow();
-    const updatedOrder = await this.orderRepository.updateAsync(id, message, updatedAt);
+    const updatedOrder = await this.orderRepository.updateAsync(id, message.trim(), updatedAt);
 
     if (!updatedOrder) {
       return super.failureDataResult<OrderDto>(ApiCode.OperationFailed, undefined, `Order with ID ${id} not found.`);

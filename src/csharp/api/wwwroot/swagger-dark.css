@@ -1,0 +1,154 @@
+/* Swagger UI Dark Theme */
+:root {
+    --bg-primary: #1e1e1e;
+    --bg-secondary: #252526;
+    --bg-tertiary: #2d2d30;
+    --text-primary: #d4d4d4;
+    --text-secondary: #9cdcfe;
+    --border-color: #3e3e42;
+    --link-color: #569cd6;
+    --success-color: #4ec9b0;
+    --error-color: #f48771;
+}
+
+body {
+    background: var(--bg-primary) !important;
+}
+
+.swagger-ui {
+    filter: invert(88%) hue-rotate(180deg);
+}
+
+.swagger-ui .topbar {
+    background-color: #2d2d30;
+    border-bottom: 1px solid #3e3e42;
+    filter: invert(100%) hue-rotate(180deg);
+}
+
+.swagger-ui .info {
+    filter: invert(100%) hue-rotate(180deg);
+}
+
+.swagger-ui .scheme-container {
+    background: #2d2d30;
+    filter: invert(100%) hue-rotate(180deg);
+}
+
+.swagger-ui .opblock {
+    border-color: #3e3e42 !important;
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.swagger-ui .opblock-summary {
+    filter: invert(100%) hue-rotate(180deg);
+}
+
+.swagger-ui .opblock-body {
+    filter: invert(100%) hue-rotate(180deg);
+}
+
+.swagger-ui .btn {
+    filter: invert(100%) hue-rotate(180deg);
+}
+
+.swagger-ui .response-col_status {
+    filter: invert(100%) hue-rotate(180deg);
+}
+
+.swagger-ui .response-col_description {
+    filter: invert(100%) hue-rotate(180deg);
+}
+
+.swagger-ui textarea {
+    background: #1e1e1e !important;
+    color: #d4d4d4 !important;
+    border: 1px solid #3e3e42 !important;
+}
+
+.swagger-ui input[type="text"],
+.swagger-ui input[type="password"],
+.swagger-ui input[type="search"],
+.swagger-ui input[type="email"],
+.swagger-ui input[type="file"] {
+    background: #1e1e1e !important;
+    color: #d4d4d4 !important;
+    border: 1px solid #3e3e42 !important;
+}
+
+.swagger-ui select {
+    background: #1e1e1e !important;
+    color: #d4d4d4 !important;
+    border: 1px solid #3e3e42 !important;
+}
+
+.swagger-ui .dialog-ux .modal-ux {
+    background: #252526;
+    border: 1px solid #3e3e42;
+}
+
+.swagger-ui .dialog-ux .modal-ux-header {
+    border-bottom: 1px solid #3e3e42;
+}
+
+.swagger-ui .model-box {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.swagger-ui section.models {
+    border: 1px solid #3e3e42;
+}
+
+.swagger-ui .model {
+    filter: invert(100%) hue-rotate(180deg);
+}
+
+.swagger-ui .model-container {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+/* Code blocks */
+.swagger-ui .highlight-code {
+    filter: invert(100%) hue-rotate(180deg);
+}
+
+.swagger-ui .microlight {
+    filter: invert(100%) hue-rotate(180deg);
+}
+
+/* Response area */
+.swagger-ui .responses-inner {
+    filter: invert(100%) hue-rotate(180deg);
+}
+
+/* Parameter table */
+.swagger-ui table thead tr th,
+.swagger-ui table thead tr td {
+    border-bottom: 1px solid #3e3e42;
+}
+
+.swagger-ui .parameter__name {
+    filter: invert(100%) hue-rotate(180deg);
+}
+
+.swagger-ui .parameter__type {
+    filter: invert(100%) hue-rotate(180deg);
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+    background: #3e3e42;
+    border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #4e4e52;
+}

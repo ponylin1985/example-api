@@ -1,3 +1,4 @@
+import { CachedPatientRepository } from "../repositories/CachedPatientRepository";
 import { CreatePatientRequest } from "../dtos/CreatePatientRequest";
 import { PatientController } from "../controllers/PatientController";
 import { PatientRepository } from "../repositories/PatientRepository";
@@ -7,7 +8,7 @@ import { validateBody } from "../middlewares/validation";
 import { validateId } from "../middlewares/validateId";
 
 const router = Router();
-const patientRepository = new PatientRepository();
+const patientRepository = new CachedPatientRepository(new PatientRepository());
 const patientService = new PatientService(patientRepository);
 const patientController = new PatientController(patientService);
 
@@ -96,5 +97,4 @@ router.get("/:id", validateId, patientController.getPatientAsync);
  *         description: Invalid request
  */
 router.post("/", validateBody(CreatePatientRequest), patientController.createPatientAsync);
-
 export default router;

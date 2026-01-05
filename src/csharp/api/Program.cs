@@ -47,8 +47,12 @@ app.UseRequestResponseLogging();
 
 if (app.Environment.IsDevelopment())
 {
+    app.UseStaticFiles();
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c =>
+    {
+        c.InjectStylesheet("/swagger-dark.css");
+    });
     app.MapOpenApi();
 }
 

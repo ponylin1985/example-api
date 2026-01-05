@@ -1,11 +1,15 @@
 import "reflect-metadata";
-import { errorHandler } from "./middlewares/errorHandler";
-import { requestLogger } from "./middlewares/requestLogger";
+import dotenv from "dotenv";
+import path from "path";
+import { errorHandler } from "./middlewares/globalErrorHandlerMiddleware";
+import { requestLogger } from "./middlewares/requestResponseMiddleware";
 import cors from "cors";
 import express, { Request, Response } from "express";
 import routes from "./routes";
 import swaggerJsdoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
+
+dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
 
 const app = express();
 app.use(cors());
@@ -20,10 +24,11 @@ const swaggerOptions = {
       version: "1.0.0",
       description: "A Node.js implementation of the Jubo Example API",
     },
-    servers: [{
+    servers: [
+      {
         url: "http://localhost:5000",
       },
-],
+    ],
   },
   apis: ["./src/routes/*.ts", "./src/controllers/*.ts", "./src/dtos/*.ts"],
 };

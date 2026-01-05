@@ -1,3 +1,5 @@
+import { CachedOrderRepository } from "../repositories/CachedOrderRepository";
+import { CachedPatientRepository } from "../repositories/CachedPatientRepository";
 import { CreateOrderRequest } from "../dtos/CreateOrderRequest";
 import { OrderController } from "../controllers/OrderController";
 import { OrderRepository } from "../repositories/OrderRepository";
@@ -9,9 +11,8 @@ import { validateBody } from "../middlewares/validation";
 import { validateId } from "../middlewares/validateId";
 
 const router = Router();
-
-const orderRepository = new OrderRepository();
-const patientRepository = new PatientRepository();
+const orderRepository = new CachedOrderRepository(new OrderRepository());
+const patientRepository = new CachedPatientRepository(new PatientRepository());
 const orderService = new OrderService(orderRepository, patientRepository);
 const orderController = new OrderController(orderService);
 
@@ -95,5 +96,4 @@ router.post("/", validateBody(CreateOrderRequest), orderController.createOrderAs
  *         description: Order not found
  */
 router.put("/:id", validateId, validateBody(UpdateOrderMessageRequest), orderController.updateOrderMessageAsync);
-
 export default router;

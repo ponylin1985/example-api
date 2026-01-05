@@ -92,7 +92,7 @@ public class OrderService : BaseService, IOrderService
         var order = new Order
         {
             PatientId = request.PatientId,
-            Message = request.Message,
+            Message = request.Message.Trim(),
         };
 
         var createdOrder = await _orderRepository.AddAsync(order);
@@ -113,7 +113,7 @@ public class OrderService : BaseService, IOrderService
         await using var _ = await _unitOfWork.BeginTransactionAsync();
 
         var utcNow = _dateTimeOffsetProvider.UtcNow;
-        var updatedOrder = await _orderRepository.UpdateAsync(id, message, utcNow);
+        var updatedOrder = await _orderRepository.UpdateAsync(id, message.Trim(), utcNow);
 
         if (updatedOrder is null)
         {

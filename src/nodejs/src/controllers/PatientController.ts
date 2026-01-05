@@ -1,5 +1,5 @@
 import { CreatePatientRequest } from "../dtos/CreatePatientRequest";
-import { DateUtils } from "../utils/dateUtils";
+import { DateUtils } from "../utils/DateUtils";
 import { IPatientService } from "../services/IPatientService";
 import { PagedRequest } from "../dtos/PagedRequest";
 import { Request, Response } from "express";

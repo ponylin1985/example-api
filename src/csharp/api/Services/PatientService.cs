@@ -112,12 +112,12 @@ public class PatientService : BaseService, IPatientService
 
         var patient = new Patient
         {
-            Name = request.Name,
+            Name = request.Name.Trim(),
             Orders =
             [
                 new()
                 {
-                    Message = request.OrderMessage,
+                    Message = request.OrderMessage.Trim(),
                 },
             ],
         };
