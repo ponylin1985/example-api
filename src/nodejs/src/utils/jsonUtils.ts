@@ -12,13 +12,28 @@ export class JsonUtils {
   }
 
   /**
+   * Deserializes a JSON string to an object of specified class type with automatic Date conversion.
+   * @template T - The type of the object to deserialize.
+   * @param jsonString - The JSON string to deserialize.
+   * @param entityClass - The class type to instantiate and assign the deserialized data to.
+   * @returns An instance of the specified class type with data from the JSON string, or undefined if deserialization fails.
+   */
+  static deserialize<T extends object>(jsonString: string, entityClass: new () => T): T | undefined {
+    const data = this.deserializeJson<T>(jsonString);
+    if (data) {
+      return Object.assign(new entityClass(), data);
+    }
+    return undefined;
+  }
+
+  /**
    * Deserializes a JSON string to an object with automatic Date conversion.
    * Automatically converts ISO 8601 date strings to Date objects.
    * @param jsonString - The JSON string to deserialize.
    * @returns The deserialized object or undefined if parsing fails.
    * @template T - The type of the object to deserialize.
    */
-  static deserialize<T>(jsonString: string): T | undefined {
+  private static deserializeJson<T>(jsonString: string): T | undefined {
     try {
       return JSON.parse(jsonString, this.dateReviver) as T;
     } catch (error) {

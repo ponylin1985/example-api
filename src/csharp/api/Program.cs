@@ -58,5 +58,10 @@ if (app.Environment.IsDevelopment())
 
 app.UseGlobalExceptionHandler();
 app.UseHttpsRedirection();
+
+app.MapGet("/healthz", () => Results.Ok(new { status = "ok" }))
+    .WithName("HealthCheck")
+    .WithTags("Health");
+
 app.MapApiEndpoints();
 app.Run();

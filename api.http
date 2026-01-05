@@ -1,0 +1,141 @@
+### Variables
+@baseUrl = http://localhost:5001
+@nodeBaseUrl = http://localhost:5001
+@dotnetBaseUrl = http://localhost:5000
+
+###############################################################################
+# ASP.NET Core API Endpoints
+###############################################################################
+
+### Health Check (ASP.NET Core)
+GET {{dotnetBaseUrl}}/healthz
+
+### Get all patients (ASP.NET Core)
+GET {{dotnetBaseUrl}}/api/patients?startTime=2025-12-01T00:00:00Z&endTime=2025-12-31T23:59:59Z&pageNumber=1&pageSize=10
+
+### Get patient by ID (ASP.NET Core)
+GET {{dotnetBaseUrl}}/api/patients/1
+
+### Create a new patient (ASP.NET Core)
+POST {{dotnetBaseUrl}}/api/patients
+Content-Type: application/json
+
+{
+  "name": "Alice Johnson",
+  "orderMessage": "Routine checkup required"
+}
+
+### Get order by ID (ASP.NET Core)
+GET {{dotnetBaseUrl}}/api/orders/1
+
+### Create a new order (ASP.NET Core)
+POST {{dotnetBaseUrl}}/api/orders
+Content-Type: application/json
+
+{
+  "patientId": 1,
+  "message": "Lab results review"
+}
+
+### Update order message (ASP.NET Core)
+PUT {{dotnetBaseUrl}}/api/orders/1
+Content-Type: application/json
+
+{
+  "message": "Updated via ASP.NET Core API"
+}
+
+
+
+### Health Check (Node.js)
+GET {{nodeBaseUrl}}/healthz
+
+###############################################################################
+# Patient Endpoints (Node.js)
+###############################################################################
+
+### Get all patients (with pagination and date filter)
+GET {{nodeBaseUrl}}/api/patients?startTime=2025-12-01T00:00:00Z&endTime=2025-12-31T23:59:59Z&pageNumber=1&pageSize=10
+# GET {{nodeBaseUrl}}/api/patients?pageNumber=1&pageSize=10&startTime=2024-01-01T00:00:00Z&endTime=2024-12-31T23:59:59Z
+
+### Get patient by ID
+GET {{nodeBaseUrl}}/api/patients/1
+
+### Get patient by ID (not found)
+GET {{nodeBaseUrl}}/api/patients/999
+
+### Create a new patient
+POST {{nodeBaseUrl}}/api/patients
+Content-Type: application/json
+
+{
+  "name": "John Doe",
+  "orderMessage": "Initial consultation needed"
+}
+
+### Create a new patient (validation error - missing required field)
+POST {{nodeBaseUrl}}/api/patients
+Content-Type: application/json
+
+{
+  "name": "Jane Smith"
+}
+
+###############################################################################
+# Order Endpoints (Node.js)
+###############################################################################
+
+### Get order by ID
+GET {{nodeBaseUrl}}/api/orders/1
+
+### Get order by ID (not found)
+GET {{nodeBaseUrl}}/api/orders/999
+
+### Create a new order
+POST {{nodeBaseUrl}}/api/orders
+Content-Type: application/json
+
+{
+  "patientId": 1,
+  "message": "Follow-up appointment scheduled"
+}
+
+### Create a new order (validation error - missing required field)
+POST {{nodeBaseUrl}}/api/orders
+Content-Type: application/json
+
+{
+  "patientId": 1
+}
+
+### Create a new order (patient not found)
+POST {{nodeBaseUrl}}/api/orders
+Content-Type: application/json
+
+{
+  "patientId": 999,
+  "message": "Test order"
+}
+
+### Update order message
+PUT {{nodeBaseUrl}}/api/orders/1
+Content-Type: application/json
+
+{
+  "message": "Updated message: Patient requested rescheduling"
+}
+
+### Update order message (validation error - missing required field)
+PUT {{nodeBaseUrl}}/api/orders/1
+Content-Type: application/json
+
+{
+}
+
+### Update order message (not found)
+PUT {{nodeBaseUrl}}/api/orders/999
+Content-Type: application/json
+
+{
+  "message": "This order does not exist"
+}
