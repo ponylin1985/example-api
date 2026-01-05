@@ -41,7 +41,11 @@ export class CachedOrderRepository implements IOrderRepository {
 
       if (cachedData) {
         logger.debug(`Cache hit for order: ${id}`);
-        return JsonUtils.deserialize<Order>(cachedData) ?? null;
+        const data = JsonUtils.deserialize<Order>(cachedData);
+        if (data) {
+          return Object.assign(new Order(), data);
+        }
+        return null;
       }
 
       logger.debug(`Cache miss for order: ${id}`);

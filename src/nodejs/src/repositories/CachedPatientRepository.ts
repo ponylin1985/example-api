@@ -41,7 +41,11 @@ export class CachedPatientRepository implements IPatientRepository {
 
       if (cachedData) {
         logger.debug(`Cache hit for patient: ${id}`);
-        return JsonUtils.deserialize<Patient>(cachedData) ?? null;
+        const data = JsonUtils.deserialize<Patient>(cachedData);
+        if (data) {
+          return Object.assign(new Patient(), data);
+        }
+        return null;
       }
 
       logger.debug(`Cache miss for patient: ${id}`);

@@ -9,18 +9,20 @@ export const errorHandler = (err: any, req: Request, res: Response, _next: NextF
   const message = err.message || "Internal Server Error";
 
   logger.error(`Error processing request ${req.method} ${req.url}`, {
-    error: err,
+    error: {
+      name: err.name,
+      message: err.message,
+      stack: err.stack,
+      code: err.code,
+      statusCode: err.statusCode,
+    },
     body: req.body,
     query: req.query,
     params: req.params,
     ip: req.ip,
   });
 
-  const response = new ApiResult(
-    false,
-    ApiCode.UnknownError, // You might want to map status codes to ApiCodes
-    message
-  );
+  const response = new ApiResult(false, ApiCode.UnknownError, message);
 
   if (process.env.NODE_ENV === "development") {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
