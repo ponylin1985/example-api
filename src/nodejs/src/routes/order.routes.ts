@@ -1,8 +1,12 @@
-import { Router } from "express";
+import { CreateOrderRequest } from "../dtos/CreateOrderRequest";
 import { OrderController } from "../controllers/OrderController";
-import { OrderService } from "../services/OrderService";
 import { OrderRepository } from "../repositories/OrderRepository";
+import { OrderService } from "../services/OrderService";
 import { PatientRepository } from "../repositories/PatientRepository";
+import { Router } from "express";
+import { UpdateOrderMessageRequest } from "../dtos/UpdateOrderMessageRequest";
+import { validateBody } from "../middlewares/validation";
+import { validateId } from "../middlewares/validateId";
 
 const router = Router();
 
@@ -30,7 +34,7 @@ const orderController = new OrderController(orderService);
  *       404:
  *         description: Order not found
  */
-router.get("/:id", orderController.getOrderAsync);
+router.get("/:id", validateId, orderController.getOrderAsync);
 
 /**
  * @swagger
@@ -58,7 +62,7 @@ router.get("/:id", orderController.getOrderAsync);
  *       400:
  *         description: Invalid request
  */
-router.post("/", orderController.createOrderAsync);
+router.post("/", validateBody(CreateOrderRequest), orderController.createOrderAsync);
 
 /**
  * @swagger
@@ -90,6 +94,6 @@ router.post("/", orderController.createOrderAsync);
  *       404:
  *         description: Order not found
  */
-router.put("/:id", orderController.updateOrderMessageAsync);
+router.put("/:id", validateId, validateBody(UpdateOrderMessageRequest), orderController.updateOrderMessageAsync);
 
 export default router;

@@ -65,7 +65,6 @@ public class PatientService : BaseService, IPatientService
             _logger.LogWarning("Query range exceeded 3 years limit. Requested duration: {Duration}", duration);
 
             return BadRequestResult<PagedResult<PatientDto>>(
-                default!,
                 $"The date range must not exceed 3 years. Requested duration was {duration.Days} days.");
         }
 

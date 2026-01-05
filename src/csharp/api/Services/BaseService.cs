@@ -93,6 +93,23 @@ public abstract class BaseService
     /// <summary>
     /// Creates a bad request API result with data.
     /// </summary>
+    /// <param name="message">Optional error message.</param>
+    /// <typeparam name="T">The type of the data.</typeparam>
+    /// <returns>A bad request ApiResult instance containing the data.</returns>
+    protected ApiResult<T> BadRequestResult<T>(string? message = default)
+    {
+        return new ApiResult<T>
+        {
+            Success = false,
+            Code = ApiCode.InvalidRequest,
+            Message = message,
+            Data = default,
+        };
+    }
+
+    /// <summary>
+    /// Creates a bad request API result with data.
+    /// </summary>
     /// <param name="data">The data to include in the result.</param>
     /// <param name="message">Optional error message.</param>
     /// <typeparam name="T">The type of the data.</typeparam>

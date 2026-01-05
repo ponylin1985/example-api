@@ -3,12 +3,8 @@ import logger from "../utils/logger";
 import { ApiResult } from "../dtos/ApiResult";
 import { ApiCode } from "../dtos/ApiCode";
 
-export const errorHandler = (
-  err: any,
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const errorHandler = (err: any, req: Request, res: Response, _next: NextFunction) => {
   const statusCode = err.statusCode || 500;
   const message = err.message || "Internal Server Error";
 
@@ -29,6 +25,7 @@ export const errorHandler = (
 
   // In development, include stack trace
   if (process.env.NODE_ENV === "development") {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (response as any).stack = err.stack;
   }
 

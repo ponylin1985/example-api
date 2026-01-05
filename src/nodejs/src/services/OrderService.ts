@@ -1,58 +1,86 @@
-import { IOrderRepository } from "../repositories/IOrderRepository";
-import { IPatientRepository } from "../repositories/IPatientRepository";
-import { IOrderService } from "./IOrderService";
-import { ApiDataResult } from "../dtos/ApiResult";
-import { OrderDto } from "../dtos/OrderDto";
+import "../mappers/OrderMapper";
 import { ApiCode } from "../dtos/ApiCode";
+import { ApiDataResult } from "../dtos/ApiResult";
+import { BaseService } from "./BaseService";
 import { CreateOrderRequest } from "../dtos/CreateOrderRequest";
+import { DateUtils } from "../utils/dateUtils";
+import { IOrderRepository } from "../repositories/IOrderRepository";
+import { IOrderService } from "./IOrderService";
+import { IPatientRepository } from "../repositories/IPatientRepository";
 import { Order } from "../entities/Order";
+import { OrderDto } from "../dtos/OrderDto";
 
-export class OrderService implements IOrderService {
+/**
+ * Service for managing order-related business logic.
+ */
+export class OrderService extends BaseService implements IOrderService {
+  /**
+   * Creates a new instance of OrderService.
+   * @param orderRepository - The order repository.
+   * @param patientRepository - The patient repository.
+   */
   constructor(
     private orderRepository: IOrderRepository,
     private patientRepository: IPatientRepository
-  ) {}
+  ) {
+    super();
+  }
 
+  /**
+   * Retrieves an order by its ID.
+   * @param id - The order ID.
+   * @returns An API result containing the order if found, null otherwise.
+   */
   async getOrderAsync(id: number): Promise<ApiDataResult<OrderDto | null>> {
     const order = await this.orderRepository.getOrderAsync(id);
 
     if (!order) {
-      return new ApiDataResult<OrderDto | null>(true, ApiCode.NoDataFound, "Order not found", null);
+      return this.noDataFoundDataResult<OrderDto | null>(null, "Order not found");
     }
 
-    return new ApiDataResult<OrderDto>(true, ApiCode.Success, "Success", this.mapToDto(order));
+    return this.successDataResult(order.toDto());
   }
 
+  /**
+   * Creates a new order.
+   * @param request - The create order request.
+   * @returns An API result containing the created order.
+   */
   async createOrderAsync(request: CreateOrderRequest): Promise<ApiDataResult<OrderDto>> {
     const patientExists = await this.patientRepository.isExistPatientAsync(request.patientId);
 
     if (!patientExists) {
-      return new ApiDataResult<OrderDto>(false, ApiCode.OperationFailed, `Order with PatientId ${request.patientId} not found.`);
+      return super.failureDataResult<OrderDto>(
+        ApiCode.OperationFailed,
+        undefined,
+        `Order with PatientId ${request.patientId} not found.`
+      );
     }
 
     const order = new Order();
     order.patientId = request.patientId;
     order.message = request.message;
-    
-    // In C#, CreatedAt is set by DB default or manually? 
+
+    // In C#, CreatedAt is set by DB default or manually?
     // Entity definition has @CreateDateColumn so TypeORM handles it.
     const createdOrder = await this.orderRepository.addAsync(order);
-    
-    return new ApiDataResult<OrderDto>(true, ApiCode.Success, "Success", this.mapToDto(createdOrder));
+    return super.successDataResult(createdOrder.toDto());
   }
 
+  /**
+   * Updates an order's message.
+   * @param id - The order ID.
+   * @param message - The new message.
+   * @returns An API result containing the updated order.
+   */
   async updateMessageAsync(id: number, message: string): Promise<ApiDataResult<OrderDto>> {
-    const updatedAt = new Date();
+    const updatedAt = DateUtils.utcNow();
     const updatedOrder = await this.orderRepository.updateAsync(id, message, updatedAt);
 
     if (!updatedOrder) {
-      return new ApiDataResult<OrderDto>(false, ApiCode.OperationFailed, `Order with ID ${id} not found.`);
+      return super.failureDataResult<OrderDto>(ApiCode.OperationFailed, undefined, `Order with ID ${id} not found.`);
     }
 
-    return new ApiDataResult<OrderDto>(true, ApiCode.Success, "Success", this.mapToDto(updatedOrder));
-  }
-
-  private mapToDto(order: Order): OrderDto {
-    return new OrderDto(order.id, order.message, order.patientId, order.createdAt, order.updatedAt);
+    return super.successDataResult(updatedOrder.toDto());
   }
 }

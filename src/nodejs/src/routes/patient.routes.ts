@@ -1,7 +1,10 @@
-import { Router } from "express";
+import { CreatePatientRequest } from "../dtos/CreatePatientRequest";
 import { PatientController } from "../controllers/PatientController";
-import { PatientService } from "../services/PatientService";
 import { PatientRepository } from "../repositories/PatientRepository";
+import { PatientService } from "../services/PatientService";
+import { Router } from "express";
+import { validateBody } from "../middlewares/validation";
+import { validateId } from "../middlewares/validateId";
 
 const router = Router();
 const patientRepository = new PatientRepository();
@@ -64,7 +67,7 @@ router.get("/", patientController.getPatientsAsync);
  *       404:
  *         description: Patient not found
  */
-router.get("/:id", patientController.getPatientAsync);
+router.get("/:id", validateId, patientController.getPatientAsync);
 
 /**
  * @swagger
@@ -92,6 +95,6 @@ router.get("/:id", patientController.getPatientAsync);
  *       400:
  *         description: Invalid request
  */
-router.post("/", patientController.createPatientAsync);
+router.post("/", validateBody(CreatePatientRequest), patientController.createPatientAsync);
 
 export default router;

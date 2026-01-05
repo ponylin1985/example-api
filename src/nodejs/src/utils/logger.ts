@@ -1,5 +1,5 @@
-import winston from "winston";
 import path from "path";
+import winston from "winston";
 
 const logLevel = process.env.LOG_LEVEL || "info";
 const logDir = "logs";
@@ -19,16 +19,16 @@ const logger = winston.createLogger({
     // - Write all logs with importance level of `error` or less to `error.log`
     // - Write all logs with importance level of `info` or less to `combined.log`
     //
-    new winston.transports.File({ 
-        filename: path.join(logDir, "error.log"), 
-        level: "error",
-        maxsize: 5242880, // 5MB
-        maxFiles: 5,
+    new winston.transports.File({
+      filename: path.join(logDir, "error.log"),
+      level: "error",
+      maxsize: 5242880, // 5MB
+      maxFiles: 5,
     }),
-    new winston.transports.File({ 
-        filename: path.join(logDir, "combined.log"),
-        maxsize: 5242880, // 5MB
-        maxFiles: 5,
+    new winston.transports.File({
+      filename: path.join(logDir, "combined.log"),
+      maxsize: 5242880, // 5MB
+      maxFiles: 5,
     }),
   ],
 });
@@ -43,7 +43,7 @@ if (process.env.NODE_ENV !== "production") {
       format: winston.format.combine(
         winston.format.colorize(),
         winston.format.printf(({ timestamp, level, message, stack, ...meta }) => {
-            return `${timestamp} [${level}]: ${message} ${stack ? '\n' + stack : ''} ${Object.keys(meta).length ? JSON.stringify(meta) : ''}`;
+          return `${timestamp} [${level}]: ${message} ${stack ? "\n" + stack : ""} ${Object.keys(meta).length ? JSON.stringify(meta) : ""}`;
         })
       ),
     })

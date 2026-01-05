@@ -1,54 +1,105 @@
-import { Patient } from "../entities/Patient";
+import "../mappers/PatientMapper";
+import { ApiDataResult } from "../dtos/ApiResult";
+import { BaseService } from "./BaseService";
+import { CreatePatientRequest } from "../dtos/CreatePatientRequest";
 import { IPatientRepository } from "../repositories/IPatientRepository";
 import { IPatientService } from "./IPatientService";
-import { ApiDataResult } from "../dtos/ApiResult";
-import { PatientDto } from "../dtos/PatientDto";
-import { ApiCode } from "../dtos/ApiCode";
-import { OrderDto } from "../dtos/OrderDto";
+import { Order } from "../entities/Order";
 import { PagedRequest } from "../dtos/PagedRequest";
 import { PagedResult } from "../dtos/PagedResult";
-import { CreatePatientRequest } from "../dtos/CreatePatientRequest";
-import { Order } from "../entities/Order";
+import { Patient } from "../entities/Patient";
+import { PatientDto } from "../dtos/PatientDto";
+import { toDtos } from "../mappers/PatientMapper";
+import { DateUtils } from "../utils/dateUtils";
 
-export class PatientService implements IPatientService {
-  constructor(private patientRepository: IPatientRepository) {}
-
-  async getPatientsAsync(request: PagedRequest, startTime?: Date, endTime?: Date): Promise<ApiDataResult<PagedResult<PatientDto>>> {
-    const start = startTime || new Date(0);
-    const end = endTime || new Date();
-
-    const [patients, totalCount] = await this.patientRepository.getPatientsAsync(start, end, request.pageNumber, request.pageSize);
-
-    const patientDtos = patients.map(p => this.mapToDto(p));
-    const pagedResult = new PagedResult(patientDtos, totalCount, request.pageNumber, request.pageSize);
-
-    return new ApiDataResult<PagedResult<PatientDto>>(true, ApiCode.Success, "Success", pagedResult);
+/**
+ * Service for managing patient-related business logic.
+ */
+export class PatientService extends BaseService implements IPatientService {
+  /**
+   * Creates a new instance of PatientService.
+   * @param patientRepository - The patient repository.
+   */
+  constructor(private patientRepository: IPatientRepository) {
+    super();
   }
-  
+
+  /**
+   * Retrieves a paginated list of patients within a date range.
+   * @param request - The pagination request.
+   * @param startTime - Optional start of the date range.
+   * @param endTime - Optional end of the date range.
+   * @returns An API result containing the paginated patient list.
+   */
+  async getPatientsAsync(
+    request: PagedRequest,
+    startTime?: Date,
+    endTime?: Date
+  ): Promise<ApiDataResult<PagedResult<PatientDto>>> {
+    // Use UTC epoch as default start, current UTC time as default end
+    const start = startTime || new Date(0);
+    const end = endTime || DateUtils.utcNow();
+
+    if (start > end) {
+      return super.badRequestDefaultDataResult<PagedResult<PatientDto>>(
+        "The start date must be earlier than or equal to the end date."
+      );
+    }
+
+    const threeYearsLimit = 3 * 365 + 1;
+    const durationMs = end.getTime() - start.getTime();
+    const durationDays = Math.floor(durationMs / (1000 * 60 * 60 * 24));
+
+    if (durationDays > threeYearsLimit) {
+      return super.badRequestDefaultDataResult<PagedResult<PatientDto>>(
+        `The date range must not exceed 3 years. Requested duration was ${durationDays} days.`
+      );
+    }
+
+    const [patients, totalCount] = await this.patientRepository.getPatientsAsync(
+      start,
+      end,
+      request.pageNumber,
+      request.pageSize
+    );
+
+    if (totalCount === 0) {
+      return super.noDataFoundPagedResult<PatientDto>("No patients found for the given date range.");
+    }
+
+    const patientDtos = toDtos(patients);
+    return super.successPagedResult(patientDtos, totalCount, request.pageNumber, request.pageSize);
+  }
+
+  /**
+   * Retrieves a patient by ID.
+   * @param id - The patient ID.
+   * @returns An API result containing the patient if found, null otherwise.
+   */
   async getPatientAsync(id: number): Promise<ApiDataResult<PatientDto | null>> {
     const patient = await this.patientRepository.getPatientAsync(id);
 
     if (!patient) {
-      return new ApiDataResult<PatientDto | null>(true, ApiCode.NoDataFound, "Patient not found", null);
+      return super.noDataFoundDataResult<PatientDto | null>(null, "Patient not found");
     }
 
-    return new ApiDataResult<PatientDto>(true, ApiCode.Success, "Success", this.mapToDto(patient));
+    return super.successDataResult(patient.toDto());
   }
 
+  /**
+   * Creates a new patient.
+   * @param request - The create patient request.
+   * @returns An API result containing the created patient.
+   */
   async createPatientAsync(request: CreatePatientRequest): Promise<ApiDataResult<PatientDto>> {
     const newOrder = new Order();
     newOrder.message = request.orderMessage;
-    
+
     const newPatient = new Patient();
     newPatient.name = request.name;
     newPatient.orders = [newOrder];
-    
-    const savedPatient = await this.patientRepository.addAsync(newPatient);
-    return new ApiDataResult<PatientDto>(true, ApiCode.Success, "Patient created", this.mapToDto(savedPatient));
-  }
 
-  private mapToDto(patient: Patient): PatientDto {
-    const ordersDto = patient.orders?.map(o => new OrderDto(o.id, o.message, o.patientId, o.createdAt, o.updatedAt)) || [];
-    return new PatientDto(patient.id, patient.name, patient.createdAt, ordersDto, patient.updatedAt);
+    const savedPatient = await this.patientRepository.addAsync(newPatient);
+    return super.successDataResult(savedPatient.toDto(), "Patient created");
   }
 }

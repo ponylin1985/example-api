@@ -6,6 +6,10 @@
     <AssemblyName>api</AssemblyName>
     <DefaultNamespace>Example.Api</DefaultNamespace>
     <UserSecretsId>de71bd9c-9493-470a-a4b9-1909b56a0edd</UserSecretsId>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.0"/>
