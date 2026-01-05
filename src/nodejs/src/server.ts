@@ -1,7 +1,7 @@
 import { app } from "./app";
 import { AppDataSource } from "./data-source";
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.NODE_EXPRESS_PORT || 5001;
 
 AppDataSource.initialize()
   .then(() => {

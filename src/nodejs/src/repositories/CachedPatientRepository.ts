@@ -3,6 +3,7 @@ import { IPatientRepository } from "./IPatientRepository";
 import { Patient } from "../entities/Patient";
 import logger from "../utils/logger";
 import redisClient from "../utils/redisClient";
+import { JsonUtils } from "../utils/jsonUtils";
 
 /**
  * Decorator for IPatientRepository that adds Redis caching functionality.
@@ -40,7 +41,7 @@ export class CachedPatientRepository implements IPatientRepository {
 
       if (cachedData) {
         logger.debug(`Cache hit for patient: ${id}`);
-        return JSON.parse(cachedData) as Patient;
+        return JsonUtils.deserialize<Patient>(cachedData) ?? null;
       }
 
       logger.debug(`Cache miss for patient: ${id}`);

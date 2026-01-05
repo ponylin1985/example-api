@@ -1,5 +1,6 @@
 import { CacheEntryOptions, defaultCacheOptions } from "../config/CacheEntryOptions";
 import { IOrderRepository } from "./IOrderRepository";
+import { JsonUtils } from "../utils/jsonUtils";
 import { Order } from "../entities/Order";
 import logger from "../utils/logger";
 import redisClient from "../utils/redisClient";
@@ -40,7 +41,7 @@ export class CachedOrderRepository implements IOrderRepository {
 
       if (cachedData) {
         logger.debug(`Cache hit for order: ${id}`);
-        return JSON.parse(cachedData) as Order;
+        return JsonUtils.deserialize<Order>(cachedData) ?? null;
       }
 
       logger.debug(`Cache miss for order: ${id}`);
@@ -64,7 +65,6 @@ export class CachedOrderRepository implements IOrderRepository {
    */
   async addAsync(order: Order): Promise<Order> {
     const createdOrder = await this.innerRepository.addAsync(order);
-    // Invalidate patient cache if exists
     await this.removeFromCacheAsync(undefined, createdOrder.patientId);
     return createdOrder;
   }
