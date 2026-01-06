@@ -1,0 +1,22 @@
+[tool.pylint.messages_control]
+disable = [
+    "broad-except",  # Allow catching general Exception
+    "logging-fstring-interpolation",  # Allow f-strings in logging (we prefer % formatting but both are acceptable)
+]
+
+[tool.pylint.format]
+max-line-length = 120
+
+[tool.pylint.basic]
+good-names = ["id", "db", "pk", "i", "j", "k", "ex", "Run", "_"]
+
+[tool.black]
+line-length = 120
+target-version = ['py310']
+
+[tool.isort]
+profile = "black"
+line_length = 120
+
+[tool.pylint.TYPECHECK]
+generated-members = ["sqlalchemy.func.*"]

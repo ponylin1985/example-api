@@ -2,6 +2,7 @@
 @baseUrl = http://localhost:5001
 @nodeBaseUrl = http://localhost:5001
 @dotnetBaseUrl = http://localhost:5000
+@pythonBaseUrl = http://localhost:5002
 
 ###############################################################################
 # ASP.NET Core API Endpoints
@@ -138,4 +139,46 @@ Content-Type: application/json
 
 {
   "message": "This order does not exist"
+}
+
+###############################################################################
+# Python FastAPI Endpoints
+###############################################################################
+
+### Health Check (Python FastAPI)
+GET {{pythonBaseUrl}}/healthz
+
+### Get all patients (Python FastAPI)
+GET {{pythonBaseUrl}}/api/patients?startTime=2025-12-01T00:00:00Z&endTime=2025-12-31T23:59:59Z&pageNumber=1&pageSize=10
+
+### Get patient by ID (Python FastAPI)
+GET {{pythonBaseUrl}}/api/patients/1
+
+### Create a new patient (Python FastAPI)
+POST {{pythonBaseUrl}}/api/patients
+Content-Type: application/json
+
+{
+  "name": "Bob Wilson",
+  "orderMessage": "Initial consultation via Python API"
+}
+
+### Get order by ID (Python FastAPI)
+GET {{pythonBaseUrl}}/api/orders/1
+
+### Create a new order (Python FastAPI)
+POST {{pythonBaseUrl}}/api/orders
+Content-Type: application/json
+
+{
+  "patientId": 1,
+  "message": "Follow-up via Python API"
+}
+
+### Update order message (Python FastAPI)
+PUT {{pythonBaseUrl}}/api/orders/1
+Content-Type: application/json
+
+{
+  "message": "Updated via Python FastAPI"
 }

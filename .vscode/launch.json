@@ -36,6 +36,26 @@
       }
     },
     {
+      "name": "python-api: debug",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": [
+        "main:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "5002",
+        "--reload"
+      ],
+      "cwd": "${workspaceFolder}/src/python",
+      "console": "integratedTerminal",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/src/python"
+      },
+      "justMyCode": false
+    },
+    {
       "name": "dotnet-api: debug (attach)",
       "type": "coreclr",
       "request": "attach",
