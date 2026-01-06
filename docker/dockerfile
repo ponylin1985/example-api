@@ -13,9 +13,8 @@ WORKDIR "/src/src/csharp/api"
 RUN dotnet publish "api.csproj" -c $BUILD_CONFIGURATION \
   -r linux-musl-x64 \
   --self-contained true \
-  /p:PublishSingleFile=true \
-  # /p:PublishReadyToRun=true \
-  # /p:TieredPGO=true \
+  /p:PublishReadyToRun=true \
+  /p:TieredPGO=true \
   -o /app/publish
 
 FROM mcr.microsoft.com/dotnet/runtime-deps:10.0-alpine AS final
