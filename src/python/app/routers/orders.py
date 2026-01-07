@@ -1,7 +1,7 @@
 """Order API endpoints."""
 
 import logging
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Body, Depends, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.services import OrderService
@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 @router.get("/{order_id}", response_model=ApiResultData[OrderDto])
-async def get_order_by_id(order_id: int, db: AsyncSession = Depends(get_db)):
+async def get_order_by_id(order_id: int = Path(..., gt=0, description="Order ID"), db: AsyncSession = Depends(get_db)):
     """
     Get an order by its identifier.
     """
@@ -50,7 +50,11 @@ async def create_order(request: CreateOrderRequest, db: AsyncSession = Depends(g
 
 
 @router.put("/{order_id}", response_model=ApiResultData[OrderDto])
-async def update_order_message(order_id: int, request: UpdateOrderMessageRequest, db: AsyncSession = Depends(get_db)):
+async def update_order_message(
+    order_id: int = Path(..., gt=0, description="Order ID"),
+    request: UpdateOrderMessageRequest = Body(...),
+    db: AsyncSession = Depends(get_db),
+):
     """
     Update the message of an existing order.
     """

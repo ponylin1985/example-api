@@ -1,12 +1,14 @@
 """Patient service."""
 
+import logging
 import math
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
-
 from app.entities import Patient, Order
 from app.repositories import PatientRepository
 from app.schemas import PatientDto, GetPatientsRequest, CreatePatientRequest, ApiResultData, PagedResult, ApiCode
+from datetime import timedelta
+from sqlalchemy.ext.asyncio import AsyncSession
+
+logger = logging.getLogger(__name__)
 
 
 class PatientService:
@@ -28,6 +30,18 @@ class PatientService:
             API result with paged patient data
         """
         try:
+            three_years_limit = timedelta(days=3 * 365 + 1)
+            duration = request.end_time - request.start_time
+
+            if duration > three_years_limit:
+                logger.warning("Query range exceeded 3 years limit. Requested duration: %s", duration)
+                return ApiResultData[PagedResult[PatientDto]](
+                    success=False,
+                    code=ApiCode.INVALID_REQUEST,
+                    message=f"The date range must not exceed 3 years. Requested duration was {duration.days} days.",
+                    data=None,
+                )
+
             patients, total_count = await self.patient_repo.get_patients(
                 start_time=request.start_time,
                 end_time=request.end_time,

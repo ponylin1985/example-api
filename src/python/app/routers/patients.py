@@ -1,7 +1,7 @@
 """Patient API endpoints."""
 
 import logging
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Path, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.services import PatientService
@@ -60,7 +60,7 @@ async def get_patients(
 
 
 @router.get("/{patient_id}", response_model=ApiResultData[PatientDto])
-async def get_patient_by_id(patient_id: int, db: AsyncSession = Depends(get_db)):
+async def get_patient_by_id(patient_id: int = Path(..., gt=0, description="Patient ID"), db: AsyncSession = Depends(get_db)):
     """
     Get a patient by their ID.
     """

@@ -20,4 +20,6 @@ class Patient(Base, BaseEntity):
     name: Mapped[str] = mapped_column(String(50), nullable=False)
 
     # Relationship
-    orders: Mapped[List["Order"]] = relationship("Order", back_populates="patient", cascade="all, delete-orphan")
+    orders: Mapped[List["Order"]] = relationship(
+        "Order", back_populates="patient", cascade="all, delete-orphan", order_by="desc(Order.id)"
+    )

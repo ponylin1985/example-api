@@ -1,6 +1,7 @@
 """Create patient request schema."""
 
 from pydantic import BaseModel, Field, field_validator
+from app.validators import SanitizerValidator
 
 
 class CreatePatientRequest(BaseModel):
@@ -16,3 +17,15 @@ class CreatePatientRequest(BaseModel):
         if not v or not v.strip():
             raise ValueError("Field cannot be empty")
         return v
+
+    @field_validator("name")
+    @classmethod
+    def validate_name_xss(cls, v: str) -> str:
+        """Validate name for XSS attacks."""
+        return SanitizerValidator.validate(v, "Name")
+
+    @field_validator("order_message")
+    @classmethod
+    def validate_order_message_xss(cls, v: str) -> str:
+        """Validate order message for XSS attacks."""
+        return SanitizerValidator.validate(v, "Order message")

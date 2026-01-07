@@ -1,6 +1,7 @@
 """Create order request schema."""
 
 from pydantic import BaseModel, Field, field_validator
+from app.validators import SanitizerValidator
 
 
 class CreateOrderRequest(BaseModel):
@@ -16,3 +17,9 @@ class CreateOrderRequest(BaseModel):
         if not v or not v.strip():
             raise ValueError("Message cannot be empty")
         return v
+
+    @field_validator("message")
+    @classmethod
+    def validate_message_xss(cls, v: str) -> str:
+        """Validate message for XSS attacks."""
+        return SanitizerValidator.validate(v, "Message")

@@ -1,7 +1,7 @@
 """Patient repository."""
 
 from __future__ import annotations
-from app.entities import Patient
+from app.entities import Patient, Order
 from datetime import datetime
 from sqlalchemy import func as sql_func
 from sqlalchemy import select
