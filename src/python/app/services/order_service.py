@@ -1,5 +1,6 @@
 """Order service."""
 
+import logging
 import redis.asyncio as redis
 from datetime import datetime
 from app.entities import Order
@@ -8,6 +9,8 @@ from app.repositories.caches.cached_order_repository import CachedOrderRepositor
 from app.repositories.caches.cached_patient_repository import CachedPatientRepository
 from app.schemas import OrderDto, CreateOrderRequest, ApiResultData, ApiCode
 from sqlalchemy.ext.asyncio import AsyncSession
+
+logger = logging.getLogger(__name__)
 
 
 class OrderService:
@@ -45,6 +48,7 @@ class OrderService:
             )
 
         except Exception as e:
+            logger.error("Failed to retrieve order: %s", str(e), exc_info=True)
             return ApiResultData[OrderDto](
                 success=False, code=ApiCode.DATA_ACCESS_ERROR, message=f"Failed to retrieve order: {str(e)}", data=None
             )
@@ -81,6 +85,7 @@ class OrderService:
             )
 
         except Exception as e:
+            logger.error("Failed to create order: %s", str(e), exc_info=True)
             await self.db.rollback()
             return ApiResultData[OrderDto](
                 success=False, code=ApiCode.OPERATION_FAILED, message=f"Failed to create order: {str(e)}", data=None
@@ -118,6 +123,7 @@ class OrderService:
             )
 
         except Exception as e:
+            logger.error("Failed to update order message: %s", str(e), exc_info=True)
             await self.db.rollback()
             return ApiResultData[OrderDto](
                 success=False,

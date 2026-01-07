@@ -67,6 +67,7 @@ class PatientService:
             )
 
         except Exception as e:
+            logger.error("Failed to retrieve patients: %s", str(e), exc_info=True)
             return ApiResultData[PagedResult[PatientDto]](
                 success=False,
                 code=ApiCode.DATA_ACCESS_ERROR,
@@ -101,6 +102,7 @@ class PatientService:
             )
 
         except Exception as e:
+            logger.error("Failed to retrieve patient: %s", str(e), exc_info=True)
             return ApiResultData[PatientDto](
                 success=False,
                 code=ApiCode.DATA_ACCESS_ERROR,
@@ -133,6 +135,7 @@ class PatientService:
             )
 
         except Exception as e:
+            logger.error("Failed to create patient: %s", str(e), exc_info=True)
             await self.db.rollback()
             return ApiResultData[PatientDto](
                 success=False, code=ApiCode.OPERATION_FAILED, message=f"Failed to create patient: {str(e)}", data=None

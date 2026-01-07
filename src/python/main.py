@@ -1,14 +1,17 @@
 """Main FastAPI application."""
 
 import logging
-from app.routers import patients, orders
 from app.configs.database_config import settings
+from app.configs.logging_config import setup_logging
+from app.handlers import setup_exception_handlers
 from app.infrastructure.redis_client import close_redis
+from app.middlewares import setup_http_logging_middleware
+from app.routers import patients, orders
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
-logging.basicConfig(level=settings.log_level, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+setup_logging()
 logger = logging.getLogger(__name__)
 
 
@@ -29,6 +32,9 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+setup_http_logging_middleware(app, max_body_size=50000)
+setup_exception_handlers(app)
 
 
 @app.get("/healthz", tags=["Health"])
