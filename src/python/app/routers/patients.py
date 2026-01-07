@@ -1,9 +1,11 @@
 """Patient API endpoints."""
 
 import logging
+import redis.asyncio as redis
 from fastapi import APIRouter, Depends, Path, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.database import get_db
+from app.infrastructure.database import get_db
+from app.infrastructure.redis_client import get_redis
 from app.services import PatientService
 from app.schemas import GetPatientsRequest, CreatePatientRequest, PatientDto, ApiResultData, PagedResult
 
@@ -18,6 +20,7 @@ async def get_patients(
     page_number: int = Query(1, alias="pageNumber", ge=1, description="Page number to retrieve"),
     page_size: int = Query(10, alias="pageSize", ge=1, le=100, description="Number of items per page"),
     db: AsyncSession = Depends(get_db),
+    redis_client: redis.Redis = Depends(get_redis),
 ):
     """
     Get patients created within a specified time range.
@@ -48,7 +51,7 @@ async def get_patients(
             success=False, code=ApiCode.INVALID_REQUEST, message=f"Invalid datetime format: {str(e)}", data=None
         )
 
-    service = PatientService(db)
+    service = PatientService(db, redis_client)
     result = await service.get_patients(request)
 
     if not result.success:
@@ -60,13 +63,17 @@ async def get_patients(
 
 
 @router.get("/{patient_id}", response_model=ApiResultData[PatientDto])
-async def get_patient_by_id(patient_id: int = Path(..., gt=0, description="Patient ID"), db: AsyncSession = Depends(get_db)):
+async def get_patient_by_id(
+    patient_id: int = Path(..., gt=0, description="Patient ID"),
+    db: AsyncSession = Depends(get_db),
+    redis_client: redis.Redis = Depends(get_redis),
+):
     """
     Get a patient by their ID.
     """
     logger.info("Received request to get patient with ID: %s", patient_id)
 
-    service = PatientService(db)
+    service = PatientService(db, redis_client)
     result = await service.get_patient(patient_id)
 
     if not result.success:
@@ -78,13 +85,17 @@ async def get_patient_by_id(patient_id: int = Path(..., gt=0, description="Patie
 
 
 @router.post("/", response_model=ApiResultData[PatientDto])
-async def create_patient(request: CreatePatientRequest, db: AsyncSession = Depends(get_db)):
+async def create_patient(
+    request: CreatePatientRequest,
+    db: AsyncSession = Depends(get_db),
+    redis_client: redis.Redis = Depends(get_redis),
+):
     """
     Create a new patient record.
     """
     logger.info("Received request to create a new patient: name=%s", request.name)
 
-    service = PatientService(db)
+    service = PatientService(db, redis_client)
     result = await service.create_patient(request)
 
     if not result.success:

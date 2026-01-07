@@ -2,8 +2,10 @@
 
 import logging
 import math
+import redis.asyncio as redis
 from app.entities import Patient, Order
 from app.repositories import PatientRepository
+from app.repositories.caches.cached_patient_repository import CachedPatientRepository
 from app.schemas import PatientDto, GetPatientsRequest, CreatePatientRequest, ApiResultData, PagedResult, ApiCode
 from datetime import timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,10 +16,11 @@ logger = logging.getLogger(__name__)
 class PatientService:
     """Service for patient business logic."""
 
-    def __init__(self, db: AsyncSession):
-        """Initialize service with database session."""
+    def __init__(self, db: AsyncSession, redis_client: redis.Redis):
+        """Initialize service with database session and Redis client."""
         self.db = db
-        self.patient_repo = PatientRepository(db)
+        inner_repo = PatientRepository(db)
+        self.patient_repo = CachedPatientRepository(inner_repo, redis_client)
 
     async def get_patients(self, request: GetPatientsRequest) -> ApiResultData[PagedResult[PatientDto]]:
         """

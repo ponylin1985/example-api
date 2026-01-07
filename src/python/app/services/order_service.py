@@ -1,7 +1,11 @@
 """Order service."""
 
+import redis.asyncio as redis
+from datetime import datetime
 from app.entities import Order
 from app.repositories import OrderRepository, PatientRepository
+from app.repositories.caches.cached_order_repository import CachedOrderRepository
+from app.repositories.caches.cached_patient_repository import CachedPatientRepository
 from app.schemas import OrderDto, CreateOrderRequest, ApiResultData, ApiCode
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -9,11 +13,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 class OrderService:
     """Service for order business logic."""
 
-    def __init__(self, db: AsyncSession):
-        """Initialize service with database session."""
+    def __init__(self, db: AsyncSession, redis_client: redis.Redis):
+        """Initialize service with database session and Redis client."""
         self.db = db
-        self.order_repo = OrderRepository(db)
-        self.patient_repo = PatientRepository(db)
+        inner_order_repo = OrderRepository(db)
+        inner_patient_repo = PatientRepository(db)
+        self.order_repo = CachedOrderRepository(inner_order_repo, redis_client)
+        self.patient_repo = CachedPatientRepository(inner_patient_repo, redis_client)
 
     async def get_order(self, order_id: int) -> ApiResultData[OrderDto]:
         """
@@ -92,17 +98,18 @@ class OrderService:
             API result with updated order data
         """
         try:
-            order = await self.order_repo.get_order(order_id)
+            utc_now = datetime.utcnow()
+            updated_order = await self.order_repo.update(order_id, message.strip(), utc_now)
 
-            if not order:
+            if not updated_order:
                 return ApiResultData[OrderDto](
-                    success=False, code=ApiCode.NO_DATA_FOUND, message=f"Order with ID {order_id} not found", data=None
+                    success=False,
+                    code=ApiCode.OPERATION_FAILED,
+                    message=f"Order with ID {order_id} not found.",
+                    data=None,
                 )
 
-            order.message = message
-            updated_order = await self.order_repo.update(order)
             await self.db.commit()
-            await self.db.refresh(updated_order)
 
             order_dto = OrderDto.model_validate(updated_order)
 

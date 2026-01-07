@@ -2,7 +2,8 @@
 
 import logging
 from app.routers import patients, orders
-from app.config import settings
+from app.configs.database_config import settings
+from app.infrastructure.redis_client import close_redis
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
@@ -17,6 +18,8 @@ async def lifespan(application: FastAPI):
     logger.info("Starting up FastAPI application...")
     yield
     logger.info("Shutting down FastAPI application...")
+    await close_redis()
+    logger.info("Redis connection closed")
 
 
 app = FastAPI(
