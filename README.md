@@ -1,6 +1,8 @@
 # Example API - Multi-Language Implementation
 
-這是一個展示如何用不同程式語言實作相同 API 規格的專案，涵蓋 C# ASP.NET Core、Node.js Express 和 Python FastAPI 三種實作。
+- 這是一個展示如何用不同程式語言實作相同 API 規格的專案，涵蓋 C# ASP.NET Core、Node.js Express 和 Python FastAPI 三種實作。
+- 希望可以提供一種基本簡易的程式架構範例，讓開發者能夠參考不同語言的實作方式與架構設計，而不是都使用「義大利麵式」一條龍的寫法寫出可閱讀性低、不語意化、不可維護、不可測試的 Web API 專案。
+- 本專案不包含任何前端相關技術，單純的示範後端 API 的實作方式，非常適合應用於前後端分離並且採用容器化 Microservices 架構的專案。
 
 ## 📁 Repository 結構
 
@@ -153,7 +155,7 @@ docker-compose -f ./docker/pg-docker-compose.yml down
 - 啟動 Redis 服務
 - 執行 npm run dev
 - API 預設運行於 `http://localhost:5001`
-- API Docs: `http://localhost:5001/api-docs`
+- API Docs: `http://localhost:5001/swagger`
 
 ### `stop-csharp.sh`
 停止 C# ASP.NET Core API 服務。
@@ -186,7 +188,7 @@ cd src/nodejs && npm install
 ./run-nodejs.sh
 
 # 瀏覽 API 文件
-open http://localhost:5001/api-docs
+open http://localhost:5001/swagger
 ```
 
 詳細說明請參考：[src/nodejs/README.md](src/nodejs/README.md)
@@ -220,11 +222,19 @@ open http://localhost:5002/swagger
 
 ## 🗄️ 資料庫管理
 
+- 本範例專案使用 PostgreSQL 作為 RDBMS 資料庫，以及 Redis 當作快取層。
+- 建議可以使用 docker-compose 來快速啟動 PostgreSQL 和 Redis 服務，在 localhost 上進行開發與測試。
+
 ### Database Migration
 
 **重要說明：** 目前資料庫遷移（Database Migration）統一由 **C# ASP.NET Core 的 EF Core** 管理。
 
-Node.js 和 Python 實作目前**不支援**獨立的 database migration，所有 schema 變更必須透過 C# 專案的 `dotnet ef` CLI 工具處理。
+Node.js 和 Python 實作目前**不支援**獨立的 database migration，所有 schema 變更必須透過 C# 專案的 `dotnet ef` CLI 工具處理。<br/>
+因此，請確保在進行任何資料庫 schema 變更時，皆在 C# 專案中執行 migration。
+
+- 必要安裝軟體：
+  - .NET SDK 10。
+  - dotnet ef CLI 工具：`dotnet tool install --global dotnet-ef`
 
 #### 執行 Migration (C# 專案)
 
@@ -245,14 +255,14 @@ dotnet ef database update PreviousMigrationName
 
 - `patient` - 病患資料表
   - `id` (bigint, PK)
-  - `name` (varchar)
+  - `name` (varchar(50))
   - `created_at` (timestamptz)
   - `updated_at` (timestamptz)
 
 - `order` - 訂單資料表
   - `id` (bigint, PK)
   - `patient_id` (bigint, FK → patient.id)
-  - `message` (text)
+  - `message` (varchar(500))
   - `created_at` (timestamptz)
   - `updated_at` (timestamptz)
 
@@ -260,22 +270,110 @@ dotnet ef database update PreviousMigrationName
 
 ## 🔧 技術棧比較
 
-| 功能      | C# ASP.NET Core                                       | Node.js Express              | Python FastAPI             |
-| --------- | ----------------------------------------------------- | ---------------------------- | -------------------------- |
-| Web 框架  | ASP.NET Core 10                                       | Express 5 + TypeScript       | FastAPI 0.115              |
-| ORM       | Entity Framework Core + Dapper                        | TypeORM                      | SQLAlchemy 2.0 (Async)     |
-| 資料驗證  | IValidatableObject (ASP.NET Core 內建)                | class-validator              | Pydantic                   |
-| 快取      | Redis (IDistributedCache)                             | Redis (ioredis)              | Redis (redis.asyncio)      |
-| API 文件  | Swagger (Swashbuckle)                                 | Swagger (swagger-ui-express) | OpenAPI (FastAPI built-in) |
-| 日誌      | Serilog + ILogger (Microsoft.Extensions.Logging)      | Winston                      | Python logging             |
-| 彈性機制  | Polly (Retry, Circuit Breaker)                        | -                            | -                          |
-| Migration | EF Core Migrations                                    | ❌ 不支援                     | ❌ 不支援                   |
+| 功能      | C# ASP.NET Core                                  | Node.js Express              | Python FastAPI             |
+| --------- | ------------------------------------------------ | ---------------------------- | -------------------------- |
+| Web 框架  | ASP.NET Core 10                                  | Express 5 + TypeScript       | FastAPI 0.115              |
+| ORM       | Entity Framework Core + Dapper                   | TypeORM                      | SQLAlchemy 2.0 (Async)     |
+| 資料驗證  | IValidatableObject (ASP.NET Core 內建)           | class-validator              | Pydantic                   |
+| 快取      | StackExchange.Redis (IDistributedCache)          | Redis (ioredis)              | Redis (redis.asyncio)      |
+| API 文件  | Swagger (Swashbuckle)                            | Swagger (swagger-ui-express) | OpenAPI (FastAPI built-in) |
+| 日誌      | Serilog + ILogger (Microsoft.Extensions.Logging) | Winston                      | Python logging             |
+| 彈性機制  | Polly (Retry, Circuit Breaker)                   | 自行實作 (Retry)             | -                          |
+| Migration | EF Core Migrations                               | ❌ 不支援                     | ❌ 不支援                   |
+
+### Node.js 彈性機制實作範例
+
+#### Retry Pattern (重試機制)
+
+```typescript
+// utils/retry.ts
+export async function withRetry<T>(
+  fn: () => Promise<T>,
+  maxRetries: number = 3,
+  delayMs: number = 1000
+): Promise<T> {
+  let lastError: Error;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error as Error;
+      if (attempt < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, delayMs * attempt));
+      }
+    }
+  }
+  
+  throw lastError!;
+}
+
+// 使用範例
+const result = await withRetry(
+  () => externalApiCall(),
+  3,  // 最多重試 3 次
+  1000 // 延遲 1 秒
+);
+```
+
+#### Circuit Breaker Pattern (斷路器機制)
+
+```typescript
+// utils/circuitBreaker.ts
+export class CircuitBreaker {
+  private failureCount = 0;
+  private lastFailureTime?: number;
+  private state: 'CLOSED' | 'OPEN' | 'HALF_OPEN' = 'CLOSED';
+
+  constructor(
+    private failureThreshold: number = 5,
+    private resetTimeoutMs: number = 60000
+  ) {}
+
+  async execute<T>(fn: () => Promise<T>): Promise<T> {
+    if (this.state === 'OPEN') {
+      if (Date.now() - this.lastFailureTime! > this.resetTimeoutMs) {
+        this.state = 'HALF_OPEN';
+      } else {
+        throw new Error('Circuit breaker is OPEN');
+      }
+    }
+
+    try {
+      const result = await fn();
+      this.onSuccess();
+      return result;
+    } catch (error) {
+      this.onFailure();
+      throw error;
+    }
+  }
+
+  private onSuccess() {
+    this.failureCount = 0;
+    this.state = 'CLOSED';
+  }
+
+  private onFailure() {
+    this.failureCount++;
+    this.lastFailureTime = Date.now();
+    if (this.failureCount >= this.failureThreshold) {
+      this.state = 'OPEN';
+    }
+  }
+}
+
+// 使用範例
+const breaker = new CircuitBreaker(5, 60000);
+const result = await breaker.execute(() => externalApiCall());
+```
 
 ---
 
 ## 🧪 測試 API
 
-專案根目錄包含 `api.http` 檔案，可使用 REST Client (VS Code Extension) 或類似工具進行 API 測試。
+- 專案根目錄包含 `api.http` 檔案，可使用 REST Client (VS Code Extension) 或類似工具進行 API 測試。
+- 弱者使用各個語言實作的出來的 `GET /swagger` 頁面進行測試。
 
 ```http
 ### Get Patients
@@ -324,13 +422,64 @@ LOG_RESPONSE_BODY=true
 
 ## 🏛️ 架構特色
 
+### 分層架構流程
+
+- 主要為 3-Tier 架構，加入 Redis 快取裝飾器 (Decorator Pattern) 以提升效能。
+- 目前 Entity 主要為貧血模型 (Anemic Model)，業務邏輯集中在 Service 層，適合中小型業務邏輯不複雜的專案，未來可能再提供以 DDD 架構的範例。
+- 整體流程如下：
+
+```
+Router/ApiEndpoint/Controller
+    ↓
+Service (Business Logic)
+    ↓
+Cached Repository (Decorator)
+    ↓
+Repository (Data Access)
+    ↓
+Database
+```
+
+### 目錄結構範例 (以 C# ASP.NET Core 的 Patient 與 Order 為例)
+
+```
+Controllers/                      ← API 端點
+├── PatientController
+└── OrderController
+
+Services/                         ← 業務邏輯 (目前為 Application Service 與 Domain Service 混合)
+├── PatientService
+└── OrderService
+
+Repositories/                     ← 資料存取
+├── PatientRepository
+└── OrderRepository
+
+Models/                           ← 貧血模型 (Entities/POCOs)
+├── Patient
+└── Order
+
+Dtos/                             ← 資料傳輸物件 (Data Transfer Objects)
+├── PatientDto
+└── OrderDto
+└── Requests                      ← 請求資料載體 (Request DTOs)
+    ├── CreateOrderRequest
+    ├── CreatePatientRequest
+    ├── GetPatientsRequest
+    └── UpdateOrderMessageRequest
+    └── PagedRequest
+└── Responses                     ← 回應資料載體 (Response DTOs)
+    ├── ApiResult
+    └── PagedResult
+```
+
 ### 共同架構模式
 - **Repository Pattern** - 資料存取抽象化
+- **Unit of Work Pattern & IDbSession** - 交易管理與資料存取抽象化 (only for C# ASP.NET Core)
 - **Service Layer** - 業務邏輯封裝
 - **DTO Pattern** - 資料傳輸物件分離
 - **Dependency Injection** - 依賴注入
 - **Decorator Pattern** - Redis 快取裝飾器
-- **Unit of Work Pattern** - 交易管理 (C# 實作)
 
 ### Redis 快取策略
 - **Cache-Aside Pattern** - 查詢時先檢查快取
