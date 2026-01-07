@@ -224,6 +224,8 @@ open http://localhost:5002/swagger
 
 - 本範例專案使用 PostgreSQL 作為 RDBMS 資料庫，以及 Redis 當作快取層。
 - 建議可以使用 docker-compose 來快速啟動 PostgreSQL 和 Redis 服務，在 localhost 上進行開發與測試。
+  - [PostgreSQL docker-compose.yml 範例](https://gitlab.com/ponylin1985/MyDockerContainers/-/blob/master/postgresql/docker-compose-15.3.yml?ref_type=heads)
+  - [Redis docker-compose.yml 範例](https://gitlab.com/ponylin1985/MyDockerContainers/-/blob/master/redis/docker-compose-7.2.2-alpine3.18.yml?ref_type=heads)
 
 ### Database Migration
 
