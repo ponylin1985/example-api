@@ -8,7 +8,8 @@
     "Build/*.nupkg": true,
     "SandcastleProject": true,
     "**/TestResults": true,
-    "**/__pycache__": true
+    "**/__pycache__": true,
+    "**/.pytest_cache": true,
   },
   "files.watcherExclude": {
     "**/.git/objects/**": true,
@@ -18,5 +19,21 @@
     "**/obj/**": true,
     "**__pycache__/**": true
   },
+  "python.defaultInterpreterPath": "${workspaceFolder}/src/python/venv/bin/python",
+  "black-formatter.path": [
+    "${workspaceFolder}/src/python/venv/bin/black"
+  ],
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": "explicit"
+  },
+  "editor.defaultFormatter": "ms-python.black-formatter",
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter"
+  },
+  "python.languageServer": "Pylance",
+  "python.analysis.typeCheckingMode": "basic",
+  "python.analysis.autoImportCompletions": true,
+  "python.terminal.activateEnvironment": true,
   "workbench.colorTheme": "Modern Purple Theme Dark"
 }

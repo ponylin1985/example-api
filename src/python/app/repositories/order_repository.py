@@ -1,10 +1,9 @@
 """Order repository."""
 
-from typing import Optional
+from app.entities import Order
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.models import Order
+from typing import Optional
 
 
 class OrderRepository:

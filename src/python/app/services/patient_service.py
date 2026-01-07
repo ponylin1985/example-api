@@ -2,8 +2,9 @@
 
 import math
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
-from app.models import Patient, Order
+from app.entities import Patient, Order
 from app.repositories import PatientRepository
 from app.schemas import PatientDto, GetPatientsRequest, CreatePatientRequest, ApiResultData, PagedResult, ApiCode
 
@@ -34,12 +35,8 @@ class PatientService:
                 page_size=request.page_size,
             )
 
-            # Calculate total pages
             total_pages = math.ceil(total_count / request.page_size) if total_count > 0 else 1
-
-            # Convert to DTOs
             patient_dtos = [PatientDto.model_validate(patient) for patient in patients]
-
             paged_result = PagedResult[PatientDto](
                 data=patient_dtos,
                 page_number=request.page_number,
@@ -82,7 +79,6 @@ class PatientService:
                 )
 
             patient_dto = PatientDto.model_validate(patient)
-
             return ApiResultData[PatientDto](
                 success=True, code=ApiCode.SUCCESS, message="Patient retrieved successfully", data=patient_dto
             )
@@ -106,32 +102,15 @@ class PatientService:
             API result with created patient data
         """
         try:
-            # Check if patient with same name already exists
-            existing_patient = await self.patient_repo.get_patient_by_name(request.name)
-            if existing_patient:
-                return ApiResultData[PatientDto](
-                    success=False,
-                    code=ApiCode.INVALID_REQUEST,
-                    message=f"Patient with name '{request.name}' already exists",
-                    data=None,
-                )
-
-            # Create new patient
             patient = Patient(name=request.name)
-
-            # Create initial order
             order = Order(message=request.order_message)
             patient.orders.append(order)
 
-            # Add to database
             created_patient = await self.patient_repo.add(patient)
             await self.db.commit()
-
-            # Refresh to get the updated data with relationships
-            await self.db.refresh(created_patient)
+            await self.db.refresh(created_patient, ["orders"])
 
             patient_dto = PatientDto.model_validate(created_patient)
-
             return ApiResultData[PatientDto](
                 success=True, code=ApiCode.SUCCESS, message="Patient created successfully", data=patient_dto
             )

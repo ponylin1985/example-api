@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     @property
     def database_url(self) -> str:
         """Construct database URL from PostgreSQL settings."""
-        return f"postgresql+asyncpg://{self.postgres_user}:{self.postgres_password}@localhost:5432/exampledb"
+        return f"postgresql+asyncpg://{self.postgres_user}:{self.postgres_password}@localhost:5432/{self.postgres_user}"
 
     class Config:
         """Pydantic configuration."""

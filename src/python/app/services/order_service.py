@@ -1,10 +1,9 @@
 """Order service."""
 
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from app.models import Order
+from app.entities import Order
 from app.repositories import OrderRepository, PatientRepository
 from app.schemas import OrderDto, CreateOrderRequest, ApiResultData, ApiCode
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class OrderService:
@@ -35,7 +34,6 @@ class OrderService:
                 )
 
             order_dto = OrderDto.model_validate(order)
-
             return ApiResultData[OrderDto](
                 success=True, code=ApiCode.SUCCESS, message="Order retrieved successfully", data=order_dto
             )
@@ -56,7 +54,6 @@ class OrderService:
             API result with created order data
         """
         try:
-            # Check if patient exists
             patient_exists = await self.patient_repo.is_exist_patient(request.patient_id)
             if not patient_exists:
                 return ApiResultData[OrderDto](
@@ -66,7 +63,6 @@ class OrderService:
                     data=None,
                 )
 
-            # Create new order
             order = Order(message=request.message, patient_id=request.patient_id)
 
             created_order = await self.order_repo.add(order)
@@ -74,7 +70,6 @@ class OrderService:
             await self.db.refresh(created_order)
 
             order_dto = OrderDto.model_validate(created_order)
-
             return ApiResultData[OrderDto](
                 success=True, code=ApiCode.SUCCESS, message="Order created successfully", data=order_dto
             )
@@ -104,7 +99,6 @@ class OrderService:
                     success=False, code=ApiCode.NO_DATA_FOUND, message=f"Order with ID {order_id} not found", data=None
                 )
 
-            # Update message
             order.message = message
             updated_order = await self.order_repo.update(order)
             await self.db.commit()

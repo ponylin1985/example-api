@@ -1,14 +1,12 @@
 """Main FastAPI application."""
 
 import logging
+from app.routers import patients, orders
+from app.config import settings
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
-from app.config import settings
-from app.api import patient_endpoints, order_endpoints
-
-# Configure logging
 logging.basicConfig(level=settings.log_level, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
@@ -21,7 +19,6 @@ async def lifespan(application: FastAPI):
     logger.info("Shutting down FastAPI application...")
 
 
-# Create FastAPI application
 app = FastAPI(
     title="Example API - Python FastAPI",
     docs_url="/swagger",
@@ -35,15 +32,12 @@ app = FastAPI(
 async def health_check():
     """
     Health check endpoint.
-
-    Matches C# endpoint: GET /healthz
     """
-    return JSONResponse(content={"status": "healthy"}, status_code=200)
+    return JSONResponse(content={"status": "ok"}, status_code=200)
 
 
-# Include routers
-app.include_router(patient_endpoints.router)
-app.include_router(order_endpoints.router)
+app.include_router(patients.router)
+app.include_router(orders.router)
 
 
 if __name__ == "__main__":
