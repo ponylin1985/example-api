@@ -7,7 +7,6 @@ using Example.Api.Options;
 using Example.Api.Repositories;
 using Example.Api.Services;
 using Example.Api.Validators;
-using Microsoft.AspNetCore.ResponseCompression;
 using Serilog;
 using Serilog.Formatting.Compact;
 using Serilog.Settings.Configuration;
