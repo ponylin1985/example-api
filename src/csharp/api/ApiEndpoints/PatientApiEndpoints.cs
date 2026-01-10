@@ -1,6 +1,7 @@
 using Example.Api.Dtos.Requests;
 using Example.Api.Extensions;
 using Example.Api.Services;
+using Microsoft.AspNetCore.OutputCaching;
 
 namespace Example.Api.Endpoints;
 
@@ -8,7 +9,7 @@ namespace Example.Api.Endpoints;
 /// API endpoints extensions for patients.
 /// </summary>
 public static class PatientApiEndpoints
-{
+{   
     /// <summary>
     /// Maps patient-related API endpoints.
     /// </summary>
@@ -42,7 +43,11 @@ public static class PatientApiEndpoints
             return result.ToHttpResult();
         })
         .WithName("GetPatientsByTimeRange")
-        .WithDescription("Get patients created within a specified time range.");
+        .WithDescription("Get patients created within a specified time range.")
+        .CacheOutput(policy => policy
+            .Expire(TimeSpan.FromMinutes(2))
+            .SetVaryByQuery("startTime", "endTime", "pageNumber", "pageSize")
+            .Tag("patients"));
 
         group.MapGet("/{id:long:min(1)}", async (
             long id,
@@ -66,17 +71,23 @@ public static class PatientApiEndpoints
             return result.ToHttpResult();
         })
         .WithName("GetPatientById")
-        .WithDescription("Get a patient by their ID.");
+        .WithDescription("Get a patient by their ID.")
+        .CacheOutput(policy => policy
+            .Expire(TimeSpan.FromMinutes(5))
+            .SetVaryByRouteValue("id")
+            .Tag("patient-detail"));
 
         group.MapPost("/", async (
             CreatePatientRequest request,
             IPatientService patientService,
+            IOutputCacheStore cacheStore,
             ILoggerFactory loggerFactory) =>
         {
             var logger = loggerFactory.CreateLogger("PatientApiEndpoints");
             logger.LogInformation("Received request to create a new patient: {@Request}", request);
 
             var result = await patientService.CreatePatientAsync(request);
+            await cacheStore.EvictByTagAsync("patients", default);
 
             if (!result.Success)
             {

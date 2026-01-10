@@ -2,6 +2,7 @@ using Example.Api.Dtos.Requests;
 using Example.Api.Extensions;
 using Example.Api.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 
 namespace Example.Api.Endpoints;
 
@@ -43,11 +44,16 @@ public static class OrderApiEndpoints
             return result.ToHttpResult();
         })
         .WithName("GetOrderById")
-        .WithDescription("Get an order by its identifier.");
+        .WithDescription("Get an order by its identifier.")
+        .CacheOutput(policy => policy
+            .Expire(TimeSpan.FromMinutes(5))
+            .SetVaryByRouteValue("id")
+            .Tag("order-detail"));
 
         group.MapPost("/", async (
             CreateOrderRequest request,
             IOrderService orderService,
+            IOutputCacheStore cacheStore,
             ILoggerFactory loggerFactory) =>
         {
             var logger = loggerFactory.CreateLogger("OrderApiEndpoints");
@@ -62,6 +68,7 @@ public static class OrderApiEndpoints
             else
             {
                 logger.LogInformation("Successfully created order with ID: {OrderId}", result.Data?.Id);
+                await EvictOrderRelatedCaches(cacheStore);
             }
 
             return result.ToHttpResult();
@@ -73,6 +80,7 @@ public static class OrderApiEndpoints
             long id,
             [FromBody] UpdateOrderMessageRequest request,
             IOrderService orderService,
+            IOutputCacheStore cacheStore,
             ILoggerFactory loggerFactory) =>
         {
             var logger = loggerFactory.CreateLogger("OrderApiEndpoints");
@@ -87,6 +95,7 @@ public static class OrderApiEndpoints
             else
             {
                 logger.LogInformation("Successfully updated message for order with ID: {OrderId}", result.Data?.Id);
+                await EvictOrderRelatedCaches(cacheStore);
             }
 
             return result.ToHttpResult();
@@ -95,5 +104,17 @@ public static class OrderApiEndpoints
         .WithDescription("Update the message of an existing order.");
 
         return app;
+    }
+
+    /// <summary>
+    /// Evicts caches related to orders and patients.
+    /// </summary>
+    /// <param name="cacheStore"></param>
+    /// <returns></returns>
+    private static async Task EvictOrderRelatedCaches(IOutputCacheStore cacheStore)
+    {
+        await cacheStore.EvictByTagAsync("patients", default);
+        await cacheStore.EvictByTagAsync("patient-detail", default);
+        await cacheStore.EvictByTagAsync("order-detail", default);
     }
 }

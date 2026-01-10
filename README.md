@@ -272,16 +272,16 @@ dotnet ef database update PreviousMigrationName
 
 ## 🔧 技術棧比較
 
-| 功能      | C# ASP.NET Core                                  | Node.js Express              | Python FastAPI             |
-| --------- | ------------------------------------------------ | ---------------------------- | -------------------------- |
-| Web 框架  | ASP.NET Core 10                                  | Express 5 + TypeScript       | FastAPI 0.115              |
-| ORM       | Entity Framework Core + Dapper                   | TypeORM                      | SQLAlchemy 2.0 (Async)     |
-| 資料驗證  | IValidatableObject (ASP.NET Core 內建)           | class-validator              | Pydantic                   |
-| 快取      | StackExchange.Redis (IDistributedCache)          | Redis (ioredis)              | Redis (redis.asyncio)      |
-| API 文件  | Swagger (Swashbuckle)                            | Swagger (swagger-ui-express) | OpenAPI (FastAPI built-in) |
-| 日誌      | Serilog + ILogger (Microsoft.Extensions.Logging) | Winston                      | Python logging             |
-| 彈性機制  | Polly (Retry, Circuit Breaker)                   | 自行實作 (Retry)             | -                          |
-| Migration | EF Core Migrations                               | ❌ 不支援                     | ❌ 不支援                   |
+| 功能      | C# ASP.NET Core                                                                              | Node.js Express              | Python FastAPI             |
+| --------- | -------------------------------------------------------------------------------------------- | ---------------------------- | -------------------------- |
+| Web 框架  | ASP.NET Core 10                                                                              | Express 5 + TypeScript       | FastAPI 0.115              |
+| ORM       | Entity Framework Core + Dapper                                                               | TypeORM                      | SQLAlchemy 2.0 (Async)     |
+| 資料驗證  | IValidatableObject (ASP.NET Core 內建)                                                       | class-validator              | Pydantic                   |
+| 快取      | StackExchange.Redis (IDistributedCache)<br/>CacheOutput (Microsoft.AspNetCore.OutputCaching) | Redis (ioredis)              | Redis (redis.asyncio)      |
+| API 文件  | Swagger (Swashbuckle)                                                                        | Swagger (swagger-ui-express) | OpenAPI (FastAPI built-in) |
+| 日誌      | Serilog + ILogger (Microsoft.Extensions.Logging)                                             | Winston                      | Python logging             |
+| 彈性機制  | Polly (Retry, Circuit Breaker)                                                               | 自行實作 (Retry)             | -                          |
+| Migration | EF Core Migrations                                                                           | ❌ 不支援                     | ❌ 不支援                   |
 
 ### Node.js 彈性機制實作範例
 
@@ -426,12 +426,14 @@ LOG_RESPONSE_BODY=true
 
 ### 分層架構流程
 
-- 主要為 3-Tier 架構，加入 Redis 快取裝飾器 (Decorator Pattern) 以提升效能。
+- 主要為 3-Tier 架構，透過 ASP.NET Core 內建的 Output Caching 和 Redis 快取裝飾器 (Decorator Pattern) 以提升效能。
 - 目前 Entity 主要為貧血模型 (Anemic Model)，業務邏輯集中在 Service 層，適合中小型業務邏輯不複雜的專案，未來可能再提供以 DDD 架構的範例。
 - 整體流程如下：
 
 ```
 Router/ApiEndpoint/Controller
+    ↓
+Http Output Cache Middleware
     ↓
 Service (Business Logic)
     ↓
@@ -445,9 +447,9 @@ Database
 ### 目錄結構範例 (以 C# ASP.NET Core 的 Patient 與 Order 為例)
 
 ```
-Controllers/                      ← API 端點
-├── PatientController
-└── OrderController
+ApiEndpoints/                     ← API 端點
+├── PatientApiEndpoints
+└── OrderApiEndpoints
 
 Services/                         ← 業務邏輯 (目前為 Application Service 與 Domain Service 混合)
 ├── PatientService

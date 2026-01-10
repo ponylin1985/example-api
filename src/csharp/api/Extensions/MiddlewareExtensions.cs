@@ -36,4 +36,15 @@ public static class MiddlewareExtensions
     {
         return app.UseMiddleware<RequestResponseLoggingMiddleware>();
     }
+
+    /// <summary>
+    /// Adds the slow request logging middleware to the pipeline.
+    /// </summary>
+    /// <param name="app">The application builder.</param>
+    /// <param name="thresholdMs">Threshold in milliseconds to consider a request as slow.</param>
+    /// <returns>The application builder.</returns>
+    public static IApplicationBuilder UseSlowRequestLogging(this IApplicationBuilder app, long thresholdMs = 1000)
+    {
+        return app.UseMiddleware<SlowRequestLoggingMiddleware>(thresholdMs);
+    }
 }

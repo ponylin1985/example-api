@@ -7,11 +7,15 @@ using Example.Api.Options;
 using Example.Api.Repositories;
 using Example.Api.Services;
 using Example.Api.Validators;
+using Microsoft.AspNetCore.ResponseCompression;
 using Serilog;
 using Serilog.Formatting.Compact;
 using Serilog.Settings.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
+
+ThreadPool.SetMinThreads(50, 50);
+ThreadPool.SetMaxThreads(100, 150);
 
 builder.Host.UseSerilog((context, services, configuration) =>
 {
@@ -29,6 +33,8 @@ builder.Host.UseSerilog((context, services, configuration) =>
         .Enrich.WithEnvironmentUserName();
 });
 
+builder.Services.AddOutputCache();
+builder.Services.AddResponseCompressionExtensions();
 builder.Services.AddOptions(builder.Configuration);
 builder.Services.AddCacheOptions(builder.Configuration);
 builder.Services.AddJsonSerializationOptions();
@@ -42,8 +48,7 @@ builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
-app.UseTraceId();
-app.UseRequestResponseLogging();
+app.UseGlobalExceptionHandler();
 
 if (app.Environment.IsDevelopment())
 {
@@ -56,9 +61,11 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-app.UseGlobalExceptionHandler();
-app.UseHttpsRedirection();
-
+app.UseResponseCompression();
+app.UseTraceId();
+app.UseOutputCache();
+app.UseSlowRequestLogging();
+app.UseRequestResponseLogging();
 app.MapGet("/healthz", () => Results.Ok(new { status = "ok" }))
     .WithName("HealthCheck")
     .WithTags("Health");
