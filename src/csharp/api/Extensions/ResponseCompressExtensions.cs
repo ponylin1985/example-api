@@ -12,7 +12,7 @@ public static class ResponseCompressExtensions
     /// </summary>
     /// <param name="services"></param>
     /// <returns></returns>
-    public static IServiceCollection AddResponseCompressionExtensions(this IServiceCollection services)
+    public static IServiceCollection AddResponseCompression(this IServiceCollection services)
     {
         services.AddResponseCompression(options =>
         {
