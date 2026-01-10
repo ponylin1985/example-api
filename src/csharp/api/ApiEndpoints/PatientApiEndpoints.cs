@@ -87,7 +87,6 @@ public static class PatientApiEndpoints
             logger.LogInformation("Received request to create a new patient: {@Request}", request);
 
             var result = await patientService.CreatePatientAsync(request);
-            await cacheStore.EvictByTagAsync("patients", default);
 
             if (!result.Success)
             {
@@ -96,6 +95,7 @@ public static class PatientApiEndpoints
             else
             {
                 logger.LogInformation("Successfully created patient with ID: {PatientId}", result.Data?.Id);
+                await cacheStore.EvictByTagAsync("patients", default);
             }
 
             return result.ToHttpResult();
