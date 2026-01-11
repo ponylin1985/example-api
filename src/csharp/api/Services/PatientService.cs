@@ -3,6 +3,7 @@ using Example.Api.Dtos;
 using Example.Api.Dtos.Requests;
 using Example.Api.Dtos.Responses;
 using Example.Api.Enums;
+using Example.Api.Extensions;
 using Example.Api.Infrastructure;
 using Example.Api.Mappers;
 using Example.Api.Models;
@@ -21,11 +22,6 @@ public class PatientService : BaseService, IPatientService
     private readonly ILogger<PatientService> _logger;
 
     /// <summary>
-    /// DateTimeOffset provider for getting current time.
-    /// </summary>
-    private readonly IDateTimeOffsetProvider _dateTimeOffsetProvider;
-
-    /// <summary>
     /// Patient data repository.
     /// </summary>
     private readonly IPatientRepository _repository;
@@ -39,17 +35,14 @@ public class PatientService : BaseService, IPatientService
     /// Initializes a new instance of the <see cref="PatientService"/> class.
     /// </summary>
     /// <param name="logger">Application logger.</param>
-    /// <param name="dateTimeOffsetProvider">The date time offset provider.</param>
     /// <param name="repository">The patient repository.</param>
     /// <param name="unitOfWork">The unit of work.</param>
     public PatientService(
         ILogger<PatientService> logger,
-        IDateTimeOffsetProvider dateTimeOffsetProvider,
         IPatientRepository repository,
         IUnitOfWork unitOfWork)
     {
         _logger = logger;
-        _dateTimeOffsetProvider = dateTimeOffsetProvider;
         _repository = repository;
         _unitOfWork = unitOfWork;
     }
@@ -57,24 +50,13 @@ public class PatientService : BaseService, IPatientService
     /// <inheritdoc />
     public async Task<ApiResult<PagedResult<PatientDto>>> GetPatientsAsync(GetPatientsRequest request)
     {
-        var threeYearsLimit = TimeSpan.FromDays(3 * 365 + 1);
-        var duration = request.EndTime - request.StartTime;
-
-        if (duration > threeYearsLimit)
-        {
-            _logger.LogWarning("Query range exceeded 3 years limit. Requested duration: {Duration}", duration);
-
-            return BadRequestResult<PagedResult<PatientDto>>(
-                $"The date range must not exceed 3 years. Requested duration was {duration.Days} days.");
-        }
-
         var queryResult = await _repository.GetPatientsAsync(
             request.StartTime,
             request.EndTime,
             request.PageNumber,
             request.PageSize);
 
-        if (queryResult.TotalCount == 0)
+        if (IsNoDataFound())
         {
             _logger.LogInformation(
                 "No patients found for the given date range: {StartTime} to {EndTime}",
@@ -89,6 +71,9 @@ public class PatientService : BaseService, IPatientService
             request.PageNumber,
             request.PageSize,
             queryResult.TotalCount);
+
+        bool IsNoDataFound() =>
+            queryResult.Data.IsNullOrEmpty() || queryResult.TotalCount == 0;
     }
 
     /// <inheritdoc />
@@ -108,8 +93,6 @@ public class PatientService : BaseService, IPatientService
     /// <inheritdoc />
     public async Task<ApiResult<PatientDto>> CreatePatientAsync(CreatePatientRequest request)
     {
-        var utcNow = _dateTimeOffsetProvider.UtcNow;
-
         var patient = new Patient
         {
             Name = request.Name.Trim(),
@@ -125,11 +108,15 @@ public class PatientService : BaseService, IPatientService
         var createdPatient = await _repository.AddAsync(patient);
         await _unitOfWork.SaveChangesAsync();
 
-        if (createdPatient.Id == default)
+        if (!IsCreatedSuccessfully())
         {
+            _logger.LogError("Failed to create patient: {Patient}", patient);
             return FailureResult<PatientDto>(ApiCode.OperationFailed, "Failed to create patient.");
         }
 
         return SuccessResult(createdPatient.ToDto());
+
+        bool IsCreatedSuccessfully() => 
+            createdPatient.Id != default;
     }
 }

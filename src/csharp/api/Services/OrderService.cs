@@ -87,8 +87,6 @@ public class OrderService : BaseService, IOrderService
             return FailureResult<OrderDto>(ApiCode.OperationFailed, $"Order with PatientId {request.PatientId} not found.");
         }
 
-        var utcNow = _dateTimeOffsetProvider.UtcNow;
-
         var order = new Order
         {
             PatientId = request.PatientId,
@@ -98,13 +96,16 @@ public class OrderService : BaseService, IOrderService
         var createdOrder = await _orderRepository.AddAsync(order);
         await _unitOfWork.SaveChangesAsync();
 
-        if (createdOrder.Id == default)
+        if (!IsCreatedSuccessfully())
         {
             _logger.LogWarning("Failed to create order for Patient ID {PatientId}.", request.PatientId);
             return FailureResult<OrderDto>(ApiCode.OperationFailed, "Failed to create the order.");
         }
 
         return SuccessResult(createdOrder.ToDto());
+
+        bool IsCreatedSuccessfully() =>
+            createdOrder.Id != default;
     }
 
     /// <inheritdoc />
@@ -115,13 +116,26 @@ public class OrderService : BaseService, IOrderService
         var utcNow = _dateTimeOffsetProvider.UtcNow;
         var updatedOrder = await _orderRepository.UpdateAsync(id, message.Trim(), utcNow);
 
-        if (updatedOrder is null)
+        if (!IsUpdatedSuccessfully(out var order))
         {
             _logger.LogWarning("Order with ID {Id} not found for update.", id);
             return FailureResult<OrderDto>(ApiCode.OperationFailed, $"Order with ID {id} not found.");
         }
 
         await _unitOfWork.CommitTransactionAsync();
-        return SuccessResult(updatedOrder.ToDto());
+        return SuccessResult(order.ToDto());
+
+        bool IsUpdatedSuccessfully(out Order order)
+        {
+            order = default!;
+
+            if (updatedOrder is null or { Id: 0, PatientId: 0 })
+            {
+                return false;
+            }
+
+            order = updatedOrder;
+            return true;
+        }
     }
 }

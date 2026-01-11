@@ -33,7 +33,7 @@ builder.Host.UseSerilog((context, services, configuration) =>
 });
 
 builder.Services.AddOutputCache();
-ResponseCompressExtensions.AddResponseCompression(builder.Services);
+builder.Services.AddHttpResponseCompression();
 builder.Services.AddOptions(builder.Configuration);
 builder.Services.AddCacheOptions(builder.Configuration);
 builder.Services.AddJsonSerializationOptions();

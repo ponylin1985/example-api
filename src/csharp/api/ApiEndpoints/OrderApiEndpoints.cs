@@ -21,26 +21,23 @@ public static class OrderApiEndpoints
         var group = app
             .MapGroup("/api/orders")
             .WithTags("Orders");
+        MapGetOrder(group);
+        MapCreateOrder(group);
+        MapUpdateOrderMessage(group);
+        return app;
+    }
 
+    /// <summary>
+    /// Maps the GetOrder endpoint.
+    /// </summary>
+    /// <param name="group"></param>
+    private static void MapGetOrder(RouteGroupBuilder group)
+    {
         group.MapGet("/{id:long:min(1)}", async (
             long id,
-            IOrderService orderService,
-            ILoggerFactory loggerFactory) =>
+            IOrderService orderService) =>
         {
-            var logger = loggerFactory.CreateLogger("OrderApiEndpoints");
-            logger.LogInformation("Received request to get order with ID: {OrderId}", id);
-
             var result = await orderService.GetOrderAsync(id);
-
-            if (!result.Success)
-            {
-                logger.LogWarning("Failed to retrieve order: {Message}", result.Message);
-            }
-            else
-            {
-                logger.LogInformation("Successfully retrieved order with ID: {OrderId}", result.Data?.Id);
-            }
-
             return result.ToHttpResult();
         })
         .WithName("GetOrderById")
@@ -49,61 +46,47 @@ public static class OrderApiEndpoints
             .Expire(TimeSpan.FromMinutes(5))
             .SetVaryByRouteValue("id")
             .Tag("order-detail"));
+    }
 
+    /// <summary>
+    /// Maps the CreateOrder endpoint.
+    /// </summary>
+    /// <param name="group"></param>
+    private static void MapCreateOrder(RouteGroupBuilder group)
+    {
         group.MapPost("/", async (
             CreateOrderRequest request,
             IOrderService orderService,
-            IOutputCacheStore cacheStore,
-            ILoggerFactory loggerFactory) =>
+            IOutputCacheStore cacheStore) =>
         {
-            var logger = loggerFactory.CreateLogger("OrderApiEndpoints");
-            logger.LogInformation("Received request to create a new order for Patient ID: {PatientId}", request.PatientId);
-
-            var result = await orderService.CreateOrderAsync(request);
-
-            if (!result.Success)
-            {
-                logger.LogWarning("Failed to create order: {Message}", result.Message);
-            }
-            else
-            {
-                logger.LogInformation("Successfully created order with ID: {OrderId}", result.Data?.Id);
-                await EvictOrderRelatedCaches(cacheStore);
-            }
-
+            var result = await orderService
+                .CreateOrderAsync(request)
+                .TapOnSuccessAsync(async () => await EvictOrderRelatedCaches(cacheStore));
             return result.ToHttpResult();
         })
         .WithName("CreateOrder")
         .WithDescription("Create a new order.");
+    }
 
+    /// <summary>
+    /// Maps the UpdateOrderMessage endpoint.
+    /// </summary>
+    /// <param name="group"></param>
+    private static void MapUpdateOrderMessage(RouteGroupBuilder group)
+    {
         group.MapPut("/{id:long:min(1)}", async (
             long id,
             [FromBody] UpdateOrderMessageRequest request,
             IOrderService orderService,
-            IOutputCacheStore cacheStore,
-            ILoggerFactory loggerFactory) =>
+            IOutputCacheStore cacheStore) =>
         {
-            var logger = loggerFactory.CreateLogger("OrderApiEndpoints");
-            logger.LogInformation("Received request to update message for order with ID: {OrderId}", id);
-
-            var result = await orderService.UpdateMessageAsync(id, request.Message);
-
-            if (!result.Success)
-            {
-                logger.LogWarning("Failed to update order message: {Message}", result.Message);
-            }
-            else
-            {
-                logger.LogInformation("Successfully updated message for order with ID: {OrderId}", result.Data?.Id);
-                await EvictOrderRelatedCaches(cacheStore);
-            }
-
+            var result = await orderService
+                .UpdateMessageAsync(id, request.Message)
+                .TapOnSuccessAsync(async () => await EvictOrderRelatedCaches(cacheStore));
             return result.ToHttpResult();
         })
         .WithName("UpdateOrderMessage")
         .WithDescription("Update the message of an existing order.");
-
-        return app;
     }
 
     /// <summary>

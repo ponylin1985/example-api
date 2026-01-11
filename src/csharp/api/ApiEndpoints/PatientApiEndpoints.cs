@@ -20,26 +20,23 @@ public static class PatientApiEndpoints
         var group = app
             .MapGroup("/api/patients")
             .WithTags("Patients");
+        MapGetPatients(group);
+        MapGetPatient(group);
+        MapCreatePatient(group);
+        return app;
+    }
 
+    /// <summary>
+    /// Maps the GetPatients endpoint.
+    /// </summary>
+    /// <param name="group"></param>
+    private static void MapGetPatients(RouteGroupBuilder group)
+    {
         group.MapGet("/", async (
             [AsParameters] GetPatientsRequest request,
-            IPatientService patientService,
-            ILoggerFactory loggerFactory) =>
+            IPatientService patientService) =>
         {
-            var logger = loggerFactory.CreateLogger("PatientApiEndpoints");
-            logger.LogInformation("Received request to get patients with parameters: {@Request}", request);
-
             var result = await patientService.GetPatientsAsync(request);
-
-            if (!result.Success)
-            {
-                logger.LogWarning("Failed to retrieve patients: {Message}", result.Message);
-            }
-            else
-            {
-                logger.LogInformation("Successfully retrieved {Count} patients.", result.Data?.TotalCount ?? 0);
-            }
-
             return result.ToHttpResult();
         })
         .WithName("GetPatientsByTimeRange")
@@ -48,26 +45,19 @@ public static class PatientApiEndpoints
             .Expire(TimeSpan.FromMinutes(2))
             .SetVaryByQuery("startTime", "endTime", "pageNumber", "pageSize")
             .Tag("patients"));
+    }
 
+    /// <summary>
+    /// Maps the GetPatient endpoint.
+    /// </summary>
+    /// <param name="group"></param>
+    private static void MapGetPatient(RouteGroupBuilder group)
+    {
         group.MapGet("/{id:long:min(1)}", async (
             long id,
-            IPatientService patientService,
-            ILoggerFactory loggerFactory) =>
+            IPatientService patientService) =>
         {
-            var logger = loggerFactory.CreateLogger("PatientApiEndpoints");
-            logger.LogInformation("Received request to get patient with ID: {PatientId}", id);
-
             var result = await patientService.GetPatientAsync(id);
-
-            if (!result.Success)
-            {
-                logger.LogWarning("Failed to retrieve patient with ID {PatientId}: {Message}", id, result.Message);
-            }
-            else
-            {
-                logger.LogInformation("Successfully retrieved patient with ID: {PatientId}", id);
-            }
-
             return result.ToHttpResult();
         })
         .WithName("GetPatientById")
@@ -76,33 +66,25 @@ public static class PatientApiEndpoints
             .Expire(TimeSpan.FromMinutes(5))
             .SetVaryByRouteValue("id")
             .Tag("patient-detail"));
+    }
 
+    /// <summary>
+    /// Maps the CreatePatient endpoint.
+    /// </summary>
+    /// <param name="group"></param>
+    private static void MapCreatePatient(RouteGroupBuilder group)
+    {
         group.MapPost("/", async (
             CreatePatientRequest request,
             IPatientService patientService,
-            IOutputCacheStore cacheStore,
-            ILoggerFactory loggerFactory) =>
+            IOutputCacheStore cacheStore) =>
         {
-            var logger = loggerFactory.CreateLogger("PatientApiEndpoints");
-            logger.LogInformation("Received request to create a new patient: {@Request}", request);
-
-            var result = await patientService.CreatePatientAsync(request);
-
-            if (!result.Success)
-            {
-                logger.LogWarning("Failed to create patient: {Message}", result.Message);
-            }
-            else
-            {
-                logger.LogInformation("Successfully created patient with ID: {PatientId}", result.Data?.Id);
-                await cacheStore.EvictByTagAsync("patients", default);
-            }
-
+            var result = await patientService
+                .CreatePatientAsync(request)
+                .TapOnSuccessAsync(async () => await cacheStore.EvictByTagAsync("patients", default));
             return result.ToHttpResult();
         })
         .WithName("CreatePatient")
         .WithDescription("Create a new patient record.");
-
-        return app;
     }
 }

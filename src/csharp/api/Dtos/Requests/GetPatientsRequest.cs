@@ -38,5 +38,15 @@ public record GetPatientsRequest : PagedRequest, IValidatableObject
                 "EndTime must be greater than or equal to StartTime.",
                 [nameof(StartTime), nameof(EndTime)]);
         }
+
+        var threeYearsLimit = TimeSpan.FromDays(3 * 365 + 1);
+        var duration = EndTime - StartTime;
+
+        if (duration > threeYearsLimit)
+        {
+            yield return new ValidationResult(
+                $"The date range must not exceed 3 years. Requested duration was {duration.Days} days.",
+                [nameof(StartTime), nameof(EndTime)]);
+        }
     }
 }

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.ResponseCompression;
+using System.IO.Compression;
 
 namespace Example.Api.Extensions;
 
@@ -12,7 +13,7 @@ public static class ResponseCompressExtensions
     /// </summary>
     /// <param name="services"></param>
     /// <returns></returns>
-    public static IServiceCollection AddResponseCompression(this IServiceCollection services)
+    public static IServiceCollection AddHttpResponseCompression(this IServiceCollection services)
     {
         services.AddResponseCompression(options =>
         {
@@ -23,12 +24,12 @@ public static class ResponseCompressExtensions
 
         services.Configure<GzipCompressionProviderOptions>(options =>
         {
-            options.Level = System.IO.Compression.CompressionLevel.Fastest;
+            options.Level = CompressionLevel.Fastest;
         });
 
         services.Configure<BrotliCompressionProviderOptions>(options =>
         {
-            options.Level = System.IO.Compression.CompressionLevel.Fastest;
+            options.Level = CompressionLevel.Fastest;
         });
 
         return services;
