@@ -426,7 +426,7 @@ LOG_RESPONSE_BODY=true
 
 ### 分層架構流程
 
-- 主要為 3-Tier 架構，透過 ASP.NET Core 內建的 Output Caching 和 Redis 快取裝飾器 (Decorator Pattern) 以提升效能。
+- 主要為 3-Layer 架構 (Presentation Layer/Business Logic Layer/Data Access Layer)，透過 ASP.NET Core 內建的 Output Caching 和 Redis 快取裝飾器 (Decorator Pattern) 以提升效能。
 - 目前 Entity 主要為貧血模型 (Anemic Model)，業務邏輯集中在 Service 層，適合中小型業務邏輯不複雜的專案，未來可能再提供以 DDD 架構的範例。
 - 整體流程如下：
 
