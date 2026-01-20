@@ -1,13 +1,13 @@
-import "reflect-metadata";
-import dotenv from "dotenv";
-import path from "path";
-import { errorHandler } from "./middlewares/globalErrorHandlerMiddleware";
-import { requestLogger } from "./middlewares/requestResponseMiddleware";
 import cors from "cors";
+import dotenv from "dotenv";
 import express, { Request, Response } from "express";
-import routes from "./routes";
+import path from "path";
+import "reflect-metadata";
 import swaggerJsdoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
+import { errorHandler } from "./middlewares/globalErrorHandlerMiddleware";
+import { requestLogger } from "./middlewares/requestResponseMiddleware";
+import routes from "./routes";
 
 dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
 
@@ -20,9 +20,9 @@ const swaggerOptions = {
   definition: {
     openapi: "3.0.0",
     info: {
-      title: "Jubo Example API (Node.js)",
+      title: "jjyy Example API (Node.js)",
       version: "1.0.0",
-      description: "A Node.js implementation of the Jubo Example API",
+      description: "A Node.js implementation of the jjyy Example API",
     },
     servers: [
       {

@@ -41,7 +41,7 @@ example-api/
 
 ```
 src/csharp/
-├── jubo-example-api.sln           # Solution 檔案
+├── jjyy-example-api.sln           # Solution 檔案
 └── api/
     ├── api.csproj                 # 專案檔
     ├── Program.cs                 # 應用程式進入點

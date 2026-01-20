@@ -7,7 +7,7 @@
             "type": "process",
             "args": [
                 "build",
-                "${workspaceFolder}/jubo-example-api.sln",
+                "${workspaceFolder}/jjyy-example-api.sln",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary"
             ],
@@ -23,7 +23,7 @@
             "type": "process",
             "args": [
                 "publish",
-                "${workspaceFolder}/api/jubo-example-api.csproj",
+                "${workspaceFolder}/api/jjyy-example-api.csproj",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary"
             ],
@@ -37,7 +37,7 @@
                 "watch",
                 "run",
                 "--project",
-                "${workspaceFolder}/api/jubo-example-api.csproj"
+                "${workspaceFolder}/api/jjyy-example-api.csproj"
             ],
             "problemMatcher": "$msCompile"
         }

@@ -21,16 +21,16 @@ else
     echo -e "${RED}Warning: docker/pg-docker-compose.yml not found.${NC}"
 fi
 
-echo -e "${YELLOW}Removing API image (jubo-dotnet-api:1.0.0)...${NC}"
-if docker image inspect jubo-dotnet-api:1.0.0 > /dev/null 2>&1; then
-    docker rmi jubo-dotnet-api:1.0.0
+echo -e "${YELLOW}Removing API image (jjyy-dotnet-api:1.0.0)...${NC}"
+if docker image inspect jjyy-dotnet-api:1.0.0 > /dev/null 2>&1; then
+    docker rmi jjyy-dotnet-api:1.0.0
     if [ $? -eq 0 ]; then
-        echo -e "${GREEN}Image jubo-dotnet-api:1.0.0 removed successfully.${NC}"
+        echo -e "${GREEN}Image jjyy-dotnet-api:1.0.0 removed successfully.${NC}"
     else
-        echo -e "${RED}Failed to remove image jubo-dotnet-api:1.0.0 (it might be in use).${NC}"
+        echo -e "${RED}Failed to remove image jjyy-dotnet-api:1.0.0 (it might be in use).${NC}"
     fi
 else
-    echo -e "${YELLOW}Image jubo-dotnet-api:1.0.0 not found, skipping.${NC}"
+    echo -e "${YELLOW}Image jjyy-dotnet-api:1.0.0 not found, skipping.${NC}"
 fi
 
 echo -e "${GREEN}All services stopped and cleaned up!${NC}"

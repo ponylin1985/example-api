@@ -1,10 +1,10 @@
 services:
   api:
-    image: jubo-dotnet-api:1.0.0
+    image: jjyy-dotnet-api:1.0.0
     build:
       context: ..
       dockerfile: docker/dockerfile
-    container_name: jubo-dotnet-api
+    container_name: jjyy-dotnet-api
     ports:
       - "5000:5000"
     environment:
@@ -16,7 +16,7 @@ services:
       - ../src/csharp/api/appsettings.json:/app/appsettings.json
     restart: unless-stopped
     networks:
-      - jubo-network
+      - jjyy-network
   redis:
     container_name: redis-cache
     image: redis:5.0.7-alpine3.11
@@ -24,8 +24,8 @@ services:
     ports:
       - "6379:6379"
     networks:
-      - jubo-network
+      - jjyy-network
 
 networks:
-  jubo-network:
+  jjyy-network:
     external: true

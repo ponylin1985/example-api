@@ -14,9 +14,9 @@ services:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     networks:
-      - jubo-network
+      - jjyy-network
 
 networks:
-  jubo-network:
-    name: jubo-network
+  jjyy-network:
+    name: jjyy-network
     driver: bridge

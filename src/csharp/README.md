@@ -70,7 +70,7 @@
 
 2. 建置專案：
    ```bash
-   dotnet build src/csharp/jubo-example-api.sln
+   dotnet build src/csharp/jjyy-example-api.sln
    ```
 
 3. 執行應用程式：
