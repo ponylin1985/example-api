@@ -20,14 +20,8 @@ public static class PatientMapper
             Id = patient.Id,
             Name = patient.Name,
             CreatedAt = patient.CreatedAt,
-            Orders = patient.Orders?.Select(o => new OrderDto
-            {
-                Id = o.Id,
-                PatientId = o.PatientId,
-                Message = o.Message,
-                CreatedAt = o.CreatedAt,
-                UpdatedAt = o.UpdatedAt,
-            }).ToList() ?? Enumerable.Empty<OrderDto>().ToList(),
+            UpdatedAt = patient.UpdatedAt,
+            Orders = patient.Orders?.ToDtos().ToList() ?? Enumerable.Empty<OrderDto>().ToList(),
         };
     }
 
