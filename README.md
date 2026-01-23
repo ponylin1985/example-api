@@ -454,34 +454,55 @@ Database
 ### 目錄結構範例 (以 C# ASP.NET Core 的 Patient 與 Order 為例)
 
 ```
-ApiEndpoints/                     ← API 端點
+ApiEndpoints/                         ← Minimal APIs 端點
 ├── PatientApiEndpoints
 └── OrderApiEndpoints
 
-Services/                         ← 業務邏輯 (目前為 Application Service 與 Domain Service 混合)
+Services/                             ← 業務邏輯 (目前為 Application Service 與 Domain Service 混合)
 ├── PatientService
 └── OrderService
 
-Repositories/                     ← 資料存取
+Repositories/                         ← 資料倉儲抽象
 ├── PatientRepository
 └── OrderRepository
 
-Models/                           ← 貧血模型 (Entities/POCOs)
+Mappers/                              ← 資料載體對應
+├── OrderMapper
+└── PatientMapper
+
+Middlewares/                          ← Http 管道中介層
+├── GlobalExceptionHandlerMiddleware
+├── RequestResponseLoggingMiddleware
+├── SlowRequestLoggingMiddleware
+└── TraceIdMiddleware
+
+Models/                               ← 貧血模型 (Entities/POCOs)
 ├── Patient
 └── Order
 
-Dtos/                             ← 資料傳輸物件 (Data Transfer Objects)
+Migrations/                           ← 資料庫遷移
+├── XxxMigration.cs
+├── YyyMigration.cs
+└── DbContextModelSnapshot
+
+Dtos/                                 ← 資料傳輸物件 (Data Transfer Objects)
 ├── PatientDto
-└── OrderDto
-└── Requests                      ← 請求資料載體 (Request DTOs)
+├── OrderDto
+└── Requests                          ← 請求資料載體 (Request DTOs)
     ├── CreateOrderRequest
     ├── CreatePatientRequest
     ├── GetPatientsRequest
-    └── UpdateOrderMessageRequest
+    ├── UpdateOrderMessageRequest
     └── PagedRequest
-└── Responses                     ← 回應資料載體 (Response DTOs)
+└── Responses                         ← 回應資料載體 (Response DTOs)
     ├── ApiResult
     └── PagedResult
+
+Options/                              ← 應用程式設定組態
+└── RequestResponseLoggingOptions
+
+Validators/                           ← 請求資料驗證器
+└── SanitizerValidator
 ```
 
 ### 共同架構模式
