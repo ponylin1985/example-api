@@ -11,7 +11,7 @@
   - 要寫出能動的「代碼」此專案就沒有任何參考價值。
 - 本專案不包含任何前端相關技術，單純的示範後端 API 的實作方式，非常適合應用於前後端分離並且採用容器化 Microservices 架構的專案。
 
-## 📁 Repository 結構
+## 📁 Git Repository 結構
 
 ```
 example-api/
@@ -302,7 +302,7 @@ export async function withRetry<T>(
   delayMs: number = 1000
 ): Promise<T> {
   let lastError: Error;
-  
+
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       return await fn();
@@ -313,7 +313,7 @@ export async function withRetry<T>(
       }
     }
   }
-  
+
   throw lastError!;
 }
 
@@ -451,6 +451,74 @@ Repository (Data Access)
 Database
 ```
 
+- 下圖為整體架構流程圖：
+
+```mermaid
+flowchart TD
+    Client["API Client"]
+
+    %% Middlewares (依序)
+    M1["GlobalExceptionHandlerMiddleware"]
+    M2["ResponseCompressionMiddleware"]
+    M3["TraceIdMiddleware"]
+    M4["OutputCacheMiddleware"]
+    M5["SlowRequestLoggingMiddleware"]
+    M6["RequestResponseLoggingMiddleware"]
+
+    Endpoint["Minimal API Endpoint<br/>ApiEndpoints"]
+
+    Service["Service Layer<br/>PatientService, OrderService"]
+    RedisCache["Cached Repository<br/>(Redis Decorator)"]
+    Repository["Repository<br/>PatientRepository, OrderRepository"]
+    DB[/"Database<br/>PostgreSQL"/]
+    TablePatient[["Table: patient"]]
+    TableOrder[["Table: order"]]
+
+    %% HTTP Pipeline (順序)
+    Client --> M1 --> M2 --> M3 --> M4
+    M4 -- "Cache Hit: Return" --> Client
+    M4 --> M5 --> M6 --> Endpoint
+    Endpoint --> Service
+    Service --> RedisCache
+    RedisCache -- "Cache Hit: Entity" --> Service
+    RedisCache --> Repository
+    Repository --> DB
+
+    %% DB Table
+    DB --> TablePatient
+    DB --> TableOrder
+
+    %% 回傳資料
+    TablePatient --> DB
+    TableOrder --> DB
+    DB --> Repository
+    Repository --> RedisCache
+    RedisCache --> Service
+    Service --> Endpoint
+    Endpoint --> Client
+
+    %% 分層標示
+    subgraph HTTP_Pipeline["HTTP Pipeline"]
+        M1
+        M2
+        M3
+        M4
+        M5
+        M6
+        Endpoint
+    end
+    subgraph Business_Logic_Layer["Business Logic Layer"]
+        Service
+    end
+    subgraph Data_Access_Layer["Data Access Layer"]
+        RedisCache
+        Repository
+        DB
+        TablePatient
+        TableOrder
+    end
+```
+
 ### 目錄結構範例 (以 C# ASP.NET Core 的 Patient 與 Order 為例)
 
 ```
@@ -506,17 +574,17 @@ Validators/                           ← 請求資料驗證器
 ```
 
 ### 共同架構模式
-- **Repository Pattern** - 資料存取抽象化
-- **Unit of Work Pattern & IDbSession** - 交易管理與資料存取抽象化 (only for C# ASP.NET Core)
+- **Repository Pattern** - 資料倉儲抽象化
+- **Unit of Work Pattern & IDbSession** - 交易管理與資料存取抽象化，並且透過 Polly 實現 Retry & Circuit Breaker (only for C# ASP.NET Core)
 - **Service Layer** - 業務邏輯封裝
 - **DTO Pattern** - 資料傳輸物件分離
 - **Dependency Injection** - 依賴注入
 - **Decorator Pattern** - Redis 快取裝飾器
 
-### Redis 快取策略
-- **Cache-Aside Pattern** - 查詢時先檢查快取
-- **Write-Through** - 更新時同步清除快取
-- **Decorator Pattern** - 透過裝飾器添加快取功能，不影響原有 Repository
+### 快取策略
+- **Cache-Aside Pattern** - 查詢時先檢查快取 (Http Output Caching + Redis Cache)
+- **Write-Through** - 更新時同步清除快取 (Http Output Caching + Redis Cache)
+- **Decorator Pattern** - 透過裝飾器添加 Redis 快取功能，不影響原有 Repository
 
 ---
 
