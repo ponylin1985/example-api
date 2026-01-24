@@ -1,5 +1,6 @@
 using Example.Api.Dtos.Responses;
 using Example.Api.Enums;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace Example.Api.Extensions;
 
@@ -53,22 +54,23 @@ public static class ApiResultExtensions
     }
 
     /// <summary>
-    /// Converts an ApiResult to the appropriate HTTP IResult based on the ApiCode.
+    /// Converts an ApiResult to an appropriate IResult for HTTP responses.
     /// </summary>
-    /// <param name="result">The ApiResult to convert.</param>
-    /// <returns>The corresponding IResult.</returns>
-    public static IResult ToHttpResult(this ApiResult result)
+    /// <param name="result"></param>
+    /// <returns></returns>
+    public static Results<Ok<ApiResult>, BadRequest<ApiResult>, InternalServerError<ApiResult>, StatusCodeHttpResult> 
+        ToHttpResult(this ApiResult result)
     {
         return result.Code switch
         {
-            ApiCode.Success => Results.Ok(result),
-            ApiCode.InvalidRequest => Results.BadRequest(result),
-            ApiCode.NoDataFound => Results.Ok(result),
-            ApiCode.DataAccessError => Results.InternalServerError(result),
-            ApiCode.OperationFailed => Results.Ok(result),
-            ApiCode.OperationTimeout => Results.StatusCode(StatusCodes.Status504GatewayTimeout),
-            ApiCode.UnknownError => Results.InternalServerError(result),
-            _ => Results.InternalServerError(result),
+            ApiCode.Success => TypedResults.Ok(result),
+            ApiCode.InvalidRequest => TypedResults.BadRequest(result),
+            ApiCode.NoDataFound => TypedResults.Ok(result),
+            ApiCode.DataAccessError => TypedResults.InternalServerError(result),
+            ApiCode.OperationFailed => TypedResults.Ok(result),
+            ApiCode.OperationTimeout => TypedResults.StatusCode(StatusCodes.Status504GatewayTimeout),
+            ApiCode.UnknownError => TypedResults.InternalServerError(result),
+            _ => TypedResults.InternalServerError(result)
         };
     }
 }

@@ -1,4 +1,5 @@
 using Example.Api.Dtos.Requests;
+using Example.Api.Dtos.Responses;
 using Example.Api.Extensions;
 using Example.Api.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -42,6 +43,9 @@ public static class OrderApiEndpoints
         })
         .WithName("GetOrderById")
         .WithDescription("Get an order by its identifier.")
+        .Produces<ApiResult>(StatusCodes.Status200OK)
+        .Produces<ApiResult>(StatusCodes.Status400BadRequest)
+        .Produces<ApiResult>(StatusCodes.Status500InternalServerError)
         .CacheOutput(policy => policy
             .Expire(TimeSpan.FromMinutes(5))
             .SetVaryByRouteValue("id")
@@ -64,6 +68,9 @@ public static class OrderApiEndpoints
                 .TapOnSuccessAsync(async () => await EvictOrderRelatedCaches(cacheStore));
             return result.ToHttpResult();
         })
+        .Produces<ApiResult>(StatusCodes.Status200OK)
+        .Produces<ApiResult>(StatusCodes.Status400BadRequest)
+        .Produces<ApiResult>(StatusCodes.Status500InternalServerError)
         .WithName("CreateOrder")
         .WithDescription("Create a new order.");
     }
@@ -85,6 +92,9 @@ public static class OrderApiEndpoints
                 .TapOnSuccessAsync(async () => await EvictOrderRelatedCaches(cacheStore));
             return result.ToHttpResult();
         })
+        .Produces<ApiResult>(StatusCodes.Status200OK)
+        .Produces<ApiResult>(StatusCodes.Status400BadRequest)
+        .Produces<ApiResult>(StatusCodes.Status500InternalServerError)
         .WithName("UpdateOrderMessage")
         .WithDescription("Update the message of an existing order.");
     }

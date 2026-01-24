@@ -1,4 +1,5 @@
 using Example.Api.Dtos.Requests;
+using Example.Api.Dtos.Responses;
 using Example.Api.Extensions;
 using Example.Api.Services;
 using Microsoft.AspNetCore.OutputCaching;
@@ -39,6 +40,9 @@ public static class PatientApiEndpoints
             var result = await patientService.GetPatientsAsync(request);
             return result.ToHttpResult();
         })
+        .Produces<ApiResult>(StatusCodes.Status200OK)
+        .Produces<ApiResult>(StatusCodes.Status400BadRequest)
+        .Produces<ApiResult>(StatusCodes.Status500InternalServerError)
         .WithName("GetPatientsByTimeRange")
         .WithDescription("Get patients created within a specified time range.")
         .CacheOutput(policy => policy
@@ -60,6 +64,9 @@ public static class PatientApiEndpoints
             var result = await patientService.GetPatientAsync(id);
             return result.ToHttpResult();
         })
+        .Produces<ApiResult>(StatusCodes.Status200OK)
+        .Produces<ApiResult>(StatusCodes.Status400BadRequest)
+        .Produces<ApiResult>(StatusCodes.Status500InternalServerError)
         .WithName("GetPatientById")
         .WithDescription("Get a patient by their ID.")
         .CacheOutput(policy => policy
@@ -84,6 +91,9 @@ public static class PatientApiEndpoints
                 .TapOnSuccessAsync(async () => await cacheStore.EvictByTagAsync("patients", default));
             return result.ToHttpResult();
         })
+        .Produces<ApiResult>(StatusCodes.Status200OK)
+        .Produces<ApiResult>(StatusCodes.Status400BadRequest)
+        .Produces<ApiResult>(StatusCodes.Status500InternalServerError)
         .WithName("CreatePatient")
         .WithDescription("Create a new patient record.");
     }
