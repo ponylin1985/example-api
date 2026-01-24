@@ -5,6 +5,12 @@ using Example.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
 
+using RestApiResult = Microsoft.AspNetCore.Http.HttpResults.Results<
+    Microsoft.AspNetCore.Http.HttpResults.Ok<Example.Api.Dtos.Responses.ApiResult>, 
+    Microsoft.AspNetCore.Http.HttpResults.BadRequest<Example.Api.Dtos.Responses.ApiResult>, 
+    Microsoft.AspNetCore.Http.HttpResults.InternalServerError<Example.Api.Dtos.Responses.ApiResult>, 
+    Microsoft.AspNetCore.Http.HttpResults.StatusCodeHttpResult>;
+
 namespace Example.Api.Endpoints;
 
 /// <summary>
@@ -34,9 +40,7 @@ public static class OrderApiEndpoints
     /// <param name="group"></param>
     private static void MapGetOrder(RouteGroupBuilder group)
     {
-        group.MapGet("/{id:long:min(1)}", async (
-            long id,
-            IOrderService orderService) =>
+        group.MapGet("/{id:long:min(1)}", async Task<RestApiResult> (long id, IOrderService orderService) => 
         {
             var result = await orderService.GetOrderAsync(id);
             return result.ToHttpResult();
@@ -58,7 +62,7 @@ public static class OrderApiEndpoints
     /// <param name="group"></param>
     private static void MapCreateOrder(RouteGroupBuilder group)
     {
-        group.MapPost("/", async (
+        group.MapPost("/", async Task<RestApiResult> (
             CreateOrderRequest request,
             IOrderService orderService,
             IOutputCacheStore cacheStore) =>
@@ -81,7 +85,7 @@ public static class OrderApiEndpoints
     /// <param name="group"></param>
     private static void MapUpdateOrderMessage(RouteGroupBuilder group)
     {
-        group.MapPut("/{id:long:min(1)}", async (
+        group.MapPut("/{id:long:min(1)}", async Task<RestApiResult> (
             long id,
             [FromBody] UpdateOrderMessageRequest request,
             IOrderService orderService,

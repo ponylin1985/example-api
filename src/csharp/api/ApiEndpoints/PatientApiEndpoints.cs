@@ -4,6 +4,12 @@ using Example.Api.Extensions;
 using Example.Api.Services;
 using Microsoft.AspNetCore.OutputCaching;
 
+using RestApiResult = Microsoft.AspNetCore.Http.HttpResults.Results<
+    Microsoft.AspNetCore.Http.HttpResults.Ok<Example.Api.Dtos.Responses.ApiResult>, 
+    Microsoft.AspNetCore.Http.HttpResults.BadRequest<Example.Api.Dtos.Responses.ApiResult>, 
+    Microsoft.AspNetCore.Http.HttpResults.InternalServerError<Example.Api.Dtos.Responses.ApiResult>, 
+    Microsoft.AspNetCore.Http.HttpResults.StatusCodeHttpResult>;
+
 namespace Example.Api.Endpoints;
 
 /// <summary>
@@ -33,7 +39,7 @@ public static class PatientApiEndpoints
     /// <param name="group"></param>
     private static void MapGetPatients(RouteGroupBuilder group)
     {
-        group.MapGet("/", async (
+        group.MapGet("/", async Task<RestApiResult> (
             [AsParameters] GetPatientsRequest request,
             IPatientService patientService) =>
         {
@@ -57,7 +63,7 @@ public static class PatientApiEndpoints
     /// <param name="group"></param>
     private static void MapGetPatient(RouteGroupBuilder group)
     {
-        group.MapGet("/{id:long:min(1)}", async (
+        group.MapGet("/{id:long:min(1)}", async Task<RestApiResult> (
             long id,
             IPatientService patientService) =>
         {
@@ -81,7 +87,7 @@ public static class PatientApiEndpoints
     /// <param name="group"></param>
     private static void MapCreatePatient(RouteGroupBuilder group)
     {
-        group.MapPost("/", async (
+        group.MapPost("/", async Task<RestApiResult> (
             CreatePatientRequest request,
             IPatientService patientService,
             IOutputCacheStore cacheStore) =>
