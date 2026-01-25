@@ -35,5 +35,11 @@
   "python.analysis.typeCheckingMode": "basic",
   "python.analysis.autoImportCompletions": true,
   "python.terminal.activateEnvironment": true,
-  "workbench.colorTheme": "Modern Purple Theme Dark"
+  "workbench.colorTheme": "Modern Purple Theme Dark",
+  "[csharp]": {
+    "editor.defaultFormatter": "ms-dotnettools.csharp"
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  }
 }
