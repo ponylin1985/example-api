@@ -63,34 +63,34 @@ public class OrderService : BaseService, IOrderService
     }
 
     /// <inheritdoc />
-    public async Task<ApiResult<OrderDto>> GetOrderAsync(long id)
+    public async Task<ApiResult<PatientOrderDto>> GetOrderAsync(long id)
     {
         var order = await _orderRepository.GetOrderAsync(id);
 
         if (order is null)
         {
             _logger.LogWarning("Order with ID {Id} not found.", id);
-            return NoDataFoundResult<OrderDto>();
+            return NoDataFoundResult<PatientOrderDto>();
         }
 
         return SuccessResult(order.ToDto());
     }
 
     /// <inheritdoc />
-    public async Task<ApiResult<OrderDto>> CreateOrderAsync(CreateOrderRequest request)
+    public async Task<ApiResult<PatientOrderDto>> CreateOrderAsync(CreateOrderRequest request)
     {
         var patientExists = await _patientRepository.IsExistPatientAsync(request.PatientId);
 
         if (!patientExists)
         {
             _logger.LogWarning("Patient with ID {PatientId} not found for order creation.", request.PatientId);
-            return FailureResult<OrderDto>(ApiCode.OperationFailed, $"Order with PatientId {request.PatientId} not found.");
+            return FailureResult<PatientOrderDto>(ApiCode.OperationFailed, $"Order with PatientId {request.PatientId} not found.");
         }
 
-        var order = new Order
+        var order = new PatientOrder
         {
             PatientId = request.PatientId,
-            Message = request.Message.Trim(),
+            Instructions = request.Message.Trim(),
         };
 
         var createdOrder = await _orderRepository.AddAsync(order);
@@ -99,7 +99,7 @@ public class OrderService : BaseService, IOrderService
         if (!IsCreatedSuccessfully())
         {
             _logger.LogWarning("Failed to create order for Patient ID {PatientId}.", request.PatientId);
-            return FailureResult<OrderDto>(ApiCode.OperationFailed, "Failed to create the order.");
+            return FailureResult<PatientOrderDto>(ApiCode.OperationFailed, "Failed to create the order.");
         }
 
         return SuccessResult(createdOrder.ToDto());
@@ -109,7 +109,7 @@ public class OrderService : BaseService, IOrderService
     }
 
     /// <inheritdoc />
-    public async Task<ApiResult<OrderDto>> UpdateMessageAsync(long id, string message)
+    public async Task<ApiResult<PatientOrderDto>> UpdateMessageAsync(long id, string message)
     {
         await using var _ = await _unitOfWork.BeginTransactionAsync();
 
@@ -119,13 +119,13 @@ public class OrderService : BaseService, IOrderService
         if (!IsUpdatedSuccessfully(out var order))
         {
             _logger.LogWarning("Order with ID {Id} not found for update.", id);
-            return FailureResult<OrderDto>(ApiCode.OperationFailed, $"Order with ID {id} not found.");
+            return FailureResult<PatientOrderDto>(ApiCode.OperationFailed, $"Order with ID {id} not found.");
         }
 
         await _unitOfWork.CommitTransactionAsync();
         return SuccessResult(order.ToDto());
 
-        bool IsUpdatedSuccessfully(out Order order)
+        bool IsUpdatedSuccessfully(out PatientOrder order)
         {
             order = default!;
 

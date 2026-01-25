@@ -33,7 +33,7 @@ public class OrderRepository : IOrderRepository
     }
 
     /// <inheritdoc />
-    public async Task<Order?> GetOrderAsync(long id)
+    public async Task<PatientOrder?> GetOrderAsync(long id)
     {
         return await _dbContext.Orders
             .AsNoTracking()
@@ -41,23 +41,23 @@ public class OrderRepository : IOrderRepository
     }
 
     /// <inheritdoc />
-    public async Task<Order> AddAsync(Order order)
+    public async Task<PatientOrder> AddAsync(PatientOrder order)
     {
         await _dbContext.Orders.AddAsync(order);
         return order;
     }
 
     /// <inheritdoc />
-    public async Task<Order> UpdateMessageAsync(Order order)
+    public async Task<PatientOrder> UpdateMessageAsync(PatientOrder order)
     {
         var existingOrder = await _dbContext.Orders.FindAsync(order.Id)
             ?? throw new InvalidOperationException($"OrderId {order.Id} not found.");
-        existingOrder.Message = order.Message;
+        existingOrder.Instructions = order.Instructions;
         return existingOrder;
     }
 
     /// <inheritdoc />
-    public async Task<Order?> UpdateAsync(long id, string message, DateTimeOffset updatedAt)
+    public async Task<PatientOrder?> UpdateAsync(long id, string message, DateTimeOffset updatedAt)
     {
         var sql = @"
             UPDATE ""order""
@@ -81,10 +81,10 @@ public class OrderRepository : IOrderRepository
             return default;
         }
 
-        return new Order
+        return new PatientOrder
         {
             Id = id,
-            Message = message,
+            Instructions = message,
             PatientId = (long)result.patient_id,
             CreatedAt = (DateTimeOffset)result.created_at,
             UpdatedAt = updatedAt,

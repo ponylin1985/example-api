@@ -19,9 +19,18 @@ public static class PatientMapper
         {
             Id = patient.Id,
             Name = patient.Name,
+            Age = patient.Age,
+            Gender = patient.Gender,
+            Email = patient.Email,
+            PhoneNumber = patient.PhoneNumber,
+            DateOfBirth = patient.DateOfBirth,
+            Address = patient.Address,
+            FirstVisitDate = patient.FirstVisitDate,
+            Status = patient.Status,
+            Remarks = patient.Remarks,
             CreatedAt = patient.CreatedAt,
             UpdatedAt = patient.UpdatedAt,
-            Orders = patient.Orders?.ToDtos().ToList() ?? Enumerable.Empty<OrderDto>().ToList(),
+            Orders = patient.Orders?.ToDtos().ToList() ?? Enumerable.Empty<PatientOrderDto>().ToList(),
         };
     }
 

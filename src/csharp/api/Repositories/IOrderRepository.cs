@@ -9,21 +9,21 @@ public interface IOrderRepository
     /// </summary>
     /// <param name="id">The order id.</param>
     /// <returns>The order entity.</returns>
-    Task<Order?> GetOrderAsync(long id);
+    Task<PatientOrder?> GetOrderAsync(long id);
 
     /// <summary>
     /// Creates a new patient's order.
     /// </summary>
     /// <param name="order">The order entity to create.</param>
     /// <returns>The created order entity.</returns>
-    Task<Order> AddAsync(Order order);
+    Task<PatientOrder> AddAsync(PatientOrder order);
 
     /// <summary>
     /// Update the message of an existing order by id.
     /// </summary>
     /// <param name="order">The order entity with updated message.</param>
     /// <returns>The updated order entity.</returns>
-    Task<Order> UpdateMessageAsync(Order order);
+    Task<PatientOrder> UpdateMessageAsync(PatientOrder order);
 
     /// <summary>
     /// Update the message of an order.
@@ -32,5 +32,5 @@ public interface IOrderRepository
     /// <param name="message">The new message for the order.</param>
     /// <param name="updatedAt">The timestamp of the update.</param>
     /// <returns>The updated order entity, or null if not found.</returns>
-    Task<Order?> UpdateAsync(long id, string message, DateTimeOffset updatedAt);
+    Task<PatientOrder?> UpdateAsync(long id, string message, DateTimeOffset updatedAt);
 }

@@ -9,7 +9,7 @@
     "SandcastleProject": true,
     "**/TestResults": true,
     "**/__pycache__": true,
-    "**/.pytest_cache": true,
+    "**/.pytest_cache": true
   },
   "files.watcherExclude": {
     "**/.git/objects/**": true,
@@ -20,9 +20,7 @@
     "**__pycache__/**": true
   },
   "python.defaultInterpreterPath": "${workspaceFolder}/src/python/venv/bin/python",
-  "black-formatter.path": [
-    "${workspaceFolder}/src/python/venv/bin/black"
-  ],
+  "black-formatter.path": ["${workspaceFolder}/src/python/venv/bin/black"],
   "editor.formatOnSave": true,
   "editor.codeActionsOnSave": {
     "source.organizeImports": "explicit"
@@ -35,11 +33,5 @@
   "python.analysis.typeCheckingMode": "basic",
   "python.analysis.autoImportCompletions": true,
   "python.terminal.activateEnvironment": true,
-  "workbench.colorTheme": "Modern Purple Theme Dark",
-  "[csharp]": {
-    "editor.defaultFormatter": "ms-dotnettools.csharp"
-  },
-  "[jsonc]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
-  }
+  "workbench.colorTheme": "Modern Purple Theme Dark"
 }

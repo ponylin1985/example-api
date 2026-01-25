@@ -1,10 +1,10 @@
-namespace Example.Api.Models;
+namespace Example.Api.Dtos;
 
 /// <summary>
-/// Base entity with common properties.
+/// The base data transfer object.
 /// </summary>
 /// <value></value>
-public abstract record BaseEntity
+public abstract record BaseDto
 {
     /// <summary>
     /// The user who created the data.

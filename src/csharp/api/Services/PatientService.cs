@@ -100,7 +100,7 @@ public class PatientService : BaseService, IPatientService
             [
                 new()
                 {
-                    Message = request.OrderMessage.Trim(),
+                    Instructions = request.OrderMessage.Trim(),
                 },
             ],
         };
@@ -116,7 +116,7 @@ public class PatientService : BaseService, IPatientService
 
         return SuccessResult(createdPatient.ToDto());
 
-        bool IsCreatedSuccessfully() => 
+        bool IsCreatedSuccessfully() =>
             createdPatient.Id != default;
     }
 }

@@ -93,14 +93,14 @@ public class CachedOrderRepository : IOrderRepository
     }
 
     /// <inheritdoc />
-    public async Task<Order?> GetOrderAsync(long id)
+    public async Task<PatientOrder?> GetOrderAsync(long id)
     {
         var key = GetOrderCacheKey(id);
         var cachedData = await ExecuteCacheOperationAsync(async () => await _cache.GetStringAsync(key));
 
         if (!string.IsNullOrWhiteSpace(cachedData))
         {
-            return JsonSerializer.Deserialize<Order>(cachedData, _jsonOptions);
+            return JsonSerializer.Deserialize<PatientOrder>(cachedData, _jsonOptions);
         }
 
         var order = await _innerRepository.GetOrderAsync(id);
@@ -114,7 +114,7 @@ public class CachedOrderRepository : IOrderRepository
     }
 
     /// <inheritdoc />
-    public async Task<Order> AddAsync(Order order)
+    public async Task<PatientOrder> AddAsync(PatientOrder order)
     {
         var createdOrder = await _innerRepository.AddAsync(order);
         await RemoveFromCacheAsync(default, createdOrder.PatientId);
@@ -122,7 +122,7 @@ public class CachedOrderRepository : IOrderRepository
     }
 
     /// <inheritdoc />
-    public async Task<Order> UpdateMessageAsync(Order order)
+    public async Task<PatientOrder> UpdateMessageAsync(PatientOrder order)
     {
         var updatedOrder = await _innerRepository.UpdateMessageAsync(order);
         await RemoveFromCacheAsync(order.Id, updatedOrder.PatientId);
@@ -130,7 +130,7 @@ public class CachedOrderRepository : IOrderRepository
     }
 
     /// <inheritdoc />
-    public async Task<Order?> UpdateAsync(long id, string message, DateTimeOffset updatedAt)
+    public async Task<PatientOrder?> UpdateAsync(long id, string message, DateTimeOffset updatedAt)
     {
         var updatedOrder = await _innerRepository.UpdateAsync(id, message, updatedAt);
 
@@ -189,7 +189,7 @@ public class CachedOrderRepository : IOrderRepository
     /// </summary>
     /// <param name="order">The order to save to the cache.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
-    private async ValueTask SaveToCacheAsync(Order order)
+    private async ValueTask SaveToCacheAsync(PatientOrder order)
     {
         var key = GetOrderCacheKey(order.Id);
         var json = JsonSerializer.Serialize(order, _jsonOptions);
