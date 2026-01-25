@@ -14,14 +14,14 @@ public interface IOrderService
     /// </summary>
     /// <param name="id">The unique identifier of the order.</param>
     /// <returns>The order DTO.</returns>
-    Task<ApiResult<OrderDto>> GetOrderAsync(long id);
+    Task<ApiResult<PatientOrderDto>> GetOrderAsync(long id);
 
     /// <summary>
     /// Creates a new order.
     /// </summary>
     /// <param name="request">The creation request.</param>
     /// <returns>The created order DTO.</returns>
-    Task<ApiResult<OrderDto>> CreateOrderAsync(CreateOrderRequest request);
+    Task<ApiResult<PatientOrderDto>> CreateOrderAsync(CreateOrderRequest request);
 
     /// <summary>
     /// Updates the message of an existing order.
@@ -29,5 +29,5 @@ public interface IOrderService
     /// <param name="id">The unique identifier of the order.</param>
     /// <param name="message">The new message.</param>
     /// <returns>The updated order DTO.</returns>
-    Task<ApiResult<OrderDto>> UpdateMessageAsync(long id, string message);
+    Task<ApiResult<PatientOrderDto>> UpdateMessageAsync(long id, string message);
 }
