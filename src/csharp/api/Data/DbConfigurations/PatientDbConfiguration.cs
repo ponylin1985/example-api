@@ -48,14 +48,11 @@ public class PatientDbConfiguration : IEntityTypeConfiguration<Patient>
         entity
             .Property(p => p.Email)
             .HasColumnName("email")
-            .HasDefaultValue(string.Empty)
-            .HasMaxLength(100)
-            .IsRequired();
+            .HasMaxLength(100);
 
         entity
             .Property(p => p.PhoneNumber)
             .HasColumnName("phone_number")
-            .HasDefaultValue(string.Empty)
             .HasMaxLength(10)
             .IsRequired();
 

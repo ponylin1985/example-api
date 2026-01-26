@@ -28,7 +28,7 @@ public static class InfrastructureProvider
         {
             options.Configuration = configuration.GetConnectionString("DefaultRedisConnection");
         });
-
+        
         return services;
     }
 

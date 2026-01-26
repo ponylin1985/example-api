@@ -15,6 +15,11 @@ public record PatientDto : BaseDto
     public long Id { get; set; }
 
     /// <summary>
+    /// Gets or sets the full name of the patient.
+    /// </summary>
+    public string Name { get; set; } = default!;
+
+    /// <summary>
     /// Gets or sets the age of the patient.
     /// </summary>
     /// <value></value>
@@ -30,43 +35,37 @@ public record PatientDto : BaseDto
     /// Get or sets the email of the patient.
     /// </summary>
     /// <value></value>
-    public string Email { get; set; } = string.Empty;
+    public string? Email { get; set; }
 
     /// <summary>
     /// Gets or sets the phone number of the patient.
     /// </summary>
     /// <value></value>
-    public string PhoneNumber { get; set; } = string.Empty;
+    public string PhoneNumber { get; set; } = default!;
 
     /// <summary>
     /// Gets or sets the address of the patient.
     /// </summary>
     /// <value></value>
-    public Address Address { get; set; } =
-        new Address(string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty);
-
-    /// <summary>
-    /// Gets or sets the full name of the patient.
-    /// </summary>
-    public string Name { get; set; } = string.Empty;
+    public Address? Address { get; set; }
 
     /// <summary>
     /// Get or sets the date of birth of the patient.
     /// </summary>
     /// <value></value>
-    public DateTimeOffset DateOfBirth { get; set; }
+    public DateOnly DateOfBirth { get; set; }
 
     /// <summary>
     /// Gets or sets the first visit date of the patient.
     /// </summary>
     /// <value></value>
-    public DateTimeOffset FirstVisitDate { get; set; }
+    public DateTimeOffset? FirstVisitDate { get; set; }
 
     /// <summary>
     /// Get or sets the status of the patient.
     /// </summary>
     /// <value></value>
-    public PatientStatus Status { get; set; }
+    public PatientStatus Status { get; set; } = PatientStatus.Active;
 
     /// <summary>
     /// Get or sets any additional remarks about the patient.
