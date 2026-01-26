@@ -1,3 +1,5 @@
+using Example.Api.Dtos.Requests;
+using FluentValidation;
 using Ganss.Xss;
 
 namespace Example.Api.Validators;
@@ -13,7 +15,8 @@ public static class ValidatorsProvider
     /// <param name="services"></param>
     public static void AddValidators(this IServiceCollection services)
     {
-        services.AddValidation();
+        services.AddSingleton<IValidator<CreatePatientRequest>, CreatePatientRequestValidator>();
+        // services.AddValidation();
         services.AddSingleton<IHtmlSanitizer, HtmlSanitizer>();
         services.AddSingleton<SanitizerValidator>();
     }

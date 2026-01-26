@@ -1,13 +1,15 @@
 using Example.Api.Dtos.Requests;
 using Example.Api.Dtos.Responses;
+using Example.Api.Enums;
 using Example.Api.Extensions;
 using Example.Api.Services;
+using FluentValidation;
 using Microsoft.AspNetCore.OutputCaching;
 
 using RestApiResult = Microsoft.AspNetCore.Http.HttpResults.Results<
-    Microsoft.AspNetCore.Http.HttpResults.Ok<Example.Api.Dtos.Responses.ApiResult>, 
-    Microsoft.AspNetCore.Http.HttpResults.BadRequest<Example.Api.Dtos.Responses.ApiResult>, 
-    Microsoft.AspNetCore.Http.HttpResults.InternalServerError<Example.Api.Dtos.Responses.ApiResult>, 
+    Microsoft.AspNetCore.Http.HttpResults.Ok<Example.Api.Dtos.Responses.ApiResult>,
+    Microsoft.AspNetCore.Http.HttpResults.BadRequest<Example.Api.Dtos.Responses.ApiResult>,
+    Microsoft.AspNetCore.Http.HttpResults.InternalServerError<Example.Api.Dtos.Responses.ApiResult>,
     Microsoft.AspNetCore.Http.HttpResults.StatusCodeHttpResult>;
 
 namespace Example.Api.Endpoints;
@@ -16,7 +18,7 @@ namespace Example.Api.Endpoints;
 /// API endpoints extensions for patients.
 /// </summary>
 public static class PatientApiEndpoints
-{   
+{
     /// <summary>
     /// Maps patient-related API endpoints.
     /// </summary>
@@ -90,8 +92,22 @@ public static class PatientApiEndpoints
         group.MapPost("/", async Task<RestApiResult> (
             CreatePatientRequest request,
             IPatientService patientService,
+            IValidator<CreatePatientRequest> validator,
             IOutputCacheStore cacheStore) =>
         {
+            var validationResult = await validator.ValidateAsync(request);
+
+            if (!validationResult.IsValid)
+            {
+                return new ApiResult<IDictionary<string, string[]>>
+                {
+                    Success = false,
+                    Code = ApiCode.InvalidRequest,
+                    Data = validationResult.ToDictionary(),
+                    Message = "Invalid request data.",
+                }.ToHttpResult();
+            }
+
             var result = await patientService
                 .CreatePatientAsync(request)
                 .TapOnSuccessAsync(async () => await cacheStore.EvictByTagAsync("patients", default));

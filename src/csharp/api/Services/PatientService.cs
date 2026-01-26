@@ -32,19 +32,27 @@ public class PatientService : BaseService, IPatientService
     private readonly IUnitOfWork _unitOfWork;
 
     /// <summary>
+    /// The DateTimeOffset provider.
+    /// </summary>
+    private readonly IDateTimeOffsetProvider _dateTimeOffsetProvider;
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="PatientService"/> class.
     /// </summary>
     /// <param name="logger">Application logger.</param>
     /// <param name="repository">The patient repository.</param>
     /// <param name="unitOfWork">The unit of work.</param>
+    /// <param name="dateTimeOffsetProvider">The DateTimeOffset provider.</param>
     public PatientService(
         ILogger<PatientService> logger,
         IPatientRepository repository,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IDateTimeOffsetProvider dateTimeOffsetProvider)
     {
         _logger = logger;
         _repository = repository;
         _unitOfWork = unitOfWork;
+        _dateTimeOffsetProvider = dateTimeOffsetProvider;
     }
 
     /// <inheritdoc />
@@ -95,12 +103,33 @@ public class PatientService : BaseService, IPatientService
     {
         var patient = new Patient
         {
-            Name = request.Name.Trim(),
+            Name = request.Name!.Trim(),
+            Age = request.Age!.Value,
+            Gender = request.Gender!.Value,
+            Email = request.Email?.Trim() ?? string.Empty,
+            PhoneNumber = request.PhoneNumber!.Trim(),
+            DateOfBirth = request.DateOfBirth!.Value,
+            FirstVisitDate = _dateTimeOffsetProvider.UtcNow,
+            Status = PatientStatus.Active,
             Orders =
             [
                 new()
                 {
-                    Instructions = request.OrderMessage.Trim(),
+                    Instructions = request.Order!.Instructions!.Trim(),
+                    NextVisitDate = request.Order.NextVisitDate,
+                    StartDate = request.Order.StartDate,
+                    EndDate = request.Order.EndDate,
+                    Type = request.Order.Type!.Value,
+                    Status = OrderStatus.Created,
+                    DispensedDate = request.Order.DispensedDate,
+                    Prescriptions = request.Order.Prescriptions!.Select(p => new Prescription
+                    {
+                        MedicationId = p.MedicationId!.Value,
+                        Dose = p.Dose!.Trim(),
+                        Frequency = p.Frequency!.Trim(),
+                        DurationInDays = p.DurationInDays!.Value,
+                        Route = p.Route!.Value,
+                    }).ToList(),
                 },
             ],
         };
