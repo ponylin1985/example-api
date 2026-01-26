@@ -34,9 +34,9 @@ public class CachedPatientRepository : IPatientRepository
     private readonly IOptionsMonitor<DistributedCacheEntryOptions> _cacheOptions;
 
     /// <summary>
-    /// The Redis database instance.
+    /// The Redis connection multiplexer.
     /// </summary>
-    private readonly IDatabase _redisDb;
+    private readonly IConnectionMultiplexer _redisConnection;
 
     /// <summary>
     /// The retry policy for cache operations.
@@ -57,21 +57,21 @@ public class CachedPatientRepository : IPatientRepository
     /// <param name="cache">The distributed cache used to store patient data.</param>
     /// <param name="cacheOptions">Cache entry options to configure cache expiration.</param>
     /// <param name="jsonOptions">JSON serializer options to handle reference loops.</param>
-    /// <param name="redis">The Redis connection multiplexer.</param>
+    /// <param name="redisConnection">The Redis connection multiplexer.</param>
     public CachedPatientRepository(
         ILogger<CachedPatientRepository> logger,
         IPatientRepository innerRepository,
         IDistributedCache cache,
         IOptionsMonitor<DistributedCacheEntryOptions> cacheOptions,
         JsonSerializerOptions jsonOptions,
-        IConnectionMultiplexer redis)
+        IConnectionMultiplexer redisConnection)
     {
         _logger = logger;
         _innerRepository = innerRepository;
         _cache = cache;
         _cacheOptions = cacheOptions;
         _jsonOptions = jsonOptions;
-        _redisDb = redis.GetDatabase();
+        _redisConnection = redisConnection;
 
         var jitterer = new Random();
         _retryPolicy = Policy
@@ -94,8 +94,9 @@ public class CachedPatientRepository : IPatientRepository
     /// <inheritdoc />
     public async Task<Patient?> GetPatientAsync(long id)
     {
-        string key = GetExistenceCacheKey(id);
-        var cachedData = await _cache.GetStringAsync(key);
+        var key = GetExistenceCacheKey(id);
+        var cachedData = await ExecuteCacheOperationAsync(
+            async () => await _cache.GetStringAsync(key));
 
         if (!string.IsNullOrWhiteSpace(cachedData))
         {
@@ -106,7 +107,7 @@ public class CachedPatientRepository : IPatientRepository
 
         if (patient is not null)
         {
-            await SaveToCacheAsync(patient);
+            _ = SaveToCacheAsync(patient);
         }
 
         return patient;
@@ -115,9 +116,11 @@ public class CachedPatientRepository : IPatientRepository
     /// <inheritdoc />
     public async Task<bool> IsExistPatientAsync(long id)
     {
-        string key = GetExistenceCacheKey(id);
+        var key = GetExistenceCacheKey(id);
+        var existed = await ExecuteCacheOperationAsync(async () =>
+            await _redisConnection.GetDatabase().KeyExistsAsync(key), false);
 
-        if (await _redisDb.KeyExistsAsync(key))
+        if (existed)
         {
             return true;
         }
@@ -149,6 +152,31 @@ public class CachedPatientRepository : IPatientRepository
     }
 
     /// <summary>
+    /// Executes a cache operation with error handling.
+    /// </summary>
+    /// <param name="cacheTask">The cache operation to execute.</param>
+    /// <param name="defaultValue">The default value to return if the cache operation fails.</param>
+    /// <typeparam name="T">The type of the value returned by the cache operation.</typeparam>
+    /// <returns>The return value of the cache operation, or the default value if the operation fails.</returns>
+    private async Task<T?> ExecuteCacheOperationAsync<T>(Func<Task<T>> cacheTask, T? defaultValue = default)
+    {
+        try
+        {
+            if (!_redisConnection.IsConnected)
+            {
+                return defaultValue;
+            }
+
+            return await _retryPolicy.ExecuteAsync(cacheTask);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "An error occurred during cache operation, bypassing to database.");
+            return defaultValue;
+        }
+    }
+
+    /// <summary>
     /// Gets the cache key for the existence of a patient with the specified ID.
     /// </summary>
     /// <param name="id">The id of the patient.</param>
@@ -168,9 +196,10 @@ public class CachedPatientRepository : IPatientRepository
 
         try
         {
-            await _retryPolicy.ExecuteAsync(async () =>
+            await ExecuteCacheOperationAsync(async () =>
             {
                 await _cache.SetStringAsync(key, patientJson, _cacheOptions.CurrentValue);
+                return true;
             });
         }
         catch (Exception ex)
