@@ -1,7 +1,8 @@
 using Example.Api.Dtos.Responses;
 using Example.Api.Enums;
-using System.Net;
+using Example.Api.Infrastructure;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Example.Api.Middlewares;
 
@@ -19,6 +20,18 @@ public class GlobalExceptionHandlerMiddleware
     /// Logger for the GlobalExceptionHandlerMiddleware.
     /// </summary>
     private readonly ILogger<GlobalExceptionHandlerMiddleware> _logger;
+
+    /// <summary>
+    /// JSON serializer options for consistent API responses.
+    /// </summary>
+    /// <returns></returns>
+    private static readonly JsonSerializerOptions _jsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        AllowTrailingCommas = true,
+        ReferenceHandler = ReferenceHandler.IgnoreCycles,
+    };
 
     /// <summary>
     /// Initializes a new instance of the <see cref="GlobalExceptionHandlerMiddleware"/> class.
@@ -44,35 +57,72 @@ public class GlobalExceptionHandlerMiddleware
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An unhandled exception occurred.");
             await HandleExceptionAsync(context, ex);
         }
     }
 
     /// <summary>
-    /// Handles exceptions that occur during the request pipeline.
+    /// Handles exceptions that occur during the http request pipeline.
     /// </summary>
-    /// <param name="context">The HTTP context.</param>
-    /// <param name="exception">The exception that occurred.</param>
-    /// <returns>A task representing the asynchronous operation.</returns>
-    private static Task HandleExceptionAsync(HttpContext context, Exception exception)
+    /// <param name="context"></param>
+    /// <param name="exception"></param>
+    /// <returns></returns>
+    private async Task HandleExceptionAsync(HttpContext context, Exception exception)
     {
         context.Response.ContentType = "application/json";
-        context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
 
-        var response = new ApiResult
+        var apiResult = exception switch
+        {
+            BusinessException bizEx => CreateFromBusinessException(context, bizEx),
+            _ => CreateFromUnhandledException(context, exception)
+        };
+
+        await context.Response.WriteAsJsonAsync(apiResult, _jsonOptions);
+    }
+
+    /// <summary>
+    /// Creates an ApiResult from a BusinessException.
+    /// </summary>
+    /// <param name="context"></param>
+    /// <param name="ex"></param>
+    /// <returns></returns>
+    private ApiResult CreateFromBusinessException(HttpContext context, BusinessException ex)
+    {
+        _logger.LogWarning(ex, "Operation failure due to business rule violation: {Message}", ex.Message);
+
+        context.Response.StatusCode = ex.ErrorCode switch
+        {
+            ApiCode.Success or ApiCode.NoDataFound or ApiCode.OperationFailed => StatusCodes.Status200OK,
+            ApiCode.InvalidRequest => StatusCodes.Status400BadRequest,
+            ApiCode.DataAccessError or ApiCode.UnknownError => StatusCodes.Status500InternalServerError,
+            ApiCode.OperationTimeout => StatusCodes.Status504GatewayTimeout,
+            _ => StatusCodes.Status500InternalServerError,
+        };
+
+        return new ApiResult
+        {
+            Success = false,
+            Code = ex.ErrorCode,
+            Message = ex.Message,
+        };
+    }
+
+    /// <summary>
+    /// Creates an ApiResult from an unhandled exception.
+    /// </summary>
+    /// <param name="context"></param>
+    /// <param name="ex"></param>
+    /// <returns></returns>
+    private ApiResult CreateFromUnhandledException(HttpContext context, Exception ex)
+    {
+        _logger.LogError(ex, "Unhandled System Error.");
+        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+
+        return new ApiResult
         {
             Success = false,
             Code = ApiCode.UnknownError,
-            Message = "An internal server error occurred. Please try again later.",
+            Message = "An internal server error occurred. Please try again later."
         };
-
-        var jsonOptions = new JsonSerializerOptions
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-        };
-
-        var json = JsonSerializer.Serialize(response, jsonOptions);
-        return context.Response.WriteAsync(json);
     }
 }

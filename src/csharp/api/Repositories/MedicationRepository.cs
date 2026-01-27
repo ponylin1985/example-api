@@ -1,3 +1,4 @@
+using Dapper;
 using Example.Api.Data;
 using Example.Api.Infrastructure;
 using Example.Api.Models;
@@ -11,6 +12,11 @@ namespace Example.Api.Repositories;
 public sealed class MedicationRepository : IMedicationRepository
 {
     /// <summary>
+    /// Database session for database operations.
+    /// </summary>
+    private readonly IDbSession _dbSession;
+
+    /// <summary>
     /// DbContext for database operations.
     /// </summary>
     private readonly ApplicationDbContext _dbContext;
@@ -21,6 +27,7 @@ public sealed class MedicationRepository : IMedicationRepository
     /// <param name="dbSession">The database session.</param>
     public MedicationRepository(IDbSession dbSession)
     {
+        _dbSession = dbSession;
         _dbContext = dbSession.DataContext as ApplicationDbContext
             ?? throw new ArgumentException("Invalid DbContext type in DbSession.");
     }
@@ -47,5 +54,21 @@ public sealed class MedicationRepository : IMedicationRepository
             .Medications
             .AsNoTracking()
             .AnyAsync(m => m.Id == id);
+    }
+
+    /// <summary>
+    /// Gets the count of existing medications from a list of IDs.
+    /// </summary>
+    /// <param name="medicationIds"></param>
+    /// <returns></returns>
+    public async Task<int> GetExistingMedicationCountAsync(IEnumerable<long> medicationIds)
+    {
+        const string sql = @"
+            SELECT COUNT(1) 
+            FROM medication
+            WHERE Id = ANY(@Ids); ";
+
+        var connection = await _dbSession.GetOpenConnectionAsync();
+        return await connection.ExecuteScalarAsync<int>(sql, new { Ids = medicationIds, });
     }
 }

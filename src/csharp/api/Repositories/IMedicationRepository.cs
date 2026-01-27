@@ -19,4 +19,11 @@ public interface IMedicationRepository
     /// <param name="id"></param>
     /// <returns></returns>
     Task<bool> IsExistMedicationAsync(long id);
+
+    /// <summary>
+    /// Gets the count of existing medications from a list of IDs.
+    /// </summary>
+    /// <param name="medicationIds"></param>
+    /// <returns></returns>
+    Task<int> GetExistingMedicationCountAsync(IEnumerable<long> medicationIds);
 }

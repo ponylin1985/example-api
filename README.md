@@ -586,6 +586,83 @@ Validators/                           ← 請求資料驗證器
 - **Write-Through** - 更新時同步清除快取 (Http Output Caching + Redis Cache)
 - **Decorator Pattern** - 透過裝飾器添加 Redis 快取功能，不影響原有 Repository
 
+### Make Your Production Code Like BDD Style
+
+- BDD (Behavior-Driven Development) 強調以行為為導向的開發方式，讓程式碼更具可讀性和可維護性。
+  - Given (前置條件)
+  - When (行為/動作)
+  - Then (結果/期望)
+- 最重要的兩點: 
+  - **讓程式碼的「意圖」(What - Happy Path) 清晰，而不是「怎麼實作」(How)**。
+  - 不要只有在寫 Unit Test 時才使用 BDD 風格，**在撰寫生產程式碼時也應該採用 BDD 風格**，讓程式碼更具可讀性和可維護性。
+- 範例: [src/csharp/api/Services/PatientService.cs AddPatientAsync 方法](src/csharp/api/Services/PatientService.cs)
+
+```csharp
+public async Task<ApiResult<PatientDto>> AddPatientAsync(CreatePatientRequest request)
+{
+    // BDD Style: Given (Guard Clauses)
+    var patient = MapToEntity(request);
+    await EnsureEmailUniqueAsync();
+    await EnsurePhoneNumberUniqueAsync();
+    await EnsurePrescriptionValidAsync();
+
+    // BDD Style: When (Action)
+    var createdPatient = await _patientRepository.AddAsync(patient);
+    await _unitOfWork.SaveChangesAsync();
+
+    // BDD Style: Then (Assertions)
+    ShouldCreatedSuccessfully();
+    return SuccessResult(createdPatient.ToDto());
+}
+```
+
+- 或者至少類似以下的範例
+
+```csharp
+public async Task<ApiResult<PatientDto>> AddPatientAsync(CreatePatientRequest request)
+{
+    var patient = MapToEntity(request);
+    
+    // Guard Clauses
+    if (!await IsEmailDuplicatedAsync())
+    {
+        _logger.LogWarning("Email {Email} is already in use.", patient.Email);
+        return FailureResult<PatientDto>(ApiCode.OperationFailed, "Email is already in use.");
+    }
+
+    // Guard Clauses
+    if (!await IsPhoneNumberDuplicatedAsync())
+    {
+        _logger.LogWarning("Phone number {PhoneNumber} is already in use.", patient.PhoneNumber);
+        return FailureResult<PatientDto>(ApiCode.OperationFailed, "Phone number is already in use.");
+    }
+
+    // Guard Clauses
+    if (!await IsPrescriptionValidAsync())
+    {
+        _logger.LogWarning("One or more prescriptions have invalid medication IDs.");
+        return FailureResult<PatientDto>(
+            ApiCode.OperationFailed, "One or more prescriptions have invalid medication IDs.");
+    }
+
+    // When (Action)
+    var createdPatient = await _patientRepository.AddAsync(patient);
+    await _unitOfWork.SaveChangesAsync();
+
+    // Then (Assertions)
+    if (!IsCreatedSuccessfully())
+    {
+        _logger.LogError("Failed to create patient: {Patient}", patient);
+        return FailureResult<PatientDto>(ApiCode.OperationFailed, "Failed to create patient.");
+    }
+
+    return SuccessResult(createdPatient.ToDto());
+}
+```
+
+- 現代的程式碼寫作風格繁多，OOP、Functional Programming、Fluent Style、BDD Style、DDD 等等，每種各有其優缺點，你可以自行挑選一種習慣的風格來撰寫。
+- 但最重要的是撰寫出**邏輯正確、高效能、高可讀性易於讓「其他人」看得懂，維護得動的程式碼**，而不是只有你自己看得懂的程式碼。
+
 ---
 
 ## 📝 開發備註
