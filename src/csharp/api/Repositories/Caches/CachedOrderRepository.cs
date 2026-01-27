@@ -5,7 +5,6 @@ using Polly;
 using Polly.Retry;
 using StackExchange.Redis;
 using System.Text.Json;
-using Order = Example.Api.Models.Order;
 
 namespace Example.Api.Repositories.Caches;
 
