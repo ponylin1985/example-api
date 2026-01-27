@@ -28,5 +28,5 @@ public interface IPatientService
     /// </summary>
     /// <param name="request">The request containing patient information.</param>
     /// <returns>The created patient.</returns>
-    Task<ApiResult<PatientDto>> CreatePatientAsync(CreatePatientRequest request);
+    Task<ApiResult<PatientDto>> AddPatientAsync(CreatePatientRequest request);
 }

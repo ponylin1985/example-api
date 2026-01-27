@@ -35,7 +35,7 @@ public class UnitOfWork : IUnitOfWork
             .Or<NpgsqlException>(ex => ex.IsTransient)
             .Or<NpgsqlException>(ex => ex.SqlState == "40001")
             .Or<TimeoutException>()
-            .WaitAndRetryAsync(3, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)));
+            .WaitAndRetryAsync(3, retryAttempt => TimeSpan.FromMilliseconds(200 * Math.Pow(2, retryAttempt - 1)));
     }
 
     /// <summary>

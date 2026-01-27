@@ -11,7 +11,7 @@ namespace Example.Api.Repositories.Caches;
 /// <summary>
 /// Decorator for IOrderRepository that adds caching.
 /// </summary>
-public class CachedOrderRepository : IOrderRepository
+public sealed class CachedOrderRepository : IOrderRepository
 {
     /// <summary>
     /// Logger for the CachedOrderRepository.

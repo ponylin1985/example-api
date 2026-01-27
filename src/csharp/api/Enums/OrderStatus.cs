@@ -8,25 +8,25 @@ public enum OrderStatus : byte
     /// <summary>
     /// Created. 已建立
     /// </summary>
-    Created,
+    Created = 1,
 
     /// <summary>
     /// Dispensed. 已發藥/已配藥
     /// </summary>
-    Dispensed,
+    Dispensed = 2,
 
     /// <summary>
     /// Executed. 已執行
     /// </summary>
-    Executed,
+    Executed = 3,
 
     /// <summary>
     /// Cancelled. 已取消
     /// </summary>
-    Cancelled,
+    Cancelled = 4,
 
     /// <summary>
     /// Expired. 已過期
     /// </summary>
-    Expired,
+    Expired = 5,
 }

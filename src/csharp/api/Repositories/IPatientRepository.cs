@@ -29,6 +29,20 @@ public interface IPatientRepository
     Task<bool> IsExistPatientAsync(long id);
 
     /// <summary>
+    /// Checks if a patient exists by their email.
+    /// </summary>
+    /// <param name="email">The email of the patient.</param>
+    /// <returns>True if the patient exists, otherwise false.</returns>
+    Task<bool> IsExistPatentByEmailAsync(string email);
+
+    /// <summary>
+    /// Checks if a patient exists by their phone number.
+    /// </summary>
+    /// <param name="phoneNumber">The phone number of the patient.</param>
+    /// <returns>True if the patient exists, otherwise false.</returns>
+    Task<bool> IsExistPatientByPhoneAsync(string phoneNumber);
+
+    /// <summary>
     /// Retrieves a patient by their id.
     /// </summary>
     /// <param name="id">The id of the patient.</param>

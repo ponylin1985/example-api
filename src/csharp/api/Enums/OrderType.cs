@@ -9,30 +9,30 @@ public enum OrderType : byte
     /// <summary>
     /// Prescription order. 處方醫囑
     /// </summary>
-    Prescription,
+    Prescription = 1,
 
     /// <summary>
     /// Laboratory order. 檢驗醫囑
     /// </summary>
-    Lab,
+    Lab = 2,
 
     /// <summary>
     /// Imaging order. 影像醫囑
     /// </summary>
-    Imaging,
+    Imaging = 3,
 
     /// <summary>
     /// Treatment order. 治療醫囑
     /// </summary>
-    Treatment,
+    Treatment = 4,
 
     /// <summary>
     /// Surgery order. 手術醫囑
     /// </summary>
-    Surgery,
+    Surgery = 5,
 
     /// <summary>
     /// Other order types. 其他
     /// </summary>
-    Other,
+    Other = 6,
 }
