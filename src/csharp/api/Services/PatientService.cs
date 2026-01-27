@@ -72,14 +72,7 @@ public class PatientService : BaseService, IPatientService
             request.PageNumber,
             request.PageSize);
 
-        if (IsNoDataFound())
-        {
-            _logger.LogInformation(
-                "No patients found for the given date range: {StartTime} to {EndTime}",
-                request.StartTime,
-                request.EndTime);
-            return NoDataFoundPagedResult<PatientDto>();
-        }
+        ShouldFoundPatients();
 
         var dtos = queryResult.Data.ToDtos();
         return SuccessPagedResult(
@@ -88,26 +81,118 @@ public class PatientService : BaseService, IPatientService
             request.PageSize,
             queryResult.TotalCount);
 
-        bool IsNoDataFound() =>
-            queryResult.Data.IsNullOrEmpty() || queryResult.TotalCount == 0;
+        void ShouldFoundPatients()
+        {
+            if (queryResult.Data.IsNullOrEmpty() || queryResult.TotalCount == 0)
+            {
+                _logger.LogInformation(
+                    "No patients found for the given date range: {StartTime} to {EndTime}",
+                    request.StartTime,
+                    request.EndTime);
+                throw new BusinessException(ApiCode.NoDataFound, "No patients found.");
+            }
+        }
     }
 
     /// <inheritdoc />
     public async Task<ApiResult<PatientDto>> GetPatientAsync(long id)
     {
         var patient = await _patientRepository.GetPatientAsync(id);
+        ShouldFoundPatient();
+        return SuccessResult(patient!.ToDto());
 
-        if (patient is null)
+        void ShouldFoundPatient()
         {
-            _logger.LogInformation("Patient with ID {Id} not found.", id);
-            return NoDataFoundResult<PatientDto>();
+            if (patient is null)
+            {
+                _logger.LogWarning("Patient with ID {Id} was not found.", id);
+                throw new BusinessException(ApiCode.NoDataFound, "Patient not found.");
+            }
         }
-
-        return SuccessResult(patient.ToDto());
     }
 
     /// <inheritdoc />
     public async Task<ApiResult<PatientDto>> AddPatientAsync(CreatePatientRequest request)
+    {
+        // BDD Style: Given (Guard Clauses)
+        var patient = MapToEntity(request);
+        await EnsureEmailUniqueAsync();
+        await EnsurePhoneNumberUniqueAsync();
+        await EnsurePrescriptionValidAsync();
+
+        // BDD Style: When (Action)
+        var createdPatient = await _patientRepository.AddAsync(patient);
+        await _unitOfWork.SaveChangesAsync();
+
+        // BDD Style: Then (Assertions)
+        ShouldCreatedSuccessfully();
+        return SuccessResult(createdPatient.ToDto());
+
+        async Task EnsureEmailUniqueAsync()
+        {
+            if (string.IsNullOrWhiteSpace(patient.Email))
+            {
+                return;
+            }
+
+            if (await _patientRepository.IsExistPatentByEmailAsync(patient.Email))
+            {
+                _logger.LogWarning("Email {Email} is already in use.", patient.Email);
+                throw new BusinessException(ApiCode.OperationFailed, "Email is already in use.");
+            }
+        }
+
+        async Task EnsurePhoneNumberUniqueAsync()
+        {
+            if (await _patientRepository.IsExistPatientByPhoneAsync(patient.PhoneNumber))
+            {
+                _logger.LogWarning("Phone number {PhoneNumber} is already in use.", patient.PhoneNumber);
+                throw new BusinessException(ApiCode.OperationFailed, "Phone number is already in use.");
+            }
+        }
+
+        async Task EnsurePrescriptionValidAsync()
+        {
+            var medicationIds = patient.Orders
+                .SelectMany(o => o.Prescriptions)
+                .Select(p => p.MedicationId)
+                .Distinct()
+                .ToList();
+
+            if (medicationIds.Count == 0)
+            {
+                throw new BusinessException(
+                    ApiCode.OperationFailed, "At least one prescription with valid medication ID is required.");
+            }
+
+            var existingCount = await _medicationRepository.GetExistingMedicationCountAsync(medicationIds);
+
+            if (existingCount != medicationIds.Count)
+            {
+                _logger.LogWarning(
+                    "One or more medication IDs in prescriptions are invalid. Provided IDs: {MedicationIds}",
+                    string.Join(", ", medicationIds));
+                throw new BusinessException(
+                    ApiCode.OperationFailed, "One or more prescriptions have invalid medication IDs.");
+            }
+        }
+
+        void ShouldCreatedSuccessfully()
+        {
+            if (createdPatient.Id <= 0)
+            {
+                _logger.LogError("Failed to create patient: {Patient}", patient);
+                throw new BusinessException(ApiCode.OperationFailed, "Failed to create patient.");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Add new patient.
+    /// </summary>
+    /// <param name="request"></param>
+    /// <returns></returns>
+    public async Task<ApiResult<PatientDto>> AddPatientAsync_ProcedureStyleBdd(CreatePatientRequest request)
     {
         var patient = MapToEntity(request);
 
@@ -169,8 +254,10 @@ public class PatientService : BaseService, IPatientService
             {
                 foreach (var prescription in order.Prescriptions)
                 {
-                    var exists = await _medicationRepository.IsExistMedicationAsync(prescription.MedicationId);
-                    return exists;
+                    if (!await _medicationRepository.IsExistMedicationAsync(prescription.MedicationId))
+                    {
+                        return false;
+                    }
                 }
             }
 
