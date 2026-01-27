@@ -1,4 +1,5 @@
 using Example.Api.Enums;
+using Example.Api.Models;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
@@ -55,6 +56,20 @@ public record CreatePatientRequest
     [Required()]
     [DataType(DataType.Date)]
     public DateOnly? DateOfBirth { get; init; }
+
+    /// <summary>
+    /// Address of the patient.
+    /// </summary>
+    /// <value></value>
+    public Address? Address { get; init; }
+
+    /// <summary>
+    /// The ID of the user creating the patient.
+    /// </summary>
+    /// <value></value>
+    [Required()]
+    [MaxLength(50)]
+    public string? UserId { get; init; }
 
     /// <summary>
     /// The order associated with the patient.

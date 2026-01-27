@@ -70,7 +70,7 @@ public class PatientDbConfiguration : IEntityTypeConfiguration<Patient>
         entity
             .Property(p => p.DateOfBirth)
             .HasColumnName("date_of_birth")
-            .HasColumnType("timestamptz")
+            .HasColumnType("date")
             .IsRequired();
 
         entity

@@ -80,3 +80,4 @@ public record PatientDto : BaseDto
     /// <returns></returns>
     public IReadOnlyList<PatientOrderDto> Orders { get; init; } = [];
 }
+

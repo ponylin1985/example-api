@@ -109,7 +109,7 @@ public static class PatientApiEndpoints
             }
 
             var result = await patientService
-                .CreatePatientAsync(request)
+                .AddPatientAsync(request)
                 .TapOnSuccessAsync(async () => await cacheStore.EvictByTagAsync("patients", default));
             return result.ToHttpResult();
         })

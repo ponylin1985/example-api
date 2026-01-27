@@ -11,7 +11,7 @@ namespace Example.Api.Repositories.Caches;
 /// <summary>
 /// Decorator for IPatientRepository that adds caching.
 /// </summary>
-public class CachedPatientRepository : IPatientRepository
+public sealed class CachedPatientRepository : IPatientRepository
 {
     /// <summary>
     /// Logger for the CachedPatientRepository.
@@ -127,6 +127,18 @@ public class CachedPatientRepository : IPatientRepository
 
         var exists = await _innerRepository.IsExistPatientAsync(id);
         return exists;
+    }
+
+    /// <inheritdoc />
+    public Task<bool> IsExistPatentByEmailAsync(string email)
+    {
+        return _innerRepository.IsExistPatentByEmailAsync(email);
+    }
+
+    /// <inheritdoc />
+    public Task<bool> IsExistPatientByPhoneAsync(string phoneNumber)
+    {
+        return _innerRepository.IsExistPatientByPhoneAsync(phoneNumber);
     }
 
     /// <inheritdoc />

@@ -36,6 +36,18 @@ public class ApplicationDbContext : DbContext
     public DbSet<PatientOrder> Orders { get; set; } = default!;
 
     /// <summary>
+    /// Gets or sets the DbSet for Prescriptions.
+    /// </summary>
+    /// <value></value>
+    public DbSet<Prescription> Prescriptions { get; set; } = default!;
+
+    /// <summary>
+    /// Gets or sets the DbSet for Prescriptions.
+    /// </summary>
+    /// <value></value>
+    public DbSet<Medication> Medications { get; set; } = default!;
+
+    /// <summary>
     /// Configures the schema needed for the application context.
     /// </summary>
     /// <param name="modelBuilder">The builder being used to construct the model for this context.</param>

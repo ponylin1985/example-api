@@ -7,9 +7,12 @@ namespace Example.Api.Validators;
 /// <summary>
 /// Request validator for CreatePatientRequest.
 /// </summary>
-public class CreatePatientRequestValidator : AbstractValidator<CreatePatientRequest>
+public sealed class CreatePatientRequestValidator : AbstractValidator<CreatePatientRequest>
 {
-    
+    /// <summary>
+    /// Constructor for CreatePatientRequestValidator.
+    /// </summary>
+    /// <param name="sanitizer"></param>
     public CreatePatientRequestValidator(IHtmlSanitizer sanitizer)
     {
         RuleFor(x => x.Name)
@@ -37,11 +40,23 @@ public class CreatePatientRequestValidator : AbstractValidator<CreatePatientRequ
             .NotEmpty().WithMessage("PhoneNumber is required.")
             .MaximumLength(10)
             .Matches(@"^$|^[0-9]+$").WithMessage("PhoneNumber must be numeric.")
+            .Sanitized(sanitizer)
             .WithName("phoneNumber");
 
         RuleFor(x => x.DateOfBirth)
             .NotNull().WithMessage("DateOfBirth is required.")
             .InclusiveBetween(new DateOnly(1900, 1, 1), new DateOnly(2100, 12, 31))
             .WithName("dateOfBirth");
+
+        RuleFor(x => x.UserId)
+            .NotEmpty().WithMessage("UserId is required.")
+            .MaximumLength(50).WithMessage("UserId cannot exceed 50 characters.")
+            .Sanitized(sanitizer)
+            .WithName("userId");
+
+        RuleFor(x => x.Order)
+            .NotNull().WithMessage("Order is required.")
+            .SetValidator(new CreatePatientOrderDtoValidator(sanitizer) as IValidator<CreatePatientOrderDto?>)
+            .WithName("orders");
     }
 }

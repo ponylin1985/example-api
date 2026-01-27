@@ -9,7 +9,7 @@ namespace Example.Api.Repositories;
 /// <summary>
 /// Data repository for managing Orders.
 /// </summary>
-public class OrderRepository : IOrderRepository
+public sealed class OrderRepository : IOrderRepository
 {
     /// <summary>
     /// Database session for database operations.
@@ -37,6 +37,7 @@ public class OrderRepository : IOrderRepository
     {
         return await _dbContext.Orders
             .AsNoTracking()
+            .Include(o => o.Prescriptions)
             .FirstOrDefaultAsync(o => o.Id == id);
     }
 

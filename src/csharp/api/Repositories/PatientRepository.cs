@@ -8,7 +8,7 @@ namespace Example.Api.Repositories;
 /// <summary>
 /// Data repository for managing patients.
 /// </summary>
-public class PatientRepository : IPatientRepository
+public sealed class PatientRepository : IPatientRepository
 {
     /// <summary>
     /// DbContext for database operations.
@@ -18,7 +18,7 @@ public class PatientRepository : IPatientRepository
     /// <summary>
     /// Initializes a new instance of the <see cref="PatientRepository"/> class.
     /// </summary>
-    /// <param name="dbSession"></param>
+    /// <param name="dbSession">The database session.</param>
     public PatientRepository(IDbSession dbSession)
     {
         _dbContext = dbSession.DataContext as ApplicationDbContext
@@ -40,6 +40,7 @@ public class PatientRepository : IPatientRepository
 
         var data = await query
             .Include(p => p.Orders.OrderByDescending(o => o.Id))
+            .ThenInclude(o => o.Prescriptions.OrderByDescending(pr => pr.Id))
             .OrderByDescending(p => p.Id)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
@@ -58,11 +59,30 @@ public class PatientRepository : IPatientRepository
     }
 
     /// <inheritdoc />
+    public async Task<bool> IsExistPatentByEmailAsync(string email)
+    {
+        return await _dbContext
+            .Patients
+            .AsNoTracking()
+            .AnyAsync(p => p.Email == email);
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> IsExistPatientByPhoneAsync(string phoneNumber)
+    {
+        return await _dbContext
+            .Patients
+            .AsNoTracking()
+            .AnyAsync(p => p.PhoneNumber == phoneNumber);
+    }
+
+    /// <inheritdoc />
     public async Task<Patient?> GetPatientAsync(long id)
     {
         return await _dbContext.Patients
             .AsNoTracking()
             .Include(p => p.Orders.OrderByDescending(o => o.Id))
+            .ThenInclude(o => o.Prescriptions.OrderByDescending(pr => pr.Id))
             .FirstOrDefaultAsync(p => p.Id == id);
     }
 
@@ -72,6 +92,7 @@ public class PatientRepository : IPatientRepository
         return await _dbContext.Patients
             .AsNoTracking()
             .Include(p => p.Orders.OrderByDescending(o => o.Id))
+            .ThenInclude(o => o.Prescriptions.OrderByDescending(pr => pr.Id))
             .FirstOrDefaultAsync(p => p.Name == name);
     }
 
