@@ -9,7 +9,7 @@ namespace Example.Api.Infrastructure;
 /// <summary>
 /// Implementation of IDbSession using Entity Framework Core.
 /// </summary>
-public class ApplicationDbSession : IDbSession
+public class ApplicationDbSession : IDbSession, IAsyncDisposable
 {
     /// <summary>
     /// The Entity Framework Core DbContext instance for the current session scope.
@@ -42,14 +42,8 @@ public class ApplicationDbSession : IDbSession
     /// <returns></returns>
     public async Task<DbConnection> GetOpenConnectionAsync(CancellationToken ct = default)
     {
-        var connection = _dbContext.Database.GetDbConnection();
-
-        if (connection.State != ConnectionState.Open)
-        {
-            await connection.OpenAsync(ct);
-        }
-
-        return connection;
+        await _dbContext.Database.OpenConnectionAsync(ct);
+        return _dbContext.Database.GetDbConnection();
     }
 
     /// <summary>
@@ -100,6 +94,7 @@ public class ApplicationDbSession : IDbSession
         {
             await _currentTransaction.DisposeAsync();
             _currentTransaction = default;
+            await _dbContext.Database.CloseConnectionAsync();
         }
     }
 
@@ -123,6 +118,7 @@ public class ApplicationDbSession : IDbSession
         {
             await _currentTransaction.DisposeAsync();
             _currentTransaction = default;
+            await _dbContext.Database.CloseConnectionAsync();
         }
     }
 
@@ -133,6 +129,21 @@ public class ApplicationDbSession : IDbSession
     {
         _currentTransaction?.Dispose();
         _dbContext.Dispose();
+        GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
+    /// Asynchronously disposes the database session and its resources.
+    /// </summary>
+    /// <returns></returns>
+    public async ValueTask DisposeAsync()
+    {
+        if (_currentTransaction is not null)
+        {
+            await _currentTransaction.DisposeAsync();
+        }
+
+        await _dbContext.DisposeAsync();
         GC.SuppressFinalize(this);
     }
 }
