@@ -165,7 +165,7 @@ public class PatientOrderService : BaseService, IPatientOrderService
         PatientOrder? updatedOrder = default;
         await WhenUpdateOrderAsync();
         ShouldUpdatedSuccessfully();
-        return SuccessResult(updatedOrder!.ToDto());
+        return SuccessResult(updatedOrder!.ToDto(includePrescriptions: false));
 
         async Task WhenUpdateOrderAsync()
         {
