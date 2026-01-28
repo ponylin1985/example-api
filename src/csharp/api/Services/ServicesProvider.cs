@@ -1,3 +1,5 @@
+using Example.Api.Services.DomainServices;
+
 namespace Example.Api.Services;
 
 /// <summary>
@@ -14,6 +16,7 @@ public static class ServicesProvider
     {
         services.AddScoped<IPatientService, PatientService>();
         services.AddScoped<IOrderService, OrderService>();
+        services.AddScoped<IOrderPrescriptionPolicy, OrderPrescriptionPolicy>();
         return services;
     }
 }

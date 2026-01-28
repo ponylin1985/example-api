@@ -7,6 +7,7 @@ using Example.Api.Infrastructure;
 using Example.Api.Mappers;
 using Example.Api.Models;
 using Example.Api.Repositories;
+using Example.Api.Services.DomainServices;
 
 namespace Example.Api.Services;
 
@@ -31,6 +32,11 @@ public class PatientService : BaseService, IPatientService
     private readonly IMedicationRepository _medicationRepository;
 
     /// <summary>
+    /// Order prescription policy for validations.
+    /// </summary>
+    private readonly IOrderPrescriptionPolicy _orderPrescriptionPolicy;
+
+    /// <summary>
     /// Unit of work for managing transactions.
     /// </summary>
     private readonly IUnitOfWork _unitOfWork;
@@ -46,18 +52,21 @@ public class PatientService : BaseService, IPatientService
     /// <param name="logger">Application logger.</param>
     /// <param name="patientRepository">The patient repository.</param>
     /// <param name="medicationRepository">The medication repository.</param>
+    /// <param name="orderPrescriptionPolicy">The order prescription policy.</param>
     /// <param name="unitOfWork">The unit of work.</param>
     /// <param name="dateTimeOffsetProvider">The DateTimeOffset provider.</param>
     public PatientService(
         ILogger<PatientService> logger,
         IPatientRepository patientRepository,
         IMedicationRepository medicationRepository,
+        IOrderPrescriptionPolicy orderPrescriptionPolicy,
         IUnitOfWork unitOfWork,
         IDateTimeOffsetProvider dateTimeOffsetProvider)
     {
         _logger = logger;
         _patientRepository = patientRepository;
         _medicationRepository = medicationRepository;
+        _orderPrescriptionPolicy = orderPrescriptionPolicy;
         _unitOfWork = unitOfWork;
         _dateTimeOffsetProvider = dateTimeOffsetProvider;
     }
@@ -181,28 +190,7 @@ public class PatientService : BaseService, IPatientService
 
         async Task EnsurePrescriptionValidAsync()
         {
-            var medicationIds = patient.Orders
-                .SelectMany(o => o.Prescriptions)
-                .Select(p => p.MedicationId)
-                .Distinct()
-                .ToList();
-
-            if (medicationIds.Count == 0)
-            {
-                throw new BusinessException(
-                    ApiCode.OperationFailed, "At least one prescription with valid medication ID is required.");
-            }
-
-            var existingCount = await _medicationRepository.GetExistingMedicationCountAsync(medicationIds);
-
-            if (existingCount != medicationIds.Count)
-            {
-                _logger.LogWarning(
-                    "One or more medication IDs in prescriptions are invalid. Provided IDs: {MedicationIds}",
-                    string.Join(", ", medicationIds));
-                throw new BusinessException(
-                    ApiCode.OperationFailed, "One or more prescriptions have invalid medication IDs.");
-            }
+            await _orderPrescriptionPolicy.EnsureMedicationIdsValidAsync(patient.Orders.FirstOrDefault()!);
         }
 
         async Task WhenAddPatientAsync()

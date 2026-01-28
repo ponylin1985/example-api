@@ -7,6 +7,7 @@ using Example.Api.Infrastructure;
 using Example.Api.Mappers;
 using Example.Api.Models;
 using Example.Api.Repositories;
+using Example.Api.Services.DomainServices;
 
 namespace Example.Api.Services;
 
@@ -26,6 +27,11 @@ public class OrderService : BaseService, IOrderService
     private readonly IDateTimeOffsetProvider _dateTimeOffsetProvider;
 
     /// <summary>
+    /// Order prescription policy for validations.
+    /// </summary>
+    private readonly IOrderPrescriptionPolicy _orderPrescriptionPolicy;
+
+    /// <summary>
     /// Order data repository.
     /// </summary>
     private readonly IOrderRepository _orderRepository;
@@ -34,11 +40,6 @@ public class OrderService : BaseService, IOrderService
     /// Patient data repository.
     /// </summary>
     private readonly IPatientRepository _patientRepository;
-
-    /// <summary>
-    /// Medication data repository.
-    /// </summary>
-    private readonly IMedicationRepository _medicationRepository;
 
     /// <summary>
     /// Unit of work for managing transactions.
@@ -50,23 +51,23 @@ public class OrderService : BaseService, IOrderService
     /// </summary>
     /// <param name="logger">Application logger.</param>
     /// <param name="dateTimeOffsetProvider">The date time offset provider.</param>
+    /// <param name="orderPrescriptionPolicy">The order prescription policy.</param>
     /// <param name="orderRepository">The order repository.</param>
     /// <param name="patientRepository">The patient repository.</param>
-    /// <param name="medicationRepository">The medication repository.</param>
     /// <param name="unitOfWork">The unit of work.</param>
     public OrderService(
         ILogger<OrderService> logger,
         IDateTimeOffsetProvider dateTimeOffsetProvider,
+        IOrderPrescriptionPolicy orderPrescriptionPolicy,
         IOrderRepository orderRepository,
         IPatientRepository patientRepository,
-        IMedicationRepository medicationRepository,
         IUnitOfWork unitOfWork)
     {
         _logger = logger;
         _dateTimeOffsetProvider = dateTimeOffsetProvider;
+        _orderPrescriptionPolicy = orderPrescriptionPolicy;
         _orderRepository = orderRepository;
         _patientRepository = patientRepository;
-        _medicationRepository = medicationRepository;
         _unitOfWork = unitOfWork;
     }
 
@@ -81,7 +82,7 @@ public class OrderService : BaseService, IOrderService
         ShouldFoundPatientOrder();
         return SuccessResult(patientOrder!.ToDto());
 
-        void GivenOrderId() => 
+        void GivenOrderId() =>
             orderId = id;
 
         async Task WhenQueryingPatientAsync() =>
@@ -101,6 +102,8 @@ public class OrderService : BaseService, IOrderService
     public async Task<ApiResult<PatientOrderDto>> AddPatientOrderAsync(CreateOrderRequest request)
     {
         PatientOrder? createdOrder = default;
+        var order = MapToEntity(request);
+
         await EnsurePatientExists();
         await EnsurePrescriptionValidAsync();
         await WhenAddPatientOrder();
@@ -109,45 +112,24 @@ public class OrderService : BaseService, IOrderService
 
         async Task EnsurePatientExists()
         {
-            var patientExists = await _patientRepository.IsExistPatientAsync(request.PatientId!.Value);
+            var patientExists = await _patientRepository.IsExistPatientAsync(order.PatientId);
 
             if (!patientExists)
             {
-                _logger.LogWarning("Patient with ID {PatientId} not found for order creation.", request.PatientId);
+                _logger.LogWarning("Patient with ID {PatientId} not found for order creation.", order.PatientId);
                 throw new BusinessException(
-                    ApiCode.InvalidRequest, 
-                    $"Patient with ID {request.PatientId} does not exist.");
+                    ApiCode.InvalidRequest,
+                    $"Patient with ID {order.PatientId} does not exist.");
             }
         }
 
         async Task EnsurePrescriptionValidAsync()
         {
-            var medicationIds = request.Prescriptions!
-                .Select(p => p.MedicationId!.Value)
-                .Distinct()
-                .ToList();
-
-            if (medicationIds.Count == 0)
-            {
-                throw new BusinessException(
-                    ApiCode.OperationFailed, "At least one prescription with valid medication ID is required.");
-            }
-
-            var existingCount = await _medicationRepository.GetExistingMedicationCountAsync(medicationIds);
-
-            if (existingCount != medicationIds.Count)
-            {
-                _logger.LogWarning(
-                    "One or more medication IDs in prescriptions are invalid. Provided IDs: {MedicationIds}",
-                    string.Join(", ", medicationIds));
-                throw new BusinessException(
-                    ApiCode.OperationFailed, "One or more prescriptions have invalid medication IDs.");
-            }
+            await _orderPrescriptionPolicy.EnsureMedicationIdsValidAsync(order);
         }
 
         async Task WhenAddPatientOrder()
         {
-            var order = MapToEntity(request);
             createdOrder = await _orderRepository.AddAsync(order);
             await _unitOfWork.SaveChangesAsync();
         }
