@@ -23,6 +23,7 @@ public static class PrescriptionMapper
         {
             Id = prescription.Id,
             MedicationId = prescription.MedicationId,
+            Dose = prescription.Dose,
             Frequency = prescription.Frequency,
             DurationInDays = prescription.DurationInDays,
             Route = prescription.Route,

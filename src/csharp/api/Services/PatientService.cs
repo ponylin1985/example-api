@@ -136,7 +136,7 @@ public class PatientService : BaseService, IPatientService
         ShouldFoundPatient();
         return SuccessResult(patient!.ToDto());
 
-        void GivenPatientId() => 
+        void GivenPatientId() =>
             patientId = id;
 
         async Task WhenQueryingPatientAsync() =>
@@ -202,7 +202,7 @@ public class PatientService : BaseService, IPatientService
         void ShouldCreatedSuccessfully()
         {
             if (createdPatient is not { Id: > 0 })
-            {   
+            {
                 _logger.LogError("Failed to create patient: {Patient}", patient);
                 throw new BusinessException(ApiCode.OperationFailed, "Failed to create patient.");
             }
@@ -249,7 +249,7 @@ public class PatientService : BaseService, IPatientService
             Name = request.Name!.Trim(),
             Age = request.Age!.Value,
             Gender = request.Gender!.Value,
-            Email = request.Email?.Trim() ?? string.Empty,
+            Email = string.IsNullOrWhiteSpace(request.Email) ? null : request.Email.Trim(),
             PhoneNumber = request.PhoneNumber!.Trim(),
             DateOfBirth = request.DateOfBirth!.Value,
             Address = request.Address,
@@ -301,7 +301,7 @@ public class PatientService : BaseService, IPatientService
             Name = request.Name!.Trim(),
             Age = request.Age!.Value,
             Gender = request.Gender!.Value,
-            Email = request.Email?.Trim() ?? string.Empty,
+            Email = string.IsNullOrWhiteSpace(request.Email) ? null : request.Email.Trim(),
             PhoneNumber = request.PhoneNumber!.Trim(),
             DateOfBirth = request.DateOfBirth!.Value,
             Address = request.Address,

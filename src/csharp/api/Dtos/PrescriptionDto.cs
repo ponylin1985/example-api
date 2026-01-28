@@ -30,13 +30,13 @@ public record PrescriptionDto : BaseDto
     /// The dosage information for the prescription.
     /// </summary>
     /// <value></value>
-    public string Dose { get; set; } = string.Empty;
+    public string? Dose { get; set; }
 
     /// <summary>
     /// The frequency of administration for the prescription.
     /// </summary>
     /// <value></value>
-    public string Frequency { get; set; } = string.Empty;
+    public string? Frequency { get; set; }
 
     /// <summary>
     /// The duration in days for the prescription.

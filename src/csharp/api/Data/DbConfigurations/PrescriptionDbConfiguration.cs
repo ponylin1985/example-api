@@ -1,6 +1,7 @@
 using Example.Api.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Example.Api.Data.DbConfigurations;
 
@@ -14,8 +15,14 @@ public class PrescriptionDbConfiguration : IEntityTypeConfiguration<Prescription
     /// </summary>
     public void Configure(EntityTypeBuilder<Prescription> entity)
     {
-        entity.ToTable("prescription");
-        entity.HasKey(p => p.Id);
+        var emptyStringToNullConverter = new ValueConverter<string?, string?>(
+            v => string.IsNullOrWhiteSpace(v) ? null : v,
+            v => v
+        );
+
+        entity
+            .ToTable("prescription")
+            .HasKey(p => p.Id);
 
         entity.Property(p => p.Id)
             .HasColumnName("id")
@@ -35,15 +42,13 @@ public class PrescriptionDbConfiguration : IEntityTypeConfiguration<Prescription
 
         entity.Property(p => p.Dose)
             .HasColumnName("dose")
-            .HasDefaultValue(string.Empty)
-            .HasMaxLength(50)
-            .IsRequired();
+            .HasConversion(emptyStringToNullConverter)
+            .HasMaxLength(50);
 
         entity.Property(p => p.Frequency)
             .HasColumnName("frequency")
-            .HasDefaultValue(string.Empty)
-            .HasMaxLength(50)
-            .IsRequired();
+            .HasConversion(emptyStringToNullConverter)
+            .HasMaxLength(50);
 
         entity.Property(p => p.DurationInDays)
             .HasColumnName("duration_in_days")
@@ -58,30 +63,36 @@ public class PrescriptionDbConfiguration : IEntityTypeConfiguration<Prescription
         entity
             .Property(p => p.CreatedBy)
             .HasColumnName("created_by")
-            .HasDefaultValue(string.Empty)
             .HasMaxLength(50)
             .IsRequired();
 
         entity
-            .Property(o => o.CreatedAt)
+            .Property(p => p.CreatedAt)
             .HasColumnType("timestamptz")
-            .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'")
+            .HasDefaultValueSql("TIMEZONE('utc', NOW())")
             .HasColumnName("created_at")
             .IsRequired();
 
         entity
             .Property(p => p.UpdatedBy)
             .HasColumnName("updated_by")
-            .HasDefaultValue(string.Empty)
             .HasMaxLength(50)
             .IsRequired();
 
         entity
-            .Property(o => o.UpdatedAt)
+            .Property(p => p.UpdatedAt)
             .HasColumnType("timestamptz")
-            .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'")
+            .HasDefaultValueSql("TIMEZONE('utc', NOW())")
             .HasColumnName("updated_at")
             .IsRequired();
+
+        entity
+            .HasIndex(p => p.OrderId)
+            .HasDatabaseName("ix_prescription_order_id");
+
+        entity
+            .HasIndex(p => p.MedicationId)
+            .HasDatabaseName("ix_prescription_medication_id");
 
         entity.HasOne(p => p.Medication)
             .WithMany()

@@ -31,7 +31,7 @@ public record CreatePatientRequest
     /// </summary>
     /// <value></value>
     [Required()]
-    [EnumDataType(typeof (Gender))]
+    [EnumDataType(typeof(Gender))]
     public Gender? Gender { get; init; }
 
     /// <summary>
@@ -125,7 +125,7 @@ public record CreatePatientOrderDto
     /// </summary>
     /// <value></value>
     [Required()]
-    [EnumDataType(typeof (OrderType))]
+    [EnumDataType(typeof(OrderType))]
     public OrderType? Type { get; set; }
 
     /// <summary>
@@ -160,7 +160,6 @@ public record CreatePatientOrderPrescriptionDto
     /// The dosage information for the prescription.
     /// </summary>
     /// <value></value>
-    [Required()]
     [MaxLength(50)]
     public string? Dose { get; set; }
 
@@ -168,7 +167,6 @@ public record CreatePatientOrderPrescriptionDto
     /// The frequency of administration for the prescription.
     /// </summary>
     /// <value></value>
-    [Required()]
     [MaxLength(50)]
     public string? Frequency { get; set; }
 

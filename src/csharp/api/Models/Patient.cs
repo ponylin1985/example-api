@@ -87,4 +87,4 @@ public record Patient : BaseEntity
 /// <param name="Street">Street</param>
 /// <param name="Others">Others</param>
 /// <returns></returns>
-public record Address(string Country, string City, string Area, string Road, string Street, string Others);
+public record Address(string? Country, string? City, string? Area, string? Road, string? Street, string? Others);
