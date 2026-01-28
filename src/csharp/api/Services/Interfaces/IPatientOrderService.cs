@@ -5,9 +5,9 @@ using Example.Api.Dtos.Responses;
 namespace Example.Api.Services;
 
 /// <summary>
-/// Service interface for managing orders.
+/// Service interface for managing patient orders.
 /// </summary>
-public interface IOrderService
+public interface IPatientOrderService
 {
     /// <summary>
     /// Retrieves an order by its identifier.
@@ -24,10 +24,11 @@ public interface IOrderService
     Task<ApiResult<PatientOrderDto>> AddPatientOrderAsync(CreateOrderRequest request);
 
     /// <summary>
-    /// Updates the message of an existing order.
+    /// Updates the instructions of an existing order.
     /// </summary>
     /// <param name="id">The unique identifier of the order.</param>
-    /// <param name="message">The new message.</param>
+    /// <param name="instructions">The new instructions.</param>
+    /// <param name="userId">The ID of the user updating the order.</param>
     /// <returns>The updated order DTO.</returns>
-    Task<ApiResult<PatientOrderDto>> UpdateMessageAsync(long id, string message);
+    Task<ApiResult<PatientOrderDto>> UpdateInstructionsAsync(long id, string instructions, string userId);
 }

@@ -296,11 +296,43 @@ public class PatientService : BaseService, IPatientService
             createdPatient.Id != default;
     }
 
+    /// <inheritdoc />
+    public async Task<ApiResult<PatientDto>> UpdatePatientAsync(UpdatePatientRequest request)
+    {
+        Patient? updatedPatient = default;
+        var patient = MapToEntity(request);
+
+        await WhenUpdatingPatientAsync();
+        ShouldUpdatedSuccessfully();
+        return SuccessResult(updatedPatient!.ToDto());
+
+        async Task WhenUpdatingPatientAsync()
+        {
+            updatedPatient = await _patientRepository.UpdateAsync(patient);
+            await _unitOfWork.SaveChangesAsync();
+        }
+
+        void ShouldUpdatedSuccessfully()
+        {
+            if (updatedPatient is null)
+            {
+                _logger.LogError("Failed to update patient: {Patient}", patient);
+                throw new BusinessException(ApiCode.OperationFailed, "Failed to update patient.");
+            }
+
+            if (updatedPatient.Id <= 0)
+            {
+                _logger.LogError("Failed to update patient: {Patient}", patient);
+                throw new BusinessException(ApiCode.OperationFailed, "Failed to update patient.");
+            }
+        }
+    }
+
     /// <summary>
     /// Maps CreatePatientRequest to Patient entity.
     /// </summary>
-    /// <param name="request"></param>
-    /// <returns></returns>
+    /// <param name="request">The create patient request.</param>
+    /// <returns>Patient entity.</returns>
     private Patient MapToEntity(CreatePatientRequest request)
     {
         var userId = request.UserId!.Trim();
@@ -316,6 +348,7 @@ public class PatientService : BaseService, IPatientService
             Address = request.Address,
             FirstVisitDate = _dateTimeOffsetProvider.UtcNow,
             Status = PatientStatus.Active,
+            Remarks = request.Remarks,
             CreatedBy = userId,
             UpdatedBy = userId,
             Orders =
@@ -343,6 +376,30 @@ public class PatientService : BaseService, IPatientService
                     }).ToList(),
                 },
             ],
+        };
+
+        return patient;
+    }
+
+    /// <summary>
+    /// Maps UpdatePatientRequest to Patient entity.
+    /// </summary>
+    /// <param name="request">The update patient request.</param>
+    /// <returns>Patient entity.</returns>
+    private static Patient MapToEntity(UpdatePatientRequest request)
+    {
+        var patient = new Patient
+        {
+            Id = request.Id,
+            Name = request.Name!.Trim(),
+            Age = request.Age!.Value,
+            Gender = request.Gender!.Value,
+            Email = request.Email?.Trim() ?? string.Empty,
+            PhoneNumber = request.PhoneNumber!.Trim(),
+            DateOfBirth = request.DateOfBirth!.Value,
+            Address = request.Address,
+            Remarks = request.Remarks,
+            UpdatedBy = request.UserId!.Trim(),
         };
 
         return patient;

@@ -1,4 +1,5 @@
 using Example.Api.Data;
+using Example.Api.Enums;
 using Example.Api.Infrastructure;
 using Example.Api.Models;
 using Microsoft.EntityFrameworkCore;
@@ -101,5 +102,22 @@ public sealed class PatientRepository : IPatientRepository
     {
         await _dbContext.Patients.AddAsync(patient);
         return patient;
+    }
+
+    public async Task<Patient> UpdateAsync(Patient patient)
+    {
+        var existingPatient = await _dbContext.Patients.FindAsync(patient.Id)
+            ?? throw new BusinessException(ApiCode.NoDataFound, $"PatientId {patient.Id} not found.");
+        existingPatient.Name = patient.Name;
+        existingPatient.Age = patient.Age;
+        existingPatient.Gender = patient.Gender;
+        existingPatient.Email = patient.Email;
+        existingPatient.PhoneNumber = patient.PhoneNumber;
+        existingPatient.DateOfBirth = patient.DateOfBirth;
+        existingPatient.Address = patient.Address;
+        existingPatient.Remarks = patient.Remarks;
+        existingPatient.UpdatedBy = patient.UpdatedBy;
+        existingPatient.UpdatedAt = patient.UpdatedAt;
+        return existingPatient;
     }
 }

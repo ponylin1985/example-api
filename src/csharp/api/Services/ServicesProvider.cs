@@ -15,7 +15,7 @@ public static class ServicesProvider
     public static IServiceCollection AddServices(this IServiceCollection services)
     {
         services.AddScoped<IPatientService, PatientService>();
-        services.AddScoped<IOrderService, OrderService>();
+        services.AddScoped<IPatientOrderService, PatientOrderService>();
         services.AddScoped<IOrderPrescriptionPolicy, OrderPrescriptionPolicy>();
         return services;
     }

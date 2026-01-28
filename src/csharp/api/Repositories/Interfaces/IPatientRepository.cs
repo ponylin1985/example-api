@@ -62,4 +62,11 @@ public interface IPatientRepository
     /// <param name="patient">The patient entity to create.</param>
     /// <returns>The created patient entity.</returns>
     Task<Patient> AddAsync(Patient patient);
+
+    /// <summary>
+    /// Updates an existing patient information.
+    /// </summary>
+    /// <param name="patient">The patient entity with updated information.</param>
+    /// <returns>The updated patient entity.</returns>
+    Task<Patient> UpdateAsync(Patient patient);
 }

@@ -1,5 +1,6 @@
 using Dapper;
 using Example.Api.Data;
+using Example.Api.Enums;
 using Example.Api.Infrastructure;
 using Example.Api.Models;
 using Microsoft.EntityFrameworkCore;
@@ -7,9 +8,9 @@ using Microsoft.EntityFrameworkCore;
 namespace Example.Api.Repositories;
 
 /// <summary>
-/// Data repository for managing Orders.
+/// Data repository for managing PatientOrders.
 /// </summary>
-public sealed class OrderRepository : IOrderRepository
+public sealed class PatientOrderRepository : IPatientOrderRepository
 {
     /// <summary>
     /// Database session for database operations.
@@ -22,10 +23,10 @@ public sealed class OrderRepository : IOrderRepository
     private readonly ApplicationDbContext _dbContext;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="OrderRepository"/> class.
+    /// Initializes a new instance of the <see cref="PatientOrderRepository"/> class.
     /// </summary>
     /// <param name="dbSession"></param>
-    public OrderRepository(IDbSession dbSession)
+    public PatientOrderRepository(IDbSession dbSession)
     {
         _dbSession = dbSession;
         _dbContext = dbSession.DataContext as ApplicationDbContext
@@ -49,20 +50,25 @@ public sealed class OrderRepository : IOrderRepository
     }
 
     /// <inheritdoc />
-    public async Task<PatientOrder> UpdateMessageAsync(PatientOrder order)
+    public async Task<PatientOrder> UpdateInstructionsAsync(PatientOrder order)
     {
         var existingOrder = await _dbContext.Orders.FindAsync(order.Id)
-            ?? throw new InvalidOperationException($"OrderId {order.Id} not found.");
+            ?? throw new BusinessException(ApiCode.NoDataFound, $"OrderId {order.Id} not found.");
         existingOrder.Instructions = order.Instructions;
         return existingOrder;
     }
 
     /// <inheritdoc />
-    public async Task<PatientOrder?> UpdateAsync(long id, string message, DateTimeOffset updatedAt)
+    public async Task<PatientOrder?> UpdateAsync(
+        long id, 
+        string instructions, 
+        string userId, 
+        DateTimeOffset updatedAt)
     {
         var sql = @"
-            UPDATE ""order""
-            SET message = @Message,
+            UPDATE ""patient_order""
+            SET instructions = @Instructions,
+                updated_by = @UserId,
                 updated_at = @UpdatedAt
             WHERE id = @Id
             RETURNING patient_id, created_at; ";
@@ -72,8 +78,9 @@ public sealed class OrderRepository : IOrderRepository
 
         var result = await conn.QueryFirstOrDefaultAsync(sql, new
         {
-            Message = message,
+            Instructions = instructions,
             UpdatedAt = updatedAt,
+            UserId = userId,
             Id = id,
         }, trans);
 
@@ -85,9 +92,10 @@ public sealed class OrderRepository : IOrderRepository
         return new PatientOrder
         {
             Id = id,
-            Instructions = message,
+            Instructions = instructions,
             PatientId = (long)result.patient_id,
             CreatedAt = (DateTimeOffset)result.created_at,
+            UpdatedBy = userId,
             UpdatedAt = updatedAt,
         };
     }

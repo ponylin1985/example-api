@@ -23,4 +23,10 @@ public class BusinessException : Exception
     {
         ErrorCode = errorCode;
     }
+
+    /// <summary>
+    /// Gets the stack trace associated with the business exception.<para/>
+    /// This is overridden to return an empty string to avoid exposing internal stack traces for better performance and security.
+    /// </summary>
+    public override string? StackTrace => string.Empty;
 }
