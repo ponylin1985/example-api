@@ -19,8 +19,8 @@ public static class RepositoriesProvider
             .Decorate<IPatientRepository, CachedPatientRepository>();
 
         services
-            .AddScoped<IOrderRepository, OrderRepository>()
-            .Decorate<IOrderRepository, CachedOrderRepository>();
+            .AddScoped<IPatientOrderRepository, PatientOrderRepository>()
+            .Decorate<IPatientOrderRepository, CachedPatientOrderRepository>();
 
         services.AddScoped<IMedicationRepository, MedicationRepository>();
         return services;

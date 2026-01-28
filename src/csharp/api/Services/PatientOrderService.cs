@@ -12,14 +12,14 @@ using Example.Api.Services.DomainServices;
 namespace Example.Api.Services;
 
 /// <summary>
-/// Service for managing orders.
+/// Service for managing patient orders.
 /// </summary>
-public class OrderService : BaseService, IOrderService
+public class PatientOrderService : BaseService, IPatientOrderService
 {
     /// <summary>
     /// Application logger.
     /// </summary>
-    private readonly ILogger<OrderService> _logger;
+    private readonly ILogger<PatientOrderService> _logger;
 
     /// <summary>
     /// DateTimeOffset provider for getting current time.
@@ -34,7 +34,7 @@ public class OrderService : BaseService, IOrderService
     /// <summary>
     /// Order data repository.
     /// </summary>
-    private readonly IOrderRepository _orderRepository;
+    private readonly IPatientOrderRepository _orderRepository;
 
     /// <summary>
     /// Patient data repository.
@@ -47,7 +47,7 @@ public class OrderService : BaseService, IOrderService
     private readonly IUnitOfWork _unitOfWork;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="OrderService"/> class.
+    /// Initializes a new instance of the <see cref="PatientOrderService"/> class.
     /// </summary>
     /// <param name="logger">Application logger.</param>
     /// <param name="dateTimeOffsetProvider">The date time offset provider.</param>
@@ -55,11 +55,11 @@ public class OrderService : BaseService, IOrderService
     /// <param name="orderRepository">The order repository.</param>
     /// <param name="patientRepository">The patient repository.</param>
     /// <param name="unitOfWork">The unit of work.</param>
-    public OrderService(
-        ILogger<OrderService> logger,
+    public PatientOrderService(
+        ILogger<PatientOrderService> logger,
         IDateTimeOffsetProvider dateTimeOffsetProvider,
         IOrderPrescriptionPolicy orderPrescriptionPolicy,
-        IOrderRepository orderRepository,
+        IPatientOrderRepository orderRepository,
         IPatientRepository patientRepository,
         IUnitOfWork unitOfWork)
     {
@@ -157,33 +157,32 @@ public class OrderService : BaseService, IOrderService
     }
 
     /// <inheritdoc />
-    public async Task<ApiResult<PatientOrderDto>> UpdateMessageAsync(long id, string message)
+    public async Task<ApiResult<PatientOrderDto>> UpdateInstructionsAsync(
+        long id, 
+        string instructions, 
+        string userId)
     {
-        await using var _ = await _unitOfWork.BeginTransactionAsync();
+        PatientOrder? updatedOrder = default;
+        await WhenUpdateOrderAsync();
+        ShouldUpdatedSuccessfully();
+        return SuccessResult(updatedOrder!.ToDto());
 
-        var utcNow = _dateTimeOffsetProvider.UtcNow;
-        var updatedOrder = await _orderRepository.UpdateAsync(id, message.Trim(), utcNow);
-
-        if (!IsUpdatedSuccessfully(out var order))
+        async Task WhenUpdateOrderAsync()
         {
-            _logger.LogWarning("Order with ID {Id} not found for update.", id);
-            return FailureResult<PatientOrderDto>(ApiCode.OperationFailed, $"Order with ID {id} not found.");
+            var utcNow = _dateTimeOffsetProvider.UtcNow;
+            await using var _ = await _unitOfWork.BeginTransactionAsync();
+            updatedOrder = await _orderRepository.UpdateAsync(id, instructions.Trim(), userId, utcNow);
+            await _unitOfWork.CommitTransactionAsync();
         }
 
-        await _unitOfWork.CommitTransactionAsync();
-        return SuccessResult(order.ToDto());
-
-        bool IsUpdatedSuccessfully(out PatientOrder order)
+        void ShouldUpdatedSuccessfully()
         {
-            order = default!;
-
             if (updatedOrder is null or { Id: 0, PatientId: 0 })
             {
-                return false;
+                _logger.LogWarning("Failed to update order instructions for order with OrderId: {Id}.", id);
+                throw new BusinessException(
+                    ApiCode.NoDataFound, $"Failed to update order instructions for order with OrderId: {id}.");
             }
-
-            order = updatedOrder;
-            return true;
         }
     }
 

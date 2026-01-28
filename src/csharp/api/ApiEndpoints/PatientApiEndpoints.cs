@@ -4,6 +4,7 @@ using Example.Api.Enums;
 using Example.Api.Extensions;
 using Example.Api.Services;
 using FluentValidation;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
 
 using RestApiResult = Microsoft.AspNetCore.Http.HttpResults.Results<
@@ -32,6 +33,7 @@ public static class PatientApiEndpoints
         MapGetPatients(group);
         MapGetPatient(group);
         MapCreatePatient(group);
+        MapUpdatePatient(group);
         return app;
     }
 
@@ -132,5 +134,55 @@ public static class PatientApiEndpoints
         .Produces<ApiResult>(StatusCodes.Status500InternalServerError)
         .WithName("CreatePatient")
         .WithDescription("Create a new patient record.");
+    }
+
+    /// <summary>
+    /// Maps the UpdatePatient endpoint.
+    /// </summary>
+    /// <param name="group"></param>
+    private static void MapUpdatePatient(RouteGroupBuilder group)
+    {
+        group.MapPut("/{id:long:min(1)}", async Task<RestApiResult> (
+            [FromRoute] long id,
+            [FromBody] UpdatePatientRequest request,
+            IPatientService patientService,
+            IValidator<UpdatePatientRequest> validator,
+            IOutputCacheStore cacheStore) =>
+        {
+            var validationResult = await validator.ValidateAsync(request);
+
+            if (!validationResult.IsValid)
+            {
+                return new ApiResult<IDictionary<string, string[]>>
+                {
+                    Success = false,
+                    Code = ApiCode.InvalidRequest,
+                    Data = validationResult.ToDictionary(),
+                    Message = "Invalid request data.",
+                }.ToHttpResult();
+            }
+
+            request.Id = id;
+            var result = await patientService
+                .UpdatePatientAsync(request)
+                .TapOnSuccessAsync(async () => await EvictPatientRelatedCaches(cacheStore));
+            return result.ToHttpResult();
+        })
+        .Produces<ApiResult>(StatusCodes.Status200OK)
+        .Produces<ApiResult>(StatusCodes.Status400BadRequest)
+        .Produces<ApiResult>(StatusCodes.Status500InternalServerError)
+        .WithName("UpdatePatient")
+        .WithDescription("Update an existing patient record.");
+    }
+
+    /// <summary>
+    /// Evicts caches related to patients.
+    /// </summary>
+    /// <param name="cacheStore"></param>
+    /// <returns></returns>
+    private static async Task EvictPatientRelatedCaches(IOutputCacheStore cacheStore)
+    {
+        await cacheStore.EvictByTagAsync("patients", default);
+        await cacheStore.EvictByTagAsync("patient-detail", default);
     }
 }

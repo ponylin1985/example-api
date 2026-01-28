@@ -2,7 +2,7 @@ using Example.Api.Models;
 
 namespace Example.Api.Repositories;
 
-public interface IOrderRepository
+public interface IPatientOrderRepository
 {
     /// <summary>
     /// Get patient's order by id.
@@ -19,18 +19,19 @@ public interface IOrderRepository
     Task<PatientOrder> AddAsync(PatientOrder order);
 
     /// <summary>
-    /// Update the message of an existing order by id.
+    /// Update the instructions of an existing order by id.
     /// </summary>
-    /// <param name="order">The order entity with updated message.</param>
+    /// <param name="order">The order entity with updated instructions.</param>
     /// <returns>The updated order entity.</returns>
-    Task<PatientOrder> UpdateMessageAsync(PatientOrder order);
+    Task<PatientOrder> UpdateInstructionsAsync(PatientOrder order);
 
     /// <summary>
-    /// Update the message of an order.
+    /// Update the instructions of an order.
     /// </summary>
     /// <param name="id">The id of the order to update.</param>
-    /// <param name="message">The new message for the order.</param>
+    /// <param name="instructions">The new instructions for the order.</param>
+    /// <param name="userId">The ID of the user making the update.</param>
     /// <param name="updatedAt">The timestamp of the update.</param>
     /// <returns>The updated order entity, or null if not found.</returns>
-    Task<PatientOrder?> UpdateAsync(long id, string message, DateTimeOffset updatedAt);
+    Task<PatientOrder?> UpdateAsync(long id, string instructions, string userId, DateTimeOffset updatedAt);
 }

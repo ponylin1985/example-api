@@ -94,7 +94,7 @@ public sealed class CachedPatientRepository : IPatientRepository
     /// <inheritdoc />
     public async Task<Patient?> GetPatientAsync(long id)
     {
-        var key = GetExistenceCacheKey(id);
+        var key = GetPatientCacheKey(id);
         var cachedData = await ExecuteCacheOperationAsync(
             async () => await _cache.GetStringAsync(key));
 
@@ -116,7 +116,7 @@ public sealed class CachedPatientRepository : IPatientRepository
     /// <inheritdoc />
     public async Task<bool> IsExistPatientAsync(long id)
     {
-        var key = GetExistenceCacheKey(id);
+        var key = GetPatientCacheKey(id);
         var existed = await ExecuteCacheOperationAsync(async () =>
             await _redisConnection.GetDatabase().KeyExistsAsync(key), false);
 
@@ -158,9 +158,77 @@ public sealed class CachedPatientRepository : IPatientRepository
     }
 
     /// <inheritdoc />
-    public Task<Patient> AddAsync(Patient patient)
+    public async Task<Patient> AddAsync(Patient patient)
     {
-        return _innerRepository.AddAsync(patient);
+        var createdPatient = await _innerRepository.AddAsync(patient);
+
+        if (createdPatient is { Id: > 0 })
+        {
+            _ = RemoveFromCacheAsync(createdPatient.Id);
+        }
+
+        return createdPatient;
+    }
+
+    /// <inheritdoc />
+    public async Task<Patient> UpdateAsync(Patient patient)
+    {
+        var updatedPatient =  await _innerRepository.UpdateAsync(patient);
+
+        if (updatedPatient is { Id: > 0 })
+        {
+            _ = RemoveFromCacheAsync(updatedPatient.Id);
+        }
+
+        return updatedPatient!;
+    }
+
+    /// <summary>
+    /// Gets the cache key for the existence of a patient with the specified ID.
+    /// </summary>
+    /// <param name="id">The id of the patient.</param>
+    /// <returns>The cache key for the existence of the patient.</returns>
+    private static string GetPatientCacheKey(long id) =>
+        $"patient:{id}";
+
+    /// <summary>
+    /// Saves the specified patient to the cache.
+    /// </summary>
+    /// <param name="patient">The patient to save to the cache.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
+    private async Task SaveToCacheAsync(Patient patient)
+    {
+        var key = GetPatientCacheKey(patient.Id);
+        var patientJson = JsonSerializer.Serialize(patient, _jsonOptions);
+
+        try
+        {
+            await ExecuteCacheOperationAsync(async () =>
+            {
+                await _cache.SetStringAsync(key, patientJson, _cacheOptions.CurrentValue);
+                return true;
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error occurred while saving patient to cache with key {Key}", key);
+        }
+    }
+
+    /// <summary>
+    /// Removes the specified patient from the cache.
+    /// </summary>
+    /// <param name="patientId">The ID of the patient to remove from the cache.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
+    private async ValueTask RemoveFromCacheAsync(long patientId)
+    {
+        var key = GetPatientCacheKey(patientId);
+
+        await ExecuteCacheOperationAsync(async () =>
+        {
+            await _cache.RemoveAsync(key);
+            return true;
+        });
     }
 
     /// <summary>
@@ -185,38 +253,6 @@ public sealed class CachedPatientRepository : IPatientRepository
         {
             _logger.LogWarning(ex, "An error occurred during cache operation, bypassing to database.");
             return defaultValue;
-        }
-    }
-
-    /// <summary>
-    /// Gets the cache key for the existence of a patient with the specified ID.
-    /// </summary>
-    /// <param name="id">The id of the patient.</param>
-    /// <returns>The cache key for the existence of the patient.</returns>
-    private static string GetExistenceCacheKey(long id) =>
-        $"patient:{id}";
-
-    /// <summary>
-    /// Saves the specified patient to the cache.
-    /// </summary>
-    /// <param name="patient">The patient to save to the cache.</param>
-    /// <returns>A task that represents the asynchronous operation.</returns>
-    private async Task SaveToCacheAsync(Patient patient)
-    {
-        var key = GetExistenceCacheKey(patient.Id);
-        var patientJson = JsonSerializer.Serialize(patient, _jsonOptions);
-
-        try
-        {
-            await ExecuteCacheOperationAsync(async () =>
-            {
-                await _cache.SetStringAsync(key, patientJson, _cacheOptions.CurrentValue);
-                return true;
-            });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error occurred while saving patient to cache with key {Key}", key);
         }
     }
 }

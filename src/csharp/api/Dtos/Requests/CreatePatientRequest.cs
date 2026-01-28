@@ -64,6 +64,13 @@ public record CreatePatientRequest
     public Address? Address { get; init; }
 
     /// <summary>
+    /// Additional remarks about the patient.
+    /// </summary>
+    /// <value></value>
+    [MaxLength(500)]
+    public string? Remarks { get; init; }
+
+    /// <summary>
     /// The ID of the user creating the patient.
     /// </summary>
     /// <value></value>

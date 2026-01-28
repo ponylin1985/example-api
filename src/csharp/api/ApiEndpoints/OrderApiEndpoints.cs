@@ -32,7 +32,7 @@ public static class OrderApiEndpoints
             .WithTags("Orders");
         MapGetOrder(group);
         MapCreateOrder(group);
-        MapUpdateOrderMessage(group);
+        MapUpdateOrderInstructions(group);
         return app;
     }
 
@@ -42,7 +42,7 @@ public static class OrderApiEndpoints
     /// <param name="group"></param>
     private static void MapGetOrder(RouteGroupBuilder group)
     {
-        group.MapGet("/{id:long:min(1)}", async Task<RestApiResult> (long id, IOrderService orderService) => 
+        group.MapGet("/{id:long:min(1)}", async Task<RestApiResult> (long id, IPatientOrderService orderService) => 
         {
             var result = await orderService.GetOrderAsync(id);
             return result.ToHttpResult();
@@ -66,7 +66,7 @@ public static class OrderApiEndpoints
     {
         group.MapPost("/", async Task<RestApiResult> (
             CreateOrderRequest request,
-            IOrderService orderService,
+            IPatientOrderService orderService,
             IOutputCacheStore cacheStore,
             IValidator<CreateOrderRequest> validator) =>
         {
@@ -96,27 +96,41 @@ public static class OrderApiEndpoints
     }
 
     /// <summary>
-    /// Maps the UpdateOrderMessage endpoint.
+    /// Maps the UpdateOrderInstructions endpoint.
     /// </summary>
     /// <param name="group"></param>
-    private static void MapUpdateOrderMessage(RouteGroupBuilder group)
+    private static void MapUpdateOrderInstructions(RouteGroupBuilder group)
     {
         group.MapPut("/{id:long:min(1)}", async Task<RestApiResult> (
             long id,
-            [FromBody] UpdateOrderMessageRequest request,
-            IOrderService orderService,
-            IOutputCacheStore cacheStore) =>
+            [FromBody] UpdateOrderInstructionseRequest request,
+            IPatientOrderService orderService,
+            IOutputCacheStore cacheStore,
+            IValidator<UpdateOrderInstructionseRequest> validator) =>
         {
+            var validationResult = await validator.ValidateAsync(request);
+
+            if (!validationResult.IsValid)
+            {
+                return new ApiResult<IDictionary<string, string[]>>
+                {
+                    Success = false,
+                    Code = ApiCode.InvalidRequest,
+                    Data = validationResult.ToDictionary(),
+                    Message = "Invalid request data.",
+                }.ToHttpResult();
+            }
+
             var result = await orderService
-                .UpdateMessageAsync(id, request.Message)
+                .UpdateInstructionsAsync(id, request.Instructions!, request.UserId!)
                 .TapOnSuccessAsync(async () => await EvictOrderRelatedCaches(cacheStore));
             return result.ToHttpResult();
         })
         .Produces<ApiResult>(StatusCodes.Status200OK)
         .Produces<ApiResult>(StatusCodes.Status400BadRequest)
         .Produces<ApiResult>(StatusCodes.Status500InternalServerError)
-        .WithName("UpdateOrderMessage")
-        .WithDescription("Update the message of an existing order.");
+        .WithName("UpdatePatientOrderInstructions")
+        .WithDescription("Update the instructions of an existing patient order.");
     }
 
     /// <summary>

@@ -5,15 +5,15 @@ using Ganss.Xss;
 namespace Example.Api.Validators;
 
 /// <summary>
-/// Request validator for CreatePatientRequest.
+/// Request validator for UpdatePatientRequest.
 /// </summary>
-public sealed class CreatePatientRequestValidator : AbstractValidator<CreatePatientRequest>
+public sealed class UpdatePatientRequestValidator : AbstractValidator<UpdatePatientRequest>
 {
     /// <summary>
-    /// Constructor for CreatePatientRequestValidator.
+    /// Constructor for UpdatePatientRequestValidator.
     /// </summary>
     /// <param name="sanitizer"></param>
-    public CreatePatientRequestValidator(IHtmlSanitizer sanitizer)
+    public UpdatePatientRequestValidator(IHtmlSanitizer sanitizer)
     {
         RuleFor(x => x.Name)
             .NotEmpty().WithMessage("Name is required.")
@@ -58,10 +58,5 @@ public sealed class CreatePatientRequestValidator : AbstractValidator<CreatePati
             .MaximumLength(50).WithMessage("UserId cannot exceed 50 characters.")
             .Sanitized(sanitizer)
             .WithName("userId");
-
-        RuleFor(x => x.Order)
-            .NotNull().WithMessage("Order is required.")
-            .SetValidator(new CreatePatientOrderDtoValidator(sanitizer) as IValidator<CreatePatientOrderDto?>)
-            .WithName("orders");
     }
 }
