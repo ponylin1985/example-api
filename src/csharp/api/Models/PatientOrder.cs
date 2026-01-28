@@ -15,7 +15,7 @@ public record PatientOrder : BaseEntity
     /// <summary>
     /// Gets the instructions associated with the order.
     /// </summary>
-    public string Instructions { get; set; } = string.Empty;
+    public string? Instructions { get; set; }
 
     /// <summary>
     /// The next visit date for the order.

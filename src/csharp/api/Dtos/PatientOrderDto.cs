@@ -16,7 +16,7 @@ public record PatientOrderDto : BaseDto
     /// <summary>
     /// The instructions associated with the order.
     /// </summary>
-    public string Instructions { get; init; } = string.Empty;
+    public string? Instructions { get; init; }
 
     /// <summary>
     /// The patient id related to the order.

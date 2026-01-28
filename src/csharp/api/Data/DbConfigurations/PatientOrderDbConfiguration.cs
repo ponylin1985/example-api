@@ -1,6 +1,7 @@
 using Example.Api.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Example.Api.Data.DbConfigurations;
 
@@ -14,6 +15,11 @@ public class PatientOrderDbConfiguration : IEntityTypeConfiguration<PatientOrder
     /// </summary>
     public void Configure(EntityTypeBuilder<PatientOrder> entity)
     {
+        var emptyStringToNullConverter = new ValueConverter<string?, string?>(
+            v => string.IsNullOrWhiteSpace(v) ? null : v,
+            v => v
+        );
+
         entity
             .ToTable("patient_order")
             .HasKey(o => o.Id);
@@ -28,9 +34,8 @@ public class PatientOrderDbConfiguration : IEntityTypeConfiguration<PatientOrder
         entity
             .Property(o => o.Instructions)
             .HasColumnName("instructions")
-            .HasDefaultValue(string.Empty)
-            .HasMaxLength(500)
-            .IsRequired();
+            .HasConversion(emptyStringToNullConverter)
+            .HasMaxLength(500);
 
         entity
             .Property(o => o.NextVisitDate)
@@ -75,88 +80,47 @@ public class PatientOrderDbConfiguration : IEntityTypeConfiguration<PatientOrder
         entity
             .Property(p => p.CreatedBy)
             .HasColumnName("created_by")
-            .HasDefaultValue(string.Empty)
             .HasMaxLength(50)
             .IsRequired();
 
         entity
-            .Property(o => o.CreatedAt)
+            .Property(p => p.CreatedAt)
             .HasColumnType("timestamptz")
-            .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'")
+            .HasDefaultValueSql("TIMEZONE('utc', NOW())")
             .HasColumnName("created_at")
             .IsRequired();
 
         entity
             .Property(p => p.UpdatedBy)
             .HasColumnName("updated_by")
-            .HasDefaultValue(string.Empty)
             .HasMaxLength(50)
             .IsRequired();
 
         entity
-            .Property(o => o.UpdatedAt)
+            .Property(p => p.UpdatedAt)
             .HasColumnType("timestamptz")
-            .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'")
+            .HasDefaultValueSql("TIMEZONE('utc', NOW())")
             .HasColumnName("updated_at")
             .IsRequired();
 
         entity
             .HasIndex(o => o.PatientId)
-            .IncludeProperties(o => new 
+            .IncludeProperties(o => new
             {
-                o.Instructions,
-                o.Status, 
+                o.Status,
                 o.Type,
             })
             .HasDatabaseName("ix_patientorder_patientid");
 
         entity
-            .HasIndex(o => o.Type)
-            .IncludeProperties(o => new 
+            .HasIndex(o => new
             {
-                o.PatientId,
-                o.Instructions,
+                o.Type,
                 o.Status,
-            })
-            .HasDatabaseName("ix_patientorder_type");
-
-        entity
-            .HasIndex(o => o.Status)
-            .IncludeProperties(o => new 
-            {
-                o.PatientId,
-                o.Instructions,
-                o.Type,
-            })
-            .HasDatabaseName("ix_patientorder_status");
-
-        entity
-            .HasIndex(o => new 
-            { 
-                o.Status, 
-                o.Type,
-            })
-            .IncludeProperties(o => new 
-            {
-                o.PatientId,
-                o.Instructions,
-            })
-            .HasDatabaseName("ix_patientorder_status_type");
-
-        entity
-            .HasIndex(o => new 
-            { 
-                o.CreatedBy, 
+                o.CreatedBy,
                 o.CreatedAt,
             })
-            .IncludeProperties(o => new 
-            {
-                o.PatientId,
-                o.Instructions,
-                o.Status, 
-                o.Type,
-            })
-            .HasDatabaseName("ix_patientorder_createdby_createdat");
+            .HasDatabaseName("ix_patientorder_type_status_createdby_createdat");
 
         entity
             .HasOne(o => o.Patient)

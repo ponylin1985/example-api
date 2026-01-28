@@ -28,10 +28,10 @@ public static class DbContextExtensions
             options.UseNpgsql(npgsqlBuilder.ToString(), npgsqlOptions =>
             {
                 npgsqlOptions.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
-                npgsqlOptions.EnableRetryOnFailure(
-                    maxRetryCount: 2,
-                    maxRetryDelay: TimeSpan.FromSeconds(5),
-                    errorCodesToAdd: ["40001"]);
+                // npgsqlOptions.EnableRetryOnFailure(
+                //     maxRetryCount: 2,
+                //     maxRetryDelay: TimeSpan.FromSeconds(5),
+                //     errorCodesToAdd: ["40001"]);
             });
         });
 

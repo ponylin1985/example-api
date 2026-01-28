@@ -12,25 +12,12 @@ public sealed class CreatePatientOrderPrescriptionDtoValidator : AbstractValidat
     /// <summary>
     /// Constructor for CreatePatientOrderPrescriptionDtoValidator.
     /// </summary>
-    /// <param name="sanitizer"></param>
-    public CreatePatientOrderPrescriptionDtoValidator(IHtmlSanitizer sanitizer)
+    public CreatePatientOrderPrescriptionDtoValidator()
     {
         RuleFor(p => p.MedicationId)
             .NotNull().WithMessage("MedicationId is required.")
             .GreaterThan(0).WithMessage("MedicationId must be greater than 0.")
             .WithName("medicationId");
-
-        RuleFor(p => p.Dose)
-            .NotEmpty().WithMessage("Dose is required.")
-            .MaximumLength(50).WithMessage("Dose cannot exceed 50 characters.")
-            .Sanitized(sanitizer)
-            .WithName("dose");
-
-        RuleFor(p => p.Frequency)
-            .NotEmpty().WithMessage("Frequency is required.")
-            .MaximumLength(50).WithMessage("Frequency cannot exceed 50 characters.")
-            .Sanitized(sanitizer)
-            .WithName("frequency");
 
         RuleFor(p => p.DurationInDays)
             .NotNull().WithMessage("DurationInDays is required.")

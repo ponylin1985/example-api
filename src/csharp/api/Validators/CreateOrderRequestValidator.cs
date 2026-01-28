@@ -25,10 +25,10 @@ public sealed class CreateOrderRequestValidator : AbstractValidator<CreateOrderR
             .Sanitized(sanitizer)
             .WithName("instructions");
 
-            RuleFor(o => o.Type)
-                .NotEmpty().WithMessage("Type is required.")
-                .IsInEnum().WithMessage("Type must be a valid enum value.")
-                .WithName("type");
+        RuleFor(o => o.Type)
+            .NotEmpty().WithMessage("Type is required.")
+            .IsInEnum().WithMessage("Type must be a valid enum value.")
+            .WithName("type");
 
         RuleFor(o => o.Prescriptions)
             .NotNull().WithMessage("Prescriptions are required.")
@@ -36,7 +36,7 @@ public sealed class CreateOrderRequestValidator : AbstractValidator<CreateOrderR
             .ForEach(prescriptionRule =>
             {
                 prescriptionRule.NotNull().WithMessage("Prescription item cannot be null.");
-                prescriptionRule.SetValidator(new CreatePatientOrderPrescriptionDtoValidator(sanitizer));
+                prescriptionRule.SetValidator(new CreatePatientOrderPrescriptionDtoValidator());
             })
             .WithName("prescriptions");
     }

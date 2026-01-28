@@ -7,7 +7,7 @@ namespace Example.Api.Dtos.Requests;
 /// Request to get patients within a date range.
 /// </summary>
 /// <value></value>
-public record GetPatientsRequest : PagedRequest, IValidatableObject
+public record GetPatientsRequest : PagedRequest
 {
     /// <summary>
     /// The start time of the date range to filter patients. (UTC time)
@@ -24,29 +24,4 @@ public record GetPatientsRequest : PagedRequest, IValidatableObject
     [Required]
     [FromQuery(Name = "endTime")]
     public required DateTimeOffset EndTime { get; init; }
-
-    /// <summary>
-    /// Validates the request.
-    /// </summary>
-    /// <param name="validationContext"></param>
-    /// <returns></returns>
-    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
-    {
-        if (EndTime < StartTime)
-        {
-            yield return new ValidationResult(
-                "EndTime must be greater than or equal to StartTime.",
-                [nameof(StartTime), nameof(EndTime)]);
-        }
-
-        var threeYearsLimit = TimeSpan.FromDays(3 * 365 + 1);
-        var duration = EndTime - StartTime;
-
-        if (duration > threeYearsLimit)
-        {
-            yield return new ValidationResult(
-                $"The date range must not exceed 3 years. Requested duration was {duration.Days} days.",
-                [nameof(StartTime), nameof(EndTime)]);
-        }
-    }
 }
