@@ -201,99 +201,12 @@ public class PatientService : BaseService, IPatientService
 
         void ShouldCreatedSuccessfully()
         {
-            if (createdPatient is null)
-            {
-                _logger.LogError("Failed to create patient: {Patient}", patient);
-                throw new BusinessException(ApiCode.OperationFailed, "Failed to create patient.");
-            }
-
-            if (createdPatient.Id <= 0)
-            {
+            if (createdPatient is not { Id: > 0 })
+            {   
                 _logger.LogError("Failed to create patient: {Patient}", patient);
                 throw new BusinessException(ApiCode.OperationFailed, "Failed to create patient.");
             }
         }
-    }
-
-    /// <summary>
-    /// Add new patient.
-    /// </summary>
-    /// <param name="request"></param>
-    /// <returns></returns>
-    public async Task<ApiResult<PatientDto>> AddPatientAsync_ProcedureStyleBdd(CreatePatientRequest request)
-    {
-        var patient = MapToEntity(request);
-
-        if (!await IsEmailDuplicatedAsync())
-        {
-            _logger.LogWarning("Email {Email} is already in use.", patient.Email);
-            return FailureResult<PatientDto>(ApiCode.OperationFailed, "Email is already in use.");
-        }
-
-        if (!await IsPhoneNumberDuplicatedAsync())
-        {
-            _logger.LogWarning("Phone number {PhoneNumber} is already in use.", patient.PhoneNumber);
-            return FailureResult<PatientDto>(ApiCode.OperationFailed, "Phone number is already in use.");
-        }
-
-        if (!await IsPrescriptionValidAsync())
-        {
-            _logger.LogWarning("One or more prescriptions have invalid medication IDs.");
-            return FailureResult<PatientDto>(
-                ApiCode.OperationFailed, "One or more prescriptions have invalid medication IDs.");
-        }
-
-        var createdPatient = await _patientRepository.AddAsync(patient);
-        await _unitOfWork.SaveChangesAsync();
-
-        if (!IsCreatedSuccessfully())
-        {
-            _logger.LogError("Failed to create patient: {Patient}", patient);
-            return FailureResult<PatientDto>(ApiCode.OperationFailed, "Failed to create patient.");
-        }
-
-        return SuccessResult(createdPatient.ToDto());
-
-        async Task<bool> IsEmailDuplicatedAsync()
-        {
-            if (string.IsNullOrWhiteSpace(patient.Email))
-            {
-                return true;
-            }
-
-            var exists = await _patientRepository.IsExistPatentByEmailAsync(patient.Email);
-            return !exists;
-        }
-
-        async Task <bool> IsPhoneNumberDuplicatedAsync()
-        {
-            if (string.IsNullOrWhiteSpace(patient.PhoneNumber))
-            {
-                return true;
-            }
-
-            var exists = await _patientRepository.IsExistPatientByPhoneAsync(patient.PhoneNumber);
-            return !exists;
-        }
-
-        async Task<bool> IsPrescriptionValidAsync()
-        {
-            foreach (var order in patient.Orders)
-            {
-                foreach (var prescription in order.Prescriptions)
-                {
-                    if (!await _medicationRepository.IsExistMedicationAsync(prescription.MedicationId))
-                    {
-                        return false;
-                    }
-                }
-            }
-
-            return true;
-        }
-
-        bool IsCreatedSuccessfully() =>
-            createdPatient.Id != default;
     }
 
     /// <inheritdoc />
@@ -304,7 +217,7 @@ public class PatientService : BaseService, IPatientService
 
         await WhenUpdatingPatientAsync();
         ShouldUpdatedSuccessfully();
-        return SuccessResult(updatedPatient!.ToDto());
+        return SuccessResult(updatedPatient!.ToDto(includeOrders: false));
 
         async Task WhenUpdatingPatientAsync()
         {
@@ -314,15 +227,9 @@ public class PatientService : BaseService, IPatientService
 
         void ShouldUpdatedSuccessfully()
         {
-            if (updatedPatient is null)
+            if (updatedPatient is not { Id: > 0 })
             {
-                _logger.LogError("Failed to update patient: {Patient}", patient);
-                throw new BusinessException(ApiCode.OperationFailed, "Failed to update patient.");
-            }
-
-            if (updatedPatient.Id <= 0)
-            {
-                _logger.LogError("Failed to update patient: {Patient}", patient);
+                _logger.LogError("Failed to update patient: {PatientId}", patient.Id);
                 throw new BusinessException(ApiCode.OperationFailed, "Failed to update patient.");
             }
         }

@@ -78,6 +78,6 @@ public record PatientDto : BaseDto
     /// </summary>
     /// <typeparam name="OrderDto"></typeparam>
     /// <returns></returns>
-    public IReadOnlyList<PatientOrderDto> Orders { get; init; } = [];
+    public IReadOnlyList<PatientOrderDto>? Orders { get; set; }
 }
 

@@ -12,10 +12,11 @@ public static class PatientOrderMapper
     /// Maps a PatientOrder entity to a PatientOrderDto.
     /// </summary>
     /// <param name="patientOrder">The order entity.</param>
+    /// <param name="includePrescriptions">Whether to include prescriptions in the DTO.</param>
     /// <returns>The order DTO.</returns>
-    public static PatientOrderDto ToDto(this PatientOrder patientOrder)
+    public static PatientOrderDto ToDto(this PatientOrder patientOrder, bool includePrescriptions = true)
     {
-        return new PatientOrderDto
+        var dto =  new PatientOrderDto
         {
             Id = patientOrder.Id,
             Instructions = patientOrder.Instructions,
@@ -30,8 +31,15 @@ public static class PatientOrderMapper
             CreatedAt = patientOrder.CreatedAt,
             UpdatedAt = patientOrder.UpdatedAt,
             UpdatedBy = patientOrder.UpdatedBy,
-            Prescriptions = patientOrder.Prescriptions?.ToDtos().ToList() ?? Enumerable.Empty<PrescriptionDto>().ToList(),
         };
+
+        if (includePrescriptions)
+        {
+            dto.Prescriptions =
+                patientOrder.Prescriptions?.ToDtos().ToList() ?? Enumerable.Empty<PrescriptionDto>().ToList();
+        }
+
+        return dto;
     }
 
     /// <summary>

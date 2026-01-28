@@ -64,5 +64,5 @@ public record PatientOrderDto : BaseDto
     /// Gets the list of prescriptions associated with the order.
     /// </summary>
     /// <returns></returns>
-    public IReadOnlyList<PrescriptionDto> Prescriptions { get; set; } = [];
+    public IReadOnlyList<PrescriptionDto>? Prescriptions { get; set; }
 }
