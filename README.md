@@ -600,19 +600,20 @@ Validators/                           ← 請求資料驗證器
 ```csharp
 public async Task<ApiResult<PatientDto>> AddPatientAsync(CreatePatientRequest request)
 {
-    // BDD Style: Given (Guard Clauses)
+    Patient? createdPatient = default;
     var patient = MapToEntity(request);
+
+    // BDD Style: Given (Guard Clauses)
     await EnsureEmailUniqueAsync();
     await EnsurePhoneNumberUniqueAsync();
     await EnsurePrescriptionValidAsync();
-
+    
     // BDD Style: When (Action)
-    var createdPatient = await _patientRepository.AddAsync(patient);
-    await _unitOfWork.SaveChangesAsync();
+    await WhenAddPatientAsync();
 
     // BDD Style: Then (Assertions)
     ShouldCreatedSuccessfully();
-    return SuccessResult(createdPatient.ToDto());
+    return SuccessResult(createdPatient!.ToDto());
 }
 ```
 

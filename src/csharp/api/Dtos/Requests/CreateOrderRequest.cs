@@ -1,4 +1,4 @@
-using Example.Api.Validators;
+using Example.Api.Enums;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
@@ -7,40 +7,69 @@ namespace Example.Api.Dtos.Requests;
 /// <summary>
 /// Request to create a new order.
 /// </summary>
-public record CreateOrderRequest : IValidatableObject
+public record CreateOrderRequest
 {
     /// <summary>
     /// The id of the patient related to the order.
     /// </summary>
     [Required]
     [DefaultValue(1L)]
-    [Range(1, long.MaxValue, ErrorMessage = "PatientId must be greater than 0.")]
-    public long PatientId { get; init; }
+    [Range(1, long.MaxValue)]
+    public long? PatientId { get; init; }
 
     /// <summary>
-    /// Gets the message associated with the order.
+    /// Instructions for the patient's order.
     /// </summary>
-    [Required]
-    [DefaultValue("Some order message here...")]
+    [Required()]
+    [DefaultValue("Some instructions for the patient's order.")]
     [MaxLength(500)]
-    public string Message { get; init; } = string.Empty;
+    public string? Instructions { get; init; }
 
     /// <summary>
-    /// Validates the request.
+    /// The next visit date for the order.
     /// </summary>
-    /// <param name="validationContext"></param>
-    /// <returns></returns>
-    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
-    {
-        var validator = validationContext.GetRequiredService<SanitizerValidator>();
-        var isValid = validator.IsValid(Message, out var messageError);
+    /// <value></value>
+    public DateTimeOffset? NextVisitDate { get; set; }
 
-        if (!isValid)
-        {
-            yield return new ValidationResult(
-                messageError,
-                new[] { nameof(Message) }
-            );
-        }
-    }
+    /// <summary>
+    /// The start date of the order.
+    /// </summary>
+    /// <value></value>
+    [DataType(DataType.DateTime)]
+    public DateTimeOffset? StartDate { get; set; }
+
+    /// <summary>
+    /// The end date of the order.
+    /// </summary>
+    /// <value></value>
+    [DataType(DataType.DateTime)]
+    public DateTimeOffset? EndDate { get; set; }
+
+    /// <summary>
+    /// The type of the order.
+    /// </summary>
+    /// <value></value>
+    [Required()]
+    [EnumDataType(typeof (OrderType))]
+    public OrderType? Type { get; set; }
+
+    /// <summary>
+    /// The date when the order was dispensed.
+    /// </summary>
+    /// <value></value>
+    [DataType(DataType.DateTime)]
+    public DateTimeOffset? DispensedDate { get; set; }
+
+    /// <summary>
+    /// The user ID associated with the order.
+    /// </summary>
+    /// <value></value>
+    public string? UserId { get; init; }
+
+    /// <summary>
+    /// The prescriptions associated with the order.
+    /// </summary>
+    /// <value></value>
+    [Required()]
+    public ICollection<CreatePatientOrderPrescriptionDto>? Prescriptions { get; init; }
 }

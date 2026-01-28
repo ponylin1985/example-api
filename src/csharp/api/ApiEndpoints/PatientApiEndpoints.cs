@@ -43,8 +43,22 @@ public static class PatientApiEndpoints
     {
         group.MapGet("/", async Task<RestApiResult> (
             [AsParameters] GetPatientsRequest request,
-            IPatientService patientService) =>
+            IPatientService patientService,
+            IValidator<GetPatientsRequest> validator) =>
         {
+            var validationResult = await validator.ValidateAsync(request);
+
+            if (!validationResult.IsValid)
+            {
+                return new ApiResult<IDictionary<string, string[]>>
+                {
+                    Success = false,
+                    Code = ApiCode.InvalidRequest,
+                    Data = validationResult.ToDictionary(),
+                    Message = "Invalid request data.",
+                }.ToHttpResult();
+            }
+
             var result = await patientService.GetPatientsAsync(request);
             return result.ToHttpResult();
         })

@@ -1,7 +1,9 @@
 using Example.Api.Dtos.Requests;
 using Example.Api.Dtos.Responses;
+using Example.Api.Enums;
 using Example.Api.Extensions;
 using Example.Api.Services;
+using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
 
@@ -65,18 +67,32 @@ public static class OrderApiEndpoints
         group.MapPost("/", async Task<RestApiResult> (
             CreateOrderRequest request,
             IOrderService orderService,
-            IOutputCacheStore cacheStore) =>
+            IOutputCacheStore cacheStore,
+            IValidator<CreateOrderRequest> validator) =>
         {
+            var validationResult = await validator.ValidateAsync(request);
+
+            if (!validationResult.IsValid)
+            {
+                return new ApiResult<IDictionary<string, string[]>>
+                {
+                    Success = false,
+                    Code = ApiCode.InvalidRequest,
+                    Data = validationResult.ToDictionary(),
+                    Message = "Invalid request data.",
+                }.ToHttpResult();
+            }
+
             var result = await orderService
-                .CreateOrderAsync(request)
+                .AddPatientOrderAsync(request)
                 .TapOnSuccessAsync(async () => await EvictOrderRelatedCaches(cacheStore));
             return result.ToHttpResult();
         })
         .Produces<ApiResult>(StatusCodes.Status200OK)
         .Produces<ApiResult>(StatusCodes.Status400BadRequest)
         .Produces<ApiResult>(StatusCodes.Status500InternalServerError)
-        .WithName("CreateOrder")
-        .WithDescription("Create a new order.");
+        .WithName("AddPatientOrder")
+        .WithDescription("Create a new order for a patient.");
     }
 
     /// <summary>

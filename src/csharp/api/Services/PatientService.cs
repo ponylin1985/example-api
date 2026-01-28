@@ -3,7 +3,6 @@ using Example.Api.Dtos;
 using Example.Api.Dtos.Requests;
 using Example.Api.Dtos.Responses;
 using Example.Api.Enums;
-using Example.Api.Extensions;
 using Example.Api.Infrastructure;
 using Example.Api.Mappers;
 using Example.Api.Models;
@@ -66,24 +65,47 @@ public class PatientService : BaseService, IPatientService
     /// <inheritdoc />
     public async Task<ApiResult<PagedResult<PatientDto>>> GetPatientsAsync(GetPatientsRequest request)
     {
-        var queryResult = await _patientRepository.GetPatientsAsync(
-            request.StartTime,
-            request.EndTime,
-            request.PageNumber,
-            request.PageSize);
+        (IEnumerable<Patient> Data, long TotalCount) queryResult = default;
 
+        EnsureRequestValid();
+        await WhenQueryingPatientsAsync();
         ShouldFoundPatients();
 
-        var dtos = queryResult.Data.ToDtos();
+        var dtos = queryResult.Data!.ToDtos();
         return SuccessPagedResult(
             dtos,
             request.PageNumber,
             request.PageSize,
             queryResult.TotalCount);
 
+        void EnsureRequestValid()
+        {
+            if (request is null)
+            {
+                _logger.LogError("GetPatientsRequest is null.");
+                throw new BusinessException(ApiCode.InvalidRequest, "Request cannot be null.");
+            }
+        }
+
+        async Task WhenQueryingPatientsAsync()
+        {
+            _logger.LogInformation(
+                "Querying patients from {StartTime} to {EndTime}, PageNumber: {PageNumber}, PageSize: {PageSize}",
+                request.StartTime,
+                request.EndTime,
+                request.PageNumber,
+                request.PageSize);
+
+            queryResult = await _patientRepository.GetPatientsAsync(
+                request.StartTime,
+                request.EndTime,
+                request.PageNumber,
+                request.PageSize);
+        }
+
         void ShouldFoundPatients()
         {
-            if (queryResult.Data.IsNullOrEmpty() || queryResult.TotalCount == 0)
+            if (queryResult.Data is null || !queryResult.Data.Any() || queryResult.TotalCount == 0)
             {
                 _logger.LogInformation(
                     "No patients found for the given date range: {StartTime} to {EndTime}",
@@ -97,9 +119,19 @@ public class PatientService : BaseService, IPatientService
     /// <inheritdoc />
     public async Task<ApiResult<PatientDto>> GetPatientAsync(long id)
     {
-        var patient = await _patientRepository.GetPatientAsync(id);
+        long patientId = default;
+        Patient? patient = default;
+
+        GivenPatientId();
+        await WhenQueryingPatientAsync();
         ShouldFoundPatient();
         return SuccessResult(patient!.ToDto());
+
+        void GivenPatientId() => 
+            patientId = id;
+
+        async Task WhenQueryingPatientAsync() =>
+            patient = await _patientRepository.GetPatientAsync(patientId);
 
         void ShouldFoundPatient()
         {
@@ -114,19 +146,15 @@ public class PatientService : BaseService, IPatientService
     /// <inheritdoc />
     public async Task<ApiResult<PatientDto>> AddPatientAsync(CreatePatientRequest request)
     {
-        // BDD Style: Given (Guard Clauses)
+        Patient? createdPatient = default;
         var patient = MapToEntity(request);
+
         await EnsureEmailUniqueAsync();
         await EnsurePhoneNumberUniqueAsync();
         await EnsurePrescriptionValidAsync();
-
-        // BDD Style: When (Action)
-        var createdPatient = await _patientRepository.AddAsync(patient);
-        await _unitOfWork.SaveChangesAsync();
-
-        // BDD Style: Then (Assertions)
+        await WhenAddPatientAsync();
         ShouldCreatedSuccessfully();
-        return SuccessResult(createdPatient.ToDto());
+        return SuccessResult(createdPatient!.ToDto());
 
         async Task EnsureEmailUniqueAsync()
         {
@@ -177,8 +205,20 @@ public class PatientService : BaseService, IPatientService
             }
         }
 
+        async Task WhenAddPatientAsync()
+        {
+            createdPatient = await _patientRepository.AddAsync(patient);
+            await _unitOfWork.SaveChangesAsync();
+        }
+
         void ShouldCreatedSuccessfully()
         {
+            if (createdPatient is null)
+            {
+                _logger.LogError("Failed to create patient: {Patient}", patient);
+                throw new BusinessException(ApiCode.OperationFailed, "Failed to create patient.");
+            }
+
             if (createdPatient.Id <= 0)
             {
                 _logger.LogError("Failed to create patient: {Patient}", patient);

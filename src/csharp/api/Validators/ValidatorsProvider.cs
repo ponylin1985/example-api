@@ -15,9 +15,10 @@ public static class ValidatorsProvider
     /// <param name="services"></param>
     public static void AddValidators(this IServiceCollection services)
     {
+        services.AddSingleton<IValidator<PagedRequest>, PagedRequestValidator>();
+        services.AddSingleton<IValidator<GetPatientsRequest>, GetPatientsRequestValidator>();
         services.AddSingleton<IValidator<CreatePatientRequest>, CreatePatientRequestValidator>();
-        // services.AddValidation();
+        services.AddSingleton<IValidator<CreateOrderRequest>, CreateOrderRequestValidator>();
         services.AddSingleton<IHtmlSanitizer, HtmlSanitizer>();
-        services.AddSingleton<SanitizerValidator>();
     }
 }
