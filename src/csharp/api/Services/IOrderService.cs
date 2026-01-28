@@ -21,7 +21,7 @@ public interface IOrderService
     /// </summary>
     /// <param name="request">The creation request.</param>
     /// <returns>The created order DTO.</returns>
-    Task<ApiResult<PatientOrderDto>> CreateOrderAsync(CreateOrderRequest request);
+    Task<ApiResult<PatientOrderDto>> AddPatientOrderAsync(CreateOrderRequest request);
 
     /// <summary>
     /// Updates the message of an existing order.
