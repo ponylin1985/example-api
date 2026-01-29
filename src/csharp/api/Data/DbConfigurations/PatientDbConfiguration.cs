@@ -47,7 +47,8 @@ public class PatientDbConfiguration : IEntityTypeConfiguration<Patient>
         entity
             .Property(p => p.Gender)
             .HasColumnName("gender")
-            .HasConversion<int>()
+            .HasConversion<byte>()
+            .HasColumnType("smallint")
             .IsRequired();
 
         entity

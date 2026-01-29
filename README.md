@@ -117,14 +117,15 @@ src/python/
 ## 🎯 API 功能
 
 ### Patient Management (病患管理)
-- `GET /api/patients` - 查詢病患列表（支援日期範圍、分頁）
-- `GET /api/patients/{id}` - 查詢單一病患
+- `GET /api/patients` - 查詢病患列表（支援日期範圍與分頁）
+- `GET /api/patients/{id}` - 查詢單一的病患
 - `POST /api/patients` - 新增病患
+- `PUT /api/patients/{id}` - 更新病患基本資料
 
-### Order Management (訂單管理)
-- `GET /api/orders/{id}` - 查詢單一訂單
-- `POST /api/orders` - 新增訂單
-- `PUT /api/orders/{id}` - 更新訂單訊息
+### Order Management (病患訂單管理)
+- `GET /api/orders/{id}` - 查詢單一病患訂單
+- `POST /api/orders` - 新增病患訂單
+- `PUT /api/orders/{id}` - 更新病患訂單的「醫囑指示」
 
 ---
 
@@ -260,20 +261,66 @@ dotnet ef database update
 dotnet ef database update PreviousMigrationName
 ```
 
-### 資料庫 Schema
 
-- `patient` - 病患資料表
-  - `id` (bigint, PK)
-  - `name` (varchar(50))
-  - `created_at` (timestamptz)
-  - `updated_at` (timestamptz)
+### 資料庫 Table Schema
 
-- `order` - 訂單資料表
+- `patient` - 病患基本資料表
   - `id` (bigint, PK)
-  - `patient_id` (bigint, FK → patient.id)
-  - `message` (varchar(500))
-  - `created_at` (timestamptz)
-  - `updated_at` (timestamptz)
+  - `name` (varchar(50), NOT NULL)
+  - `age` (int, NOT NULL)
+  - `gender` (smallint, NOT NULL)
+  - `email` (varchar(100), NULL)
+  - `phone_number` (varchar(10), NOT NULL)
+  - `country` (varchar(25), NULL)
+  - `city` (varchar(25), NULL)
+  - `area` (varchar(25), NULL)
+  - `road` (varchar(25), NULL)
+  - `street` (varchar(25), NULL)
+  - `address_others` (varchar(100), NULL)
+  - `date_of_birth` (date, NOT NULL)
+  - `first_visit_date` (timestamptz, NOT NULL)
+  - `status` (smallint, NOT NULL)
+  - `remarks` (varchar(500), NULL)
+  - `created_at` (timestamptz, NOT NULL, DEFAULT NOW())
+  - `created_by` (varchar(50), NOT NULL)
+  - `updated_at` (timestamptz, NOT NULL, DEFAULT NOW())
+  - `updated_by` (varchar(50), NOT NULL)
+
+- `patient_order` - 病患訂單資料表
+  - `id` (bigint, PK)
+  - `patient_id` (bigint, `FK → patient.id`, NOT NULL)
+  - `instructions` (varchar(500), NULL)
+  - `next_visit_date` (timestamptz, NULL)
+  - `start_date` (timestamptz, NULL)
+  - `end_date` (timestamptz, NULL)
+  - `type` (smallint, NOT NULL)
+  - `status` (smallint, NOT NULL)
+  - `created_at` (timestamptz, NOT NULL, DEFAULT NOW())
+  - `created_by` (varchar(50), NOT NULL)
+  - `updated_at` (timestamptz, NOT NULL, DEFAULT NOW())
+  - `updated_by` (varchar(50), NOT NULL)
+
+- `medication` - 藥品資料表
+  - `id` (bigint, PK)
+  - `name` (varchar(50), NOT NULL)
+  - `manufacturer` (varchar(50), NOT NULL)
+  - `created_at` (timestamptz, NOT NULL, DEFAULT NOW())
+  - `created_by` (varchar(50), NOT NULL)
+  - `updated_at` (timestamptz, NOT NULL, DEFAULT NOW())
+  - `updated_by` (varchar(50), NOT NULL)
+
+- `prescription` - 處方資料表
+  - `id` (bigint, PK)
+  - `order_id` (bigint, `FK → patient_order.id`, NOT NULL)
+  - `medication_id` (bigint, `FK → medication.id`, NOT NULL)
+  - `dose` (varchar(50), NULL)
+  - `frequency` (varchar(50), NULL)
+  - `duration_in_days` (int, NOT NULL)
+  - `route` (smallint, NOT NULL)
+  - `created_at` (timestamptz, NOT NULL, DEFAULT NOW())
+  - `created_by` (varchar(50), NOT NULL)
+  - `updated_at` (timestamptz, NOT NULL, DEFAULT NOW())
+  - `updated_by` (varchar(50), NOT NULL)
 
 ---
 
