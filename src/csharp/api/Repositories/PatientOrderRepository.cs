@@ -60,9 +60,9 @@ public sealed class PatientOrderRepository : IPatientOrderRepository
 
     /// <inheritdoc />
     public async Task<PatientOrder?> UpdateAsync(
-        long id, 
-        string instructions, 
-        string userId, 
+        long id,
+        string instructions,
+        string userId,
         DateTimeOffset updatedAt)
     {
         var sql = @"
