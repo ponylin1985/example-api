@@ -264,6 +264,75 @@ dotnet ef database update PreviousMigrationName
 
 ### 資料庫 Table Schema
 
+```mermaid
+erDiagram
+    patient ||--o{ patient_order : "places"
+    patient_order ||--o{ prescription : "contains"
+    medication ||--o{ prescription : "is prescribed in"
+
+    patient {
+        bigint id PK
+        varchar_50 name
+        int age
+        smallint gender
+        varchar_100 email
+        varchar_10 phone_number
+        varchar_25 country
+        varchar_25 city
+        varchar_25 area
+        varchar_25 road
+        varchar_25 street
+        varchar_100 address_others
+        date date_of_birth
+        timestamptz first_visit_date
+        smallint status
+        varchar_500 remarks
+        timestamptz created_at
+        varchar_50 created_by
+        timestamptz updated_at
+        varchar_50 updated_by
+    }
+
+    patient_order {
+        bigint id PK
+        bigint patient_id FK
+        varchar_500 instructions
+        timestamptz next_visit_date
+        timestamptz start_date
+        timestamptz end_date
+        smallint type
+        smallint status
+        timestamptz created_at
+        varchar_50 created_by
+        timestamptz updated_at
+        varchar_50 updated_by
+    }
+
+    medication {
+        bigint id PK
+        varchar_50 name
+        varchar_50 manufacturer
+        timestamptz created_at
+        varchar_50 created_by
+        timestamptz updated_at
+        varchar_50 updated_by
+    }
+
+    prescription {
+        bigint id PK
+        bigint order_id FK
+        bigint medication_id FK
+        varchar_50 dose
+        varchar_50 frequency
+        int duration_in_days
+        smallint route
+        timestamptz created_at
+        varchar_50 created_by
+        timestamptz updated_at
+        varchar_50 updated_by
+    }
+```
+
 - `patient` - 病患基本資料表
   - `id` (bigint, PK)
   - `name` (varchar(50), NOT NULL)
@@ -504,7 +573,7 @@ Database
 flowchart TD
     Client["API Client"]
 
-    %% Middlewares (依序)
+    %% Middlewares
     M1["GlobalExceptionHandlerMiddleware"]
     M2["ResponseCompressionMiddleware"]
     M3["TraceIdMiddleware"]
@@ -514,56 +583,59 @@ flowchart TD
 
     Endpoint["Minimal API Endpoint<br/>ApiEndpoints"]
 
-    Service["Service Layer<br/>PatientService, OrderService"]
-    RedisCache["Cached Repository<br/>(Redis Decorator)"]
-    Repository["Repository<br/>PatientRepository, OrderRepository"]
-    DB[/"Database<br/>PostgreSQL"/]
-    TablePatient[["Table: patient"]]
-    TableOrder[["Table: order"]]
+    %% Business Logic Layer
+    subgraph Business_Logic_Layer["Business Logic Layer"]
+        subgraph Application_Services["Application Services"]
+            S1["PatientService"]
+            S2["PatientOrderService"]
+        end
+        
+        subgraph Domain_Services["Domain Services"]
+            DS1["OrderPrescriptionPolicy"]
+        end
+    end
 
-    %% HTTP Pipeline (順序)
+    %% Data Access Layer
+    subgraph Data_Access_Layer["Data Access Layer"]
+        RedisCache["Cached Repository<br/>(Redis Decorator)"]
+        Repository["Repository<br/>Patient, Order, Med, Rx"]
+        
+        DB[/"Database<br/>PostgreSQL"/]
+        
+        T1[["Table: patient"]]
+        T2[["Table: patient_order"]]
+        T3[["Table: medication"]]
+        T4[["Table: prescription"]]
+    end
+
+    %% HTTP Pipeline
     Client --> M1 --> M2 --> M3 --> M4
-    M4 -- "Cache Hit: Return" --> Client
+    M4 -- "Cache Hit" --> Client
     M4 --> M5 --> M6 --> Endpoint
-    Endpoint --> Service
-    Service --> RedisCache
-    RedisCache -- "Cache Hit: Entity" --> Service
+    Endpoint --> S1
+    Endpoint --> S2
+
+    %% Logic Dependency
+    S1 --> DS1
+    S2 --> DS1
+    Application_Services --> RedisCache
+
+    %% Data Flow
     RedisCache --> Repository
     Repository --> DB
 
-    %% DB Table
-    DB --> TablePatient
-    DB --> TableOrder
+    %% DB Tables Relationship
+    DB --> T1
+    DB --> T2
+    DB --> T3
+    DB --> T4
 
-    %% 回傳資料
-    TablePatient --> DB
-    TableOrder --> DB
-    DB --> Repository
-    Repository --> RedisCache
-    RedisCache --> Service
-    Service --> Endpoint
-    Endpoint --> Client
-
-    %% 分層標示
-    subgraph HTTP_Pipeline["HTTP Pipeline"]
-        M1
-        M2
-        M3
-        M4
-        M5
-        M6
-        Endpoint
-    end
-    subgraph Business_Logic_Layer["Business Logic Layer"]
-        Service
-    end
-    subgraph Data_Access_Layer["Data Access Layer"]
-        RedisCache
-        Repository
-        DB
-        TablePatient
-        TableOrder
-    end
+    %% Styles
+    style Domain_Services fill:#2d2d2d,stroke:#f9f,stroke-width:2px,stroke-dasharray: 5 5
+    style T1 fill:#333,stroke:#fff
+    style T2 fill:#333,stroke:#fff
+    style T3 fill:#333,stroke:#fff
+    style T4 fill:#333,stroke:#fff
 ```
 
 ### 目錄結構範例 (以 C# ASP.NET Core 的 Patient 與 Order 為例)
