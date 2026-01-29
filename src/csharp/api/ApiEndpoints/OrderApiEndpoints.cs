@@ -8,9 +8,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
 
 using RestApiResult = Microsoft.AspNetCore.Http.HttpResults.Results<
-    Microsoft.AspNetCore.Http.HttpResults.Ok<Example.Api.Dtos.Responses.ApiResult>, 
-    Microsoft.AspNetCore.Http.HttpResults.BadRequest<Example.Api.Dtos.Responses.ApiResult>, 
-    Microsoft.AspNetCore.Http.HttpResults.InternalServerError<Example.Api.Dtos.Responses.ApiResult>, 
+    Microsoft.AspNetCore.Http.HttpResults.Ok<Example.Api.Dtos.Responses.ApiResult>,
+    Microsoft.AspNetCore.Http.HttpResults.BadRequest<Example.Api.Dtos.Responses.ApiResult>,
+    Microsoft.AspNetCore.Http.HttpResults.InternalServerError<Example.Api.Dtos.Responses.ApiResult>,
     Microsoft.AspNetCore.Http.HttpResults.StatusCodeHttpResult>;
 
 namespace Example.Api.Endpoints;
@@ -42,7 +42,7 @@ public static class OrderApiEndpoints
     /// <param name="group"></param>
     private static void MapGetOrder(RouteGroupBuilder group)
     {
-        group.MapGet("/{id:long:min(1)}", async Task<RestApiResult> (long id, IPatientOrderService orderService) => 
+        group.MapGet("/{id:long:min(1)}", async Task<RestApiResult> (long id, IPatientOrderService orderService) =>
         {
             var result = await orderService.GetOrderAsync(id);
             return result.ToHttpResult();
@@ -65,10 +65,10 @@ public static class OrderApiEndpoints
     private static void MapCreateOrder(RouteGroupBuilder group)
     {
         group.MapPost("/", async Task<RestApiResult> (
-            CreateOrderRequest request,
+            CreatePatientOrderRequest request,
             IPatientOrderService orderService,
             IOutputCacheStore cacheStore,
-            IValidator<CreateOrderRequest> validator) =>
+            IValidator<CreatePatientOrderRequest> validator) =>
         {
             var validationResult = await validator.ValidateAsync(request);
 

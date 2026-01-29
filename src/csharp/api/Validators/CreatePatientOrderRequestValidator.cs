@@ -5,15 +5,15 @@ using Ganss.Xss;
 namespace Example.Api.Validators;
 
 /// <summary>
-/// Validator for CreateOrderRequest.
+/// Validator for CreatePatientOrderRequest.
 /// </summary>
-public sealed class CreateOrderRequestValidator : AbstractValidator<CreateOrderRequest>
+public sealed class CreatePatientOrderRequestValidator : AbstractValidator<CreatePatientOrderRequest>
 {
     /// <summary>
-    /// Constructor for CreateOrderRequestValidator.
+    /// Constructor for CreatePatientOrderRequestValidator.
     /// </summary>
     /// <param name="sanitizer"></param>
-    public CreateOrderRequestValidator(IHtmlSanitizer sanitizer)
+    public CreatePatientOrderRequestValidator(IHtmlSanitizer sanitizer)
     {
         RuleFor(x => x.PatientId)
             .NotNull().WithMessage("PatientId is required.")

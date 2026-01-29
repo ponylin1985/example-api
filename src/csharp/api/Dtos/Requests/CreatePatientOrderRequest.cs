@@ -5,9 +5,9 @@ using System.ComponentModel.DataAnnotations;
 namespace Example.Api.Dtos.Requests;
 
 /// <summary>
-/// Request to create a new order.
+/// Request to create a new order related to a patient.
 /// </summary>
-public record CreateOrderRequest
+public record CreatePatientOrderRequest
 {
     /// <summary>
     /// The id of the patient related to the order.
@@ -50,7 +50,7 @@ public record CreateOrderRequest
     /// </summary>
     /// <value></value>
     [Required()]
-    [EnumDataType(typeof (OrderType))]
+    [EnumDataType(typeof(OrderType))]
     public OrderType? Type { get; set; }
 
     /// <summary>

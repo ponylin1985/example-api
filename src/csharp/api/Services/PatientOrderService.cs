@@ -99,7 +99,7 @@ public class PatientOrderService : BaseService, IPatientOrderService
     }
 
     /// <inheritdoc />
-    public async Task<ApiResult<PatientOrderDto>> AddPatientOrderAsync(CreateOrderRequest request)
+    public async Task<ApiResult<PatientOrderDto>> AddPatientOrderAsync(CreatePatientOrderRequest request)
     {
         PatientOrder? createdOrder = default;
         var order = MapToEntity(request);
@@ -194,7 +194,7 @@ public class PatientOrderService : BaseService, IPatientOrderService
     /// </summary>
     /// <param name="request"></param>
     /// <returns></returns>
-    private PatientOrder MapToEntity(CreateOrderRequest request)
+    private PatientOrder MapToEntity(CreatePatientOrderRequest request)
     {
         var userId = request.UserId!.Trim();
 
