@@ -42,8 +42,14 @@ public class ApplicationDbSession : IDbSession, IAsyncDisposable
     /// <returns></returns>
     public async Task<DbConnection> GetOpenConnectionAsync(CancellationToken ct = default)
     {
-        await _dbContext.Database.OpenConnectionAsync(ct);
-        return _dbContext.Database.GetDbConnection();
+        var connection = _dbContext.Database.GetDbConnection();
+
+        if (connection.State != ConnectionState.Open)
+        {
+            await _dbContext.Database.OpenConnectionAsync(ct);
+        }
+
+        return connection;
     }
 
     /// <summary>
@@ -62,6 +68,23 @@ public class ApplicationDbSession : IDbSession, IAsyncDisposable
         }
 
         return _currentTransaction.GetDbTransaction();
+    }
+
+    /// <summary>
+    /// Executes the specified action with a resilient execution strategy.
+    /// </summary>
+    /// <param name="action"></param>
+    /// <typeparam name="T"></typeparam>
+    /// <returns></returns>
+    public async Task<T> ExecuteResilientAsync<T>(Func<Task<T>> action)
+    {
+        if (_dbContext.Database.CurrentTransaction is not null)
+        {
+            return await action();
+        }
+
+        var strategy = _dbContext.Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync(action);
     }
 
     /// <summary>

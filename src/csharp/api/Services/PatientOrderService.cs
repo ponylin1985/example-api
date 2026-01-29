@@ -158,8 +158,8 @@ public class PatientOrderService : BaseService, IPatientOrderService
 
     /// <inheritdoc />
     public async Task<ApiResult<PatientOrderDto>> UpdateInstructionsAsync(
-        long id, 
-        string instructions, 
+        long id,
+        string instructions,
         string userId)
     {
         PatientOrder? updatedOrder = default;
@@ -169,10 +169,13 @@ public class PatientOrderService : BaseService, IPatientOrderService
 
         async Task WhenUpdateOrderAsync()
         {
-            var utcNow = _dateTimeOffsetProvider.UtcNow;
-            await using var _ = await _unitOfWork.BeginTransactionAsync();
-            updatedOrder = await _orderRepository.UpdateAsync(id, instructions.Trim(), userId, utcNow);
-            await _unitOfWork.CommitTransactionAsync();
+            await _unitOfWork.ExecuteStrategyAsync(async () =>
+            {
+                var utcNow = _dateTimeOffsetProvider.UtcNow;
+                await using var _ = await _unitOfWork.BeginTransactionAsync();
+                updatedOrder = await _orderRepository.UpdateAsync(id, instructions.Trim(), userId, utcNow);
+                await _unitOfWork.CommitTransactionAsync();
+            });
         }
 
         void ShouldUpdatedSuccessfully()
@@ -199,11 +202,11 @@ public class PatientOrderService : BaseService, IPatientOrderService
         {
             PatientId = request.PatientId!.Value,
             Instructions = request.Instructions!.Trim(),
-            NextVisitDate = request.NextVisitDate,
-            StartDate = request.StartDate,
-            EndDate = request.EndDate,
+            NextVisitDate = request.NextVisitDate?.UtcDateTime,
+            StartDate = request.StartDate?.UtcDateTime,
+            EndDate = request.EndDate?.UtcDateTime,
             Type = request.Type!.Value,
-            DispensedDate = request.DispensedDate,
+            DispensedDate = request.DispensedDate?.UtcDateTime,
             CreatedBy = userId,
             CreatedAt = _dateTimeOffsetProvider.UtcNow,
             UpdatedBy = userId,

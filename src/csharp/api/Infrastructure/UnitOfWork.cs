@@ -27,20 +27,35 @@ public class UnitOfWork : IUnitOfWork, IAsyncDisposable
     }
 
     /// <summary>
+    /// Executes the specified database operation with a EF Core built-in resilient execution strategy.
+    /// </summary>
+    /// <param name="action">A database operation action.</param>
+    /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous execution operation.</returns>
+    public async Task ExecuteStrategyAsync(Func<Task> action, CancellationToken cancellationToken = default)
+    {
+        await _dbSession.ExecuteResilientAsync(async () =>
+        {
+            await action();
+            return true;
+        });
+    }
+
+    /// <summary>
     /// Begins a new database transaction.
     /// </summary>
     /// <param name="level">The isolation level of the transaction.</param>
-    /// <param name="ct">The cancellation token.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains the transaction wrapper.</returns>
     public async Task<IUnitOfWorkTransaction> BeginTransactionAsync(
-        IsolationLevel level = IsolationLevel.ReadCommitted, CancellationToken ct = default)
+        IsolationLevel level = IsolationLevel.ReadCommitted, CancellationToken cancellationToken = default)
     {
         if (_activeWrapper is not null)
         {
             throw new InvalidOperationException("A transaction is already in progress for this unit of work.");
         }
 
-        await _dbSession.EnsureTransactionAsync(level, ct);
+        await _dbSession.EnsureTransactionAsync(level, cancellationToken);
         _activeWrapper = new UnitOfWorkTransactionWrapper(this, () => _activeWrapper = null);
         return _activeWrapper;
     }
@@ -49,7 +64,7 @@ public class UnitOfWork : IUnitOfWork, IAsyncDisposable
     /// Commits all changes tracked by EF Core and commits the underlying database transaction.
     /// </summary>
     /// <param name="cancellationToken">The cancellation token.</param>
-    /// <returns></returns>
+    /// <returns>A task that represents the asynchronous save operation. The task result contains the number of state entries written to the database.</returns>
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         return await _dbSession.SaveChangesAsync(cancellationToken);
@@ -58,8 +73,8 @@ public class UnitOfWork : IUnitOfWork, IAsyncDisposable
     /// <summary>
     /// Commits the underlying database transaction.
     /// </summary>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>A task that represents the asynchronous commit operation.</returns>
     public async Task CommitTransactionAsync(CancellationToken cancellationToken = default)
     {
         await _dbSession.CommitTransactionAsync(cancellationToken);
@@ -69,8 +84,8 @@ public class UnitOfWork : IUnitOfWork, IAsyncDisposable
     /// <summary>
     /// Rolls back the underlying database transaction.
     /// </summary>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>A task that represents the asynchronous rollback operation.</returns>
     public async Task RollbackTransactionAsync(CancellationToken cancellationToken = default)
     {
         await _dbSession.RollbackTransactionAsync(cancellationToken);
@@ -100,7 +115,7 @@ public class UnitOfWork : IUnitOfWork, IAsyncDisposable
         {
             _dbSession.Dispose();
         }
-        
+
         GC.SuppressFinalize(this);
     }
 
@@ -165,7 +180,7 @@ public class UnitOfWork : IUnitOfWork, IAsyncDisposable
                 Cleanup();
                 return;
             }
-            
+
 
             try
             {

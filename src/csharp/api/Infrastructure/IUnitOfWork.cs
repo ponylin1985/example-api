@@ -8,6 +8,16 @@ namespace Example.Api.Infrastructure;
 public interface IUnitOfWork : IDisposable
 {
     /// <summary>
+    /// Executes the specified database operation with a EF Core built-in resilient execution strategy.
+    /// </summary>
+    /// <param name="action">A database operation action.</param>
+    /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous execution operation.</returns>
+    Task ExecuteStrategyAsync(
+        Func<Task> action,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Begin a new database transaction.
     /// </summary>
     /// <param name="level">The isolation level for the transaction.</param>
@@ -28,13 +38,13 @@ public interface IUnitOfWork : IDisposable
     /// Commits the underlying database transaction.
     /// </summary>
     /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
-    /// <returns></returns>
+    /// <returns>A task that represents the asynchronous commit operation.</returns>
     Task CommitTransactionAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Rolls back the current database transaction.
     /// </summary>
     /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
-    /// <returns></returns>
+    /// <returns>A task that represents the asynchronous rollback operation.</returns>
     Task RollbackTransactionAsync(CancellationToken cancellationToken = default);
 }

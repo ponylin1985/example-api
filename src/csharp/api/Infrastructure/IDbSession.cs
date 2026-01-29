@@ -26,6 +26,14 @@ public interface IDbSession : IDisposable
         IsolationLevel level = IsolationLevel.ReadCommitted, CancellationToken ct = default);
 
     /// <summary>
+    /// Executes the specified action with a resilient execution strategy.
+    /// </summary>
+    /// <param name="action"></param>
+    /// <typeparam name="T"></typeparam>
+    /// <returns></returns>
+    Task<T> ExecuteResilientAsync<T>(Func<Task<T>> action);
+
+    /// <summary>
     /// Saves all changes made in this context to the database.
     /// </summary>
     /// <param name="ct"></param>
