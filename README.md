@@ -526,11 +526,13 @@ ApiEndpoints/                         ← Minimal APIs 端點
 ├── PatientApiEndpoints
 └── OrderApiEndpoints
 
-Services/                             ← 業務邏輯 (目前為 Application Service 與 Domain Service 混合)
+Services/                             ← 業務邏輯 (目前主要為應用程式服務 Application Service)
+├── DomainServices/                   ← 領域服務 (業務領域服務 Domain Services)
+|   └── OrderPrescriptionPolicy
 ├── PatientService
 └── OrderService
 
-Repositories/                         ← 資料倉儲抽象
+Repositories/                         ← 資料倉儲抽象化 (Repository Pattern)
 ├── PatientRepository
 └── OrderRepository
 
@@ -538,7 +540,7 @@ Mappers/                              ← 資料載體對應
 ├── OrderMapper
 └── PatientMapper
 
-Middlewares/                          ← Http 管道中介層
+Middlewares/                          ← Http 管道中介層 (Http Pipeline Middlewares)
 ├── GlobalExceptionHandlerMiddleware
 ├── RequestResponseLoggingMiddleware
 ├── SlowRequestLoggingMiddleware
@@ -548,7 +550,7 @@ Models/                               ← 貧血模型 (Entities/POCOs)
 ├── Patient
 └── Order
 
-Migrations/                           ← 資料庫遷移
+Migrations/                           ← 資料庫遷移 (dotnet ef migrations)
 ├── XxxMigration.cs
 ├── YyyMigration.cs
 └── DbContextModelSnapshot
@@ -566,11 +568,12 @@ Dtos/                                 ← 資料傳輸物件 (Data Transfer Obje
     ├── ApiResult
     └── PagedResult
 
-Options/                              ← 應用程式設定組態
+Options/                              ← 應用程式設定組態 (IOptions Pattern)
 └── RequestResponseLoggingOptions
 
-Validators/                           ← 請求資料驗證器
-└── SanitizerValidator
+Validators/                           ← 請求資料驗證器 (Request Validators - FluentValidation)
+├── CreatePatientRequestValidator
+└── CreateOrderRequestValidator
 ```
 
 ### 共同架構模式
