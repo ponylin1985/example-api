@@ -692,7 +692,7 @@ Options/                              ← 應用程式設定組態 (IOptions Pat
 
 Validators/                           ← 請求資料驗證器 (Request Validators - FluentValidation)
 ├── CreatePatientRequestValidator
-└── CreateOrderRequestValidator
+└── CreatePatientOrderRequestValidator
 ```
 
 ### 共同架構模式
