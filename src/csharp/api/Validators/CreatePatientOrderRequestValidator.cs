@@ -25,10 +25,46 @@ public sealed class CreatePatientOrderRequestValidator : AbstractValidator<Creat
             .Sanitized(sanitizer)
             .WithName("instructions");
 
+        RuleFor(o => o.StartDate)
+            .Must(o => o >= DateTimeOffset.UtcNow)
+            .When(o => o.StartDate.HasValue)
+            .WithMessage("StartDate must be in the future.")
+            .WithName("startDate");
+
+        RuleFor(o => o.StartDate)
+            .LessThan(o => o.EndDate)
+            .When(o => o.StartDate.HasValue && o.EndDate.HasValue)
+            .WithMessage("StartDate must be earlier than EndDate.")
+            .WithName("startDate");
+
+        RuleFor(o => o.EndDate)
+            .Must(o => o >= DateTimeOffset.UtcNow)
+            .When(o => o.EndDate.HasValue)
+            .WithMessage("EndDate must be in the future.")
+            .WithName("endDate");
+
+        RuleFor(o => o.EndDate)
+            .GreaterThan(o => o.StartDate)
+            .When(o => o.StartDate.HasValue && o.EndDate.HasValue)
+            .WithMessage("EndDate must be later than StartDate.")
+            .WithName("endDate");
+
+        RuleFor(o => o.DispensedDate)
+            .Must(o => o <= DateTimeOffset.UtcNow)
+            .When(o => o.DispensedDate.HasValue)
+            .WithMessage("DispensedDate cannot be in the future.")
+            .WithName("dispensedDate");
+
         RuleFor(o => o.Type)
             .NotEmpty().WithMessage("Type is required.")
             .IsInEnum().WithMessage("Type must be a valid enum value.")
             .WithName("type");
+
+        RuleFor(o => o.UserId)
+            .NotEmpty().WithMessage("UserId is required.")
+            .MaximumLength(50).WithMessage("UserId cannot exceed 50 characters.")
+            .Sanitized(sanitizer)
+            .WithName("userId");
 
         RuleFor(o => o.Prescriptions)
             .NotNull().WithMessage("Prescriptions are required.")

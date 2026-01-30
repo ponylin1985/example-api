@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Example.Api.DateTimeOffsetProviders;
 using Example.Api.Dtos;
 using Example.Api.Dtos.Requests;
@@ -101,10 +102,12 @@ public class PatientOrderService : BaseService, IPatientOrderService
     /// <inheritdoc />
     public async Task<ApiResult<PatientOrderDto>> AddPatientOrderAsync(CreatePatientOrderRequest request)
     {
+        Patient? patient = default;
         PatientOrder? createdOrder = default;
         var order = MapToEntity(request);
 
         await EnsurePatientExists();
+        EnsurePatientStatusValid();
         await EnsurePrescriptionValidAsync();
         await WhenAddPatientOrder();
         ShouldCreatedSuccessfully();
@@ -112,14 +115,30 @@ public class PatientOrderService : BaseService, IPatientOrderService
 
         async Task EnsurePatientExists()
         {
-            var patientExists = await _patientRepository.IsExistPatientAsync(order.PatientId);
+            patient = await _patientRepository.GetPatientAsync(order.PatientId);
 
-            if (!patientExists)
+            if (patient is null)
             {
                 _logger.LogWarning("Patient with ID {PatientId} not found for order creation.", order.PatientId);
                 throw new BusinessException(
-                    ApiCode.InvalidRequest,
+                    ApiCode.OperationFailed,
                     $"Patient with ID {order.PatientId} does not exist.");
+            }
+        }
+
+        void EnsurePatientStatusValid()
+        {
+            PatientStatus[] validStatuses = [PatientStatus.Active, PatientStatus.Transferred];
+
+            if (!validStatuses.Contains(patient!.Status))
+            {
+                _logger.LogWarning(
+                    "Patient with ID {PatientId} has invalid status {Status} for order creation.",
+                    order.PatientId,
+                    patient.Status);
+
+                throw new BusinessException(
+                    ApiCode.OperationFailed, "Patient status is invalid for creating orders.");
             }
         }
 
@@ -136,22 +155,16 @@ public class PatientOrderService : BaseService, IPatientOrderService
 
         void ShouldCreatedSuccessfully()
         {
-            var errorMessage = $"Failed to create order for PatientId: {request.PatientId}.";
-
-            if (createdOrder is null)
+            if (createdOrder is null or { Id: <= 0 })
             {
-                _logger.LogWarning(errorMessage);
+                var requestJson = JsonSerializer.Serialize(request);
+                _logger.LogWarning(
+                    "Failed to create order for PatientId: {PatientId}. Request: {RequestJson}",
+                    request.PatientId,
+                    requestJson);
                 throw new BusinessException(
                     ApiCode.OperationFailed,
-                    errorMessage);
-            }
-
-            if (createdOrder.Id == default)
-            {
-                _logger.LogWarning(errorMessage);
-                throw new BusinessException(
-                    ApiCode.OperationFailed,
-                    errorMessage);
+                    $"Failed to create order for PatientId: {request.PatientId}.");
             }
         }
     }
@@ -180,7 +193,7 @@ public class PatientOrderService : BaseService, IPatientOrderService
 
         void ShouldUpdatedSuccessfully()
         {
-            if (updatedOrder is null or { Id: 0, PatientId: 0 })
+            if (updatedOrder is null or { Id: <= 0, PatientId: <= 0 })
             {
                 _logger.LogWarning("Failed to update order instructions for order with OrderId: {Id}.", id);
                 throw new BusinessException(
