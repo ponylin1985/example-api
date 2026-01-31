@@ -3,9 +3,11 @@ using Example.Api.Dtos;
 using Example.Api.Dtos.Requests;
 using Example.Api.Dtos.Responses;
 using Example.Api.Enums;
+using Example.Api.Extensions;
 using Example.Api.Infrastructure;
 using Example.Api.Mappers;
 using Example.Api.Models;
+using Example.Api.Processes;
 using Example.Api.Repositories;
 using Example.Api.Services.DomainServices;
 
@@ -16,6 +18,11 @@ namespace Example.Api.Services;
 /// </summary>
 public class PatientService : BaseService, IPatientService
 {
+    /// <summary>
+    /// Application logger factory.
+    /// </summary>
+    private readonly ILoggerFactory _loggerFactory;
+
     /// <summary>
     /// Application logger.
     /// </summary>
@@ -56,14 +63,15 @@ public class PatientService : BaseService, IPatientService
     /// <param name="unitOfWork">The unit of work.</param>
     /// <param name="dateTimeOffsetProvider">The DateTimeOffset provider.</param>
     public PatientService(
-        ILogger<PatientService> logger,
+        ILoggerFactory loggerFactory,
         IPatientRepository patientRepository,
         IMedicationRepository medicationRepository,
         IOrderPrescriptionPolicy orderPrescriptionPolicy,
         IUnitOfWork unitOfWork,
         IDateTimeOffsetProvider dateTimeOffsetProvider)
     {
-        _logger = logger;
+        _loggerFactory = loggerFactory;
+        _logger = loggerFactory.CreateLogger<PatientService>();
         _patientRepository = patientRepository;
         _medicationRepository = medicationRepository;
         _orderPrescriptionPolicy = orderPrescriptionPolicy;
@@ -155,58 +163,23 @@ public class PatientService : BaseService, IPatientService
     /// <inheritdoc />
     public async Task<ApiResult<PatientDto>> AddPatientAsync(CreatePatientRequest request)
     {
-        Patient? createdPatient = default;
-        var patient = MapToEntity(request);
+        var process = new AddPatientProcess(
+            _loggerFactory.CreateLogger<AddPatientProcess>(),
+            request,
+            _patientRepository,
+            _orderPrescriptionPolicy,
+            _dateTimeOffsetProvider);
 
-        await EnsureEmailUniqueAsync();
-        await EnsurePhoneNumberUniqueAsync();
-        await EnsurePrescriptionValidAsync();
-        await WhenAddPatientAsync();
-        ShouldCreatedSuccessfully();
-        return SuccessResult(createdPatient!.ToDto());
+        await process
+            .Prepare()
+            .EnsureEmailUniqueAsync()
+            .ThenAsync(p => p.EnsurePhoneNumberUniqueAsync())
+            .ThenAsync(p => p.EnsurePrescriptionValidAsync())
+            .ThenAsync(p => p.ExecuteAsync())
+            .ThenAsync(p => p.CommitAsync(_unitOfWork))
+            .Then(p => p.ShouldSuccessfully());
 
-        async Task EnsureEmailUniqueAsync()
-        {
-            if (string.IsNullOrWhiteSpace(patient.Email))
-            {
-                return;
-            }
-
-            if (await _patientRepository.IsExistPatentByEmailAsync(patient.Email))
-            {
-                _logger.LogWarning("Email {Email} is already in use.", patient.Email);
-                throw new BusinessException(ApiCode.OperationFailed, "Email is already in use.");
-            }
-        }
-
-        async Task EnsurePhoneNumberUniqueAsync()
-        {
-            if (await _patientRepository.IsExistPatientByPhoneAsync(patient.PhoneNumber))
-            {
-                _logger.LogWarning("Phone number {PhoneNumber} is already in use.", patient.PhoneNumber);
-                throw new BusinessException(ApiCode.OperationFailed, "Phone number is already in use.");
-            }
-        }
-
-        async Task EnsurePrescriptionValidAsync()
-        {
-            await _orderPrescriptionPolicy.EnsureMedicationIdsValidAsync(patient.Orders.FirstOrDefault()!);
-        }
-
-        async Task WhenAddPatientAsync()
-        {
-            createdPatient = await _patientRepository.AddAsync(patient);
-            await _unitOfWork.SaveChangesAsync();
-        }
-
-        void ShouldCreatedSuccessfully()
-        {
-            if (createdPatient is not { Id: > 0 })
-            {
-                _logger.LogError("Failed to create patient: {Patient}", patient);
-                throw new BusinessException(ApiCode.OperationFailed, "Failed to create patient.");
-            }
-        }
+        return SuccessResult(process.CreatedPatient!.ToDto());
     }
 
     /// <inheritdoc />
@@ -233,59 +206,6 @@ public class PatientService : BaseService, IPatientService
                 throw new BusinessException(ApiCode.OperationFailed, "Failed to update patient.");
             }
         }
-    }
-
-    /// <summary>
-    /// Maps CreatePatientRequest to Patient entity.
-    /// </summary>
-    /// <param name="request">The create patient request.</param>
-    /// <returns>Patient entity.</returns>
-    private Patient MapToEntity(CreatePatientRequest request)
-    {
-        var userId = request.UserId!.Trim();
-
-        var patient = new Patient
-        {
-            Name = request.Name!.Trim(),
-            Age = request.Age!.Value,
-            Gender = request.Gender!.Value,
-            Email = string.IsNullOrWhiteSpace(request.Email) ? null : request.Email.Trim(),
-            PhoneNumber = request.PhoneNumber!.Trim(),
-            DateOfBirth = request.DateOfBirth!.Value,
-            Address = request.Address,
-            FirstVisitDate = _dateTimeOffsetProvider.UtcNow,
-            Status = PatientStatus.Active,
-            Remarks = request.Remarks,
-            CreatedBy = userId,
-            UpdatedBy = userId,
-            Orders =
-            [
-                new()
-                {
-                    Instructions = request.Order!.Instructions!.Trim(),
-                    NextVisitDate = request.Order.NextVisitDate?.UtcDateTime,
-                    StartDate = request.Order.StartDate?.UtcDateTime,
-                    EndDate = request.Order.EndDate?.UtcDateTime,
-                    Type = request.Order.Type!.Value,
-                    Status = OrderStatus.Created,
-                    DispensedDate = request.Order.DispensedDate?.UtcDateTime,
-                    CreatedBy = userId,
-                    UpdatedBy = userId,
-                    Prescriptions = request.Order.Prescriptions!.Select(p => new Prescription
-                    {
-                        MedicationId = p.MedicationId!.Value,
-                        Dose = p.Dose!.Trim(),
-                        Frequency = p.Frequency!.Trim(),
-                        DurationInDays = p.DurationInDays!.Value,
-                        Route = p.Route!.Value,
-                        CreatedBy = userId,
-                        UpdatedBy = userId,
-                    }).ToList(),
-                },
-            ],
-        };
-
-        return patient;
     }
 
     /// <summary>

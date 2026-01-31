@@ -1,12 +1,13 @@
-using System.Text.Json;
 using Example.Api.DateTimeOffsetProviders;
 using Example.Api.Dtos;
 using Example.Api.Dtos.Requests;
 using Example.Api.Dtos.Responses;
 using Example.Api.Enums;
+using Example.Api.Extensions;
 using Example.Api.Infrastructure;
 using Example.Api.Mappers;
 using Example.Api.Models;
+using Example.Api.Processes;
 using Example.Api.Repositories;
 using Example.Api.Services.DomainServices;
 
@@ -17,6 +18,11 @@ namespace Example.Api.Services;
 /// </summary>
 public class PatientOrderService : BaseService, IPatientOrderService
 {
+    /// <summary>
+    /// Application logger factory.
+    /// </summary>
+    private readonly ILoggerFactory _loggerFactory;
+
     /// <summary>
     /// Application logger.
     /// </summary>
@@ -57,14 +63,15 @@ public class PatientOrderService : BaseService, IPatientOrderService
     /// <param name="patientRepository">The patient repository.</param>
     /// <param name="unitOfWork">The unit of work.</param>
     public PatientOrderService(
-        ILogger<PatientOrderService> logger,
+        ILoggerFactory loggerFactory,
         IDateTimeOffsetProvider dateTimeOffsetProvider,
         IOrderPrescriptionPolicy orderPrescriptionPolicy,
         IPatientOrderRepository orderRepository,
         IPatientRepository patientRepository,
         IUnitOfWork unitOfWork)
     {
-        _logger = logger;
+        _loggerFactory = loggerFactory;
+        _logger = loggerFactory.CreateLogger<PatientOrderService>();
         _dateTimeOffsetProvider = dateTimeOffsetProvider;
         _orderPrescriptionPolicy = orderPrescriptionPolicy;
         _orderRepository = orderRepository;
@@ -102,71 +109,24 @@ public class PatientOrderService : BaseService, IPatientOrderService
     /// <inheritdoc />
     public async Task<ApiResult<PatientOrderDto>> AddPatientOrderAsync(CreatePatientOrderRequest request)
     {
-        Patient? patient = default;
-        PatientOrder? createdOrder = default;
-        var order = MapToEntity(request);
+        var process = new AddPatientOrderProcess(
+            _loggerFactory.CreateLogger<AddPatientOrderProcess>(),
+            request,
+            _patientRepository,
+            _orderRepository,
+            _orderPrescriptionPolicy,
+            _dateTimeOffsetProvider);
 
-        await EnsurePatientExists();
-        EnsurePatientStatusValid();
-        await EnsurePrescriptionValidAsync();
-        await WhenAddPatientOrder();
-        ShouldCreatedSuccessfully();
-        return SuccessResult(createdOrder!.ToDto());
+        await process
+            .Prepare()
+            .EnsurePatientExistAsync()
+            .Then(p => p.EnsurePatientStatus())
+            .ThenAsync(p => p.EnsureMedicationIdExistAsync())
+            .ThenAsync(p => p.ExecuteAsync())
+            .ThenAsync(p => p.CommitAsync(_unitOfWork))
+            .Then(p => p.ShouldSuccessfully());
 
-        async Task EnsurePatientExists()
-        {
-            patient = await _patientRepository.GetPatientAsync(order.PatientId);
-
-            if (patient is null)
-            {
-                _logger.LogWarning("Patient with ID {PatientId} not found for order creation.", order.PatientId);
-                throw new BusinessException(
-                    ApiCode.OperationFailed,
-                    $"Patient with ID {order.PatientId} does not exist.");
-            }
-        }
-
-        void EnsurePatientStatusValid()
-        {
-            PatientStatus[] validStatuses = [PatientStatus.Active, PatientStatus.Transferred];
-
-            if (!validStatuses.Contains(patient!.Status))
-            {
-                _logger.LogWarning(
-                    "Patient with ID {PatientId} has invalid status {Status} for order creation.",
-                    order.PatientId,
-                    patient.Status);
-
-                throw new BusinessException(
-                    ApiCode.OperationFailed, "Patient status is invalid for creating orders.");
-            }
-        }
-
-        async Task EnsurePrescriptionValidAsync()
-        {
-            await _orderPrescriptionPolicy.EnsureMedicationIdsValidAsync(order);
-        }
-
-        async Task WhenAddPatientOrder()
-        {
-            createdOrder = await _orderRepository.AddAsync(order);
-            await _unitOfWork.SaveChangesAsync();
-        }
-
-        void ShouldCreatedSuccessfully()
-        {
-            if (createdOrder is null or { Id: <= 0 })
-            {
-                var requestJson = JsonSerializer.Serialize(request);
-                _logger.LogWarning(
-                    "Failed to create order for PatientId: {PatientId}. Request: {RequestJson}",
-                    request.PatientId,
-                    requestJson);
-                throw new BusinessException(
-                    ApiCode.OperationFailed,
-                    $"Failed to create order for PatientId: {request.PatientId}.");
-            }
-        }
+        return SuccessResult(process.CreatedOrder!.ToDto());
     }
 
     /// <inheritdoc />
@@ -200,42 +160,5 @@ public class PatientOrderService : BaseService, IPatientOrderService
                     ApiCode.NoDataFound, $"Failed to update order instructions for order with OrderId: {id}.");
             }
         }
-    }
-
-    /// <summary>
-    /// Maps CreateOrderRequest to PatientOrder entity.
-    /// </summary>
-    /// <param name="request"></param>
-    /// <returns></returns>
-    private PatientOrder MapToEntity(CreatePatientOrderRequest request)
-    {
-        var userId = request.UserId!.Trim();
-
-        var order = new PatientOrder
-        {
-            PatientId = request.PatientId!.Value,
-            Instructions = request.Instructions!.Trim(),
-            NextVisitDate = request.NextVisitDate?.UtcDateTime,
-            StartDate = request.StartDate?.UtcDateTime,
-            EndDate = request.EndDate?.UtcDateTime,
-            Type = request.Type!.Value,
-            DispensedDate = request.DispensedDate?.UtcDateTime,
-            CreatedBy = userId,
-            CreatedAt = _dateTimeOffsetProvider.UtcNow,
-            UpdatedBy = userId,
-            UpdatedAt = _dateTimeOffsetProvider.UtcNow,
-            Prescriptions = request.Prescriptions!.Select(p => new Prescription
-            {
-                MedicationId = p.MedicationId!.Value,
-                Dose = p.Dose!.Trim(),
-                Frequency = p.Frequency!.Trim(),
-                DurationInDays = p.DurationInDays!.Value,
-                Route = p.Route!.Value,
-                CreatedBy = userId,
-                UpdatedBy = userId,
-            }).ToList(),
-        };
-
-        return order;
     }
 }

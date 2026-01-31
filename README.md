@@ -739,6 +739,36 @@ public async Task<ApiResult<PatientDto>> AddPatientAsync(CreatePatientRequest re
 }
 ```
 
+- 甚至用 Method Object 的手法繼續重構，最後變成 Fluent API 語意化的寫法，如下。
+  - 現在 AddPatientAsync 方法中甚至連區域變數都不用了。
+  - 仍然支援 async/await 呼叫。
+  - 交易管理 (Unit of Work) 仍然在原始方法中決定。
+  - 實際上 `AddPatientProcess` class 已經被上述手法重構成一個 BDD style 的 Domain Service，開始往 DDD 的設計邁進。
+
+```csharp
+public async Task<ApiResult<PatientDto>> AddPatientAsync(CreatePatientRequest request)
+{
+    var process = new AddPatientProcess(
+        _loggerFactory.CreateLogger<AddPatientProcess>(),
+        request,
+        _patientRepository,
+        _orderPrescriptionPolicy,
+        _dateTimeOffsetProvider);
+
+    // BDD Style with Fluent API
+    await process
+        .Prepare()                                            // Given
+        .EnsureEmailUniqueAsync()                             // Given (Guard Clauses)
+        .ThenAsync(p => p.EnsurePhoneNumberUniqueAsync())     // Given (Guard Clauses)
+        .ThenAsync(p => p.EnsurePrescriptionValidAsync())     // Given (Guard Clauses)
+        .ThenAsync(p => p.ExecuteAsync())                     // When (Action)
+        .ThenAsync(p => p.CommitAsync(_unitOfWork))           // When (Action) 
+        .Then(p => p.ShouldSuccessfully());                   // Then (Assertions)
+
+    return SuccessResult(process.CreatedPatient!.ToDto());
+}
+```
+
 - 或者至少類似以下的範例
 
 ```csharp
