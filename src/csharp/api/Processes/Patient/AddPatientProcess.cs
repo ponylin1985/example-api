@@ -92,7 +92,7 @@ public sealed class AddPatientProcess
     public async Task<AddPatientProcess> EnsureEmailUniqueAsync()
     {
         if (!string.IsNullOrWhiteSpace(Patient!.Email) &&
-            await _patientRepository.IsExistPatentByEmailAsync(Patient.Email))
+            await _patientRepository.IsExistPatientByEmailAsync(Patient.Email))
         {
             _logger.LogWarning("Email {Email} is already in use.", Patient.Email);
             throw new BusinessException(ApiCode.OperationFailed, "Email is already in use.");

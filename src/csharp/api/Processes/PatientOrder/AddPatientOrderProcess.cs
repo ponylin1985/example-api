@@ -205,6 +205,7 @@ public sealed class AddPatientOrderProcess
             StartDate = request.StartDate?.UtcDateTime,
             EndDate = request.EndDate?.UtcDateTime,
             Type = request.Type!.Value,
+            Status = OrderStatus.Created,
             DispensedDate = request.DispensedDate?.UtcDateTime,
             CreatedBy = userId,
             CreatedAt = _dateTimeOffsetProvider.UtcNow,

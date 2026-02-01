@@ -80,30 +80,49 @@ public class PatientOrderService : BaseService, IPatientOrderService
     }
 
     /// <inheritdoc />
-    public async Task<ApiResult<PatientOrderDto>> GetOrderAsync(long id)
+    public async Task<ApiResult<PagedResult<PatientOrderDto>>> GetPatientOrdersAsync(
+        GetPatientOrdersRequest request)
     {
-        long orderId = default;
-        PatientOrder? patientOrder = default;
+        var queryResult = await _orderRepository.GetPatientOrdersAsync(
+            request.PageNumber,
+            request.PageSize,
+            request.PatientId,
+            request.Type,
+            request.Status);
 
-        GivenOrderId();
-        await WhenQueryingPatientAsync();
-        ShouldFoundPatientOrder();
-        return SuccessResult(patientOrder!.ToDto());
-
-        void GivenOrderId() =>
-            orderId = id;
-
-        async Task WhenQueryingPatientAsync() =>
-            patientOrder = await _orderRepository.GetOrderAsync(orderId);
-
-        void ShouldFoundPatientOrder()
+        if (!HasPatientOrdersData())
         {
-            if (patientOrder is null)
-            {
-                _logger.LogWarning("Order with ID {Id} not found.", orderId);
-                throw new BusinessException(ApiCode.NoDataFound, $"Order with ID {orderId} not found.");
-            }
+            _logger.LogInformation(
+                "No patient orders found for PatientId: {PatientId}, Type: {Type}, Status: {Status}",
+                request.PatientId,
+                request.Type,
+                request.Status);
+            return NoDataFoundPagedResult<PatientOrderDto>();
         }
+
+        var dtos = queryResult.Data!.ToDtos();
+        return SuccessPagedResult(
+            dtos,
+            request.PageNumber,
+            request.PageSize,
+            queryResult.TotalCount);
+
+        bool HasPatientOrdersData() =>
+            !queryResult.Data.IsNullOrEmpty() && queryResult.TotalCount > 0;
+    }
+
+    /// <inheritdoc />
+    public async Task<ApiResult<PatientOrderDto>> GetPatientOrderAsync(long id)
+    {
+        var patientOrder = await _orderRepository.GetPatientOrderAsync(id);
+
+        if (patientOrder is null or { Id: <= 0 })
+        {
+            _logger.LogWarning("Order with ID {Id} not found.", id);
+            return NoDataFoundResult<PatientOrderDto>($"Order with ID {id} not found.");
+        }
+
+        return SuccessResult(patientOrder.ToDto());
     }
 
     /// <inheritdoc />

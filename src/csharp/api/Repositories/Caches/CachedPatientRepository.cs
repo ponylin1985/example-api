@@ -1,3 +1,4 @@
+using Example.Api.Enums;
 using Example.Api.Models;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
@@ -92,6 +93,30 @@ public sealed class CachedPatientRepository : IPatientRepository
     }
 
     /// <inheritdoc />
+    public Task<(IEnumerable<Patient> Data, long TotalCount)> GetPatientsAsync(
+        int pageNumber,
+        int pageSize,
+        string? name = default,
+        bool isPrefix = false,
+        string? email = default,
+        string? phoneNumber = default,
+        PatientStatus? status = default,
+        DateTimeOffset? startTime = default,
+        DateTimeOffset? endTime = default)
+    {
+        return _innerRepository.GetPatientsAsync(
+            pageNumber,
+            pageSize,
+            name,
+            isPrefix,
+            email,
+            phoneNumber,
+            status,
+            startTime,
+            endTime);
+    }
+
+    /// <inheritdoc />
     public async Task<Patient?> GetPatientAsync(long id)
     {
         var key = GetPatientCacheKey(id);
@@ -130,25 +155,15 @@ public sealed class CachedPatientRepository : IPatientRepository
     }
 
     /// <inheritdoc />
-    public Task<bool> IsExistPatentByEmailAsync(string email)
+    public Task<bool> IsExistPatientByEmailAsync(string email)
     {
-        return _innerRepository.IsExistPatentByEmailAsync(email);
+        return _innerRepository.IsExistPatientByEmailAsync(email);
     }
 
     /// <inheritdoc />
     public Task<bool> IsExistPatientByPhoneAsync(string phoneNumber)
     {
         return _innerRepository.IsExistPatientByPhoneAsync(phoneNumber);
-    }
-
-    /// <inheritdoc />
-    public Task<(IEnumerable<Patient> Data, long TotalCount)> GetPatientsAsync(
-        DateTimeOffset startTime,
-        DateTimeOffset endTime,
-        int pageNumber,
-        int pageSize)
-    {
-        return _innerRepository.GetPatientsAsync(startTime, endTime, pageNumber, pageSize);
     }
 
     /// <inheritdoc />
@@ -173,7 +188,7 @@ public sealed class CachedPatientRepository : IPatientRepository
     /// <inheritdoc />
     public async Task<Patient> UpdateAsync(Patient patient)
     {
-        var updatedPatient =  await _innerRepository.UpdateAsync(patient);
+        var updatedPatient = await _innerRepository.UpdateAsync(patient);
 
         if (updatedPatient is { Id: > 0 })
         {

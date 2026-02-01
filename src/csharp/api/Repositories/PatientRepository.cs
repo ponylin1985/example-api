@@ -28,23 +28,53 @@ public sealed class PatientRepository : IPatientRepository
 
     /// <inheritdoc />
     public async Task<(IEnumerable<Patient> Data, long TotalCount)> GetPatientsAsync(
-        DateTimeOffset startTime,
-        DateTimeOffset endTime,
         int pageNumber,
-        int pageSize)
+        int pageSize,
+        string? name = default,
+        bool isPrefix = false,
+        string? email = default,
+        string? phoneNumber = default,
+        PatientStatus? status = default,
+        DateTimeOffset? startTime = default,
+        DateTimeOffset? endTime = default)
     {
-        var query = _dbContext.Patients
-            .AsNoTracking()
-            .Where(p => p.CreatedAt >= startTime && p.CreatedAt <= endTime);
+        var query = _dbContext.Patients.AsNoTracking();
+
+        if (!string.IsNullOrWhiteSpace(email))
+        {
+            query = query.Where(p => p.Email == email && p.Email != null);
+        }
+
+        if (!string.IsNullOrWhiteSpace(phoneNumber))
+        {
+            query = query.Where(p => p.PhoneNumber == phoneNumber && p.PhoneNumber != null);
+        }
+
+        if (!string.IsNullOrWhiteSpace(name))
+        {
+            query = isPrefix ?
+                query.Where(p => p.Name.StartsWith(name)) :
+                query.Where(p => p.Name == name);
+        }
+
+        if (startTime.HasValue && endTime.HasValue)
+        {
+            query = query.Where(p => p.CreatedAt >= startTime && p.CreatedAt <= endTime);
+        }
+
+        if (status.HasValue)
+        {
+            query = query.Where(p => p.Status == status.Value);
+        }
 
         var totalCount = await query.LongCountAsync();
-
         var data = await query
-            .Include(p => p.Orders.OrderByDescending(o => o.Id))
-            .ThenInclude(o => o.Prescriptions.OrderByDescending(pr => pr.Id))
-            .OrderByDescending(p => p.Id)
+            .OrderByDescending(p => p.CreatedAt)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
+            .Include(p => p.Orders.OrderByDescending(o => o.CreatedAt))
+            .ThenInclude(o => o.Prescriptions.OrderByDescending(s => s.Id))
+            .AsSplitQuery()
             .ToListAsync();
 
         return (data, totalCount);
@@ -60,7 +90,7 @@ public sealed class PatientRepository : IPatientRepository
     }
 
     /// <inheritdoc />
-    public async Task<bool> IsExistPatentByEmailAsync(string email)
+    public async Task<bool> IsExistPatientByEmailAsync(string email)
     {
         return await _dbContext
             .Patients

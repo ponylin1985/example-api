@@ -17,6 +17,7 @@ public static class ValidatorsProvider
     {
         services.AddSingleton<IValidator<PagedRequest>, PagedRequestValidator>();
         services.AddSingleton<IValidator<GetPatientsRequest>, GetPatientsRequestValidator>();
+        services.AddSingleton<IValidator<GetPatientOrdersRequest>, GetPatientOrdersRequestValidator>();
         services.AddSingleton<IValidator<CreatePatientRequest>, CreatePatientRequestValidator>();
         services.AddSingleton<IValidator<CreatePatientOrderRequest>, CreatePatientOrderRequestValidator>();
         services.AddSingleton<IValidator<UpdateOrderInstructionseRequest>, UpdateOrderInstructionseRequestValidator>();

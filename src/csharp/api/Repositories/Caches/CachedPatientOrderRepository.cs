@@ -1,3 +1,4 @@
+using Example.Api.Enums;
 using Example.Api.Models;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
@@ -92,7 +93,23 @@ public sealed class CachedPatientOrderRepository : IPatientOrderRepository
     }
 
     /// <inheritdoc />
-    public async Task<PatientOrder?> GetOrderAsync(long id)
+    public async Task<(IEnumerable<PatientOrder> Data, long TotalCount)> GetPatientOrdersAsync(
+        int pageNumber,
+        int pageSize,
+        long? patientId = default,
+        OrderType? orderType = default,
+        OrderStatus? orderStatus = default)
+    {
+        return await _innerRepository.GetPatientOrdersAsync(
+            pageNumber,
+            pageSize,
+            patientId,
+            orderType,
+            orderStatus);
+    }
+
+    /// <inheritdoc />
+    public async Task<PatientOrder?> GetPatientOrderAsync(long id)
     {
         var key = GetOrderCacheKey(id);
         var cachedData = await ExecuteCacheOperationAsync(async () => await _cache.GetStringAsync(key));
@@ -102,7 +119,7 @@ public sealed class CachedPatientOrderRepository : IPatientOrderRepository
             return JsonSerializer.Deserialize<PatientOrder>(cachedData, _jsonOptions);
         }
 
-        var order = await _innerRepository.GetOrderAsync(id);
+        var order = await _innerRepository.GetPatientOrderAsync(id);
 
         if (order is not null)
         {

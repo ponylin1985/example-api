@@ -42,13 +42,44 @@ public static class OrderApiEndpoints
     /// <param name="group"></param>
     private static void MapGetOrder(RouteGroupBuilder group)
     {
-        group.MapGet("/{id:long:min(1)}", async Task<RestApiResult> (long id, IPatientOrderService orderService) =>
+        group.MapGet("/", async Task<RestApiResult> (
+            [AsParameters] GetPatientOrdersRequest request,
+            IPatientOrderService orderService,
+            IValidator<GetPatientOrdersRequest> validator) =>
         {
-            var result = await orderService.GetOrderAsync(id);
+            var validationResult = await validator.ValidateAsync(request);
+
+            if (!validationResult.IsValid)
+            {
+                return new ApiResult<IDictionary<string, string[]>>
+                {
+                    Success = false,
+                    Code = ApiCode.InvalidRequest,
+                    Data = validationResult.ToDictionary(),
+                    Message = "Invalid request data.",
+                }.ToHttpResult();
+            }
+
+            var result = await orderService.GetPatientOrdersAsync(request);
             return result.ToHttpResult();
         })
-        .WithName("GetOrderById")
-        .WithDescription("Get an order by its identifier.")
+        .Produces<ApiResult>(StatusCodes.Status200OK)
+        .Produces<ApiResult>(StatusCodes.Status400BadRequest)
+        .Produces<ApiResult>(StatusCodes.Status500InternalServerError)
+        .WithName("GetPatientOrders")
+        .WithDescription("Get patient orders with filters.")
+        .CacheOutput(policy => policy
+            .Expire(TimeSpan.FromMinutes(2))
+            .SetVaryByQuery("patientId", "type", "status", "pageNumber", "pageSize")
+            .Tag("orders"));
+
+        group.MapGet("/{id:long:min(1)}", async Task<RestApiResult> (long id, IPatientOrderService orderService) =>
+        {
+            var result = await orderService.GetPatientOrderAsync(id);
+            return result.ToHttpResult();
+        })
+        .WithName("GetPatientOrderById")
+        .WithDescription("Get an patient order by its identifier.")
         .Produces<ApiResult>(StatusCodes.Status200OK)
         .Produces<ApiResult>(StatusCodes.Status400BadRequest)
         .Produces<ApiResult>(StatusCodes.Status500InternalServerError)
@@ -141,6 +172,7 @@ public static class OrderApiEndpoints
     private static async Task EvictOrderRelatedCaches(IOutputCacheStore cacheStore)
     {
         await cacheStore.EvictByTagAsync("patients", default);
+        await cacheStore.EvictByTagAsync("orders", default);
         await cacheStore.EvictByTagAsync("patient-detail", default);
         await cacheStore.EvictByTagAsync("order-detail", default);
     }

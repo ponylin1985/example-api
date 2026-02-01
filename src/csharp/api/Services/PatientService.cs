@@ -82,11 +82,32 @@ public class PatientService : BaseService, IPatientService
     /// <inheritdoc />
     public async Task<ApiResult<PagedResult<PatientDto>>> GetPatientsAsync(GetPatientsRequest request)
     {
-        (IEnumerable<Patient> Data, long TotalCount) queryResult = default;
+        _logger.LogInformation(
+            "Querying patients from {StartTime} to {EndTime}, PageNumber: {PageNumber}, PageSize: {PageSize}",
+            request.StartTime,
+            request.EndTime,
+            request.PageNumber,
+            request.PageSize);
 
-        EnsureRequestValid();
-        await WhenQueryingPatientsAsync();
-        ShouldFoundPatients();
+        var queryResult = await _patientRepository.GetPatientsAsync(
+                request.PageNumber,
+                request.PageSize,
+                request.Name,
+                request.IsPrefix,
+                request.Email,
+                request.PhoneNumber,
+                request.Status,
+                request.StartTime,
+                request.EndTime);
+
+        if (!HasPatientsData())
+        {
+            _logger.LogInformation(
+                "No patients found for the given date range: {StartTime} to {EndTime}",
+                request.StartTime,
+                request.EndTime);
+            return NoDataFoundPagedResult<PatientDto>();
+        }
 
         var dtos = queryResult.Data!.ToDtos();
         return SuccessPagedResult(
@@ -95,69 +116,22 @@ public class PatientService : BaseService, IPatientService
             request.PageSize,
             queryResult.TotalCount);
 
-        void EnsureRequestValid()
-        {
-            if (request is null)
-            {
-                _logger.LogError("GetPatientsRequest is null.");
-                throw new BusinessException(ApiCode.InvalidRequest, "Request cannot be null.");
-            }
-        }
-
-        async Task WhenQueryingPatientsAsync()
-        {
-            _logger.LogInformation(
-                "Querying patients from {StartTime} to {EndTime}, PageNumber: {PageNumber}, PageSize: {PageSize}",
-                request.StartTime,
-                request.EndTime,
-                request.PageNumber,
-                request.PageSize);
-
-            queryResult = await _patientRepository.GetPatientsAsync(
-                request.StartTime,
-                request.EndTime,
-                request.PageNumber,
-                request.PageSize);
-        }
-
-        void ShouldFoundPatients()
-        {
-            if (queryResult.Data is null || !queryResult.Data.Any() || queryResult.TotalCount == 0)
-            {
-                _logger.LogInformation(
-                    "No patients found for the given date range: {StartTime} to {EndTime}",
-                    request.StartTime,
-                    request.EndTime);
-                throw new BusinessException(ApiCode.NoDataFound, "No patients found.");
-            }
-        }
+        bool HasPatientsData() =>
+            !queryResult.Data.IsNullOrEmpty() && queryResult.TotalCount > 0;
     }
 
     /// <inheritdoc />
     public async Task<ApiResult<PatientDto>> GetPatientAsync(long id)
     {
-        long patientId = default;
-        Patient? patient = default;
+        var patient = await _patientRepository.GetPatientAsync(id);
 
-        GivenPatientId();
-        await WhenQueryingPatientAsync();
-        ShouldFoundPatient();
-        return SuccessResult(patient!.ToDto());
-
-        void GivenPatientId() =>
-            patientId = id;
-
-        async Task WhenQueryingPatientAsync() =>
-            patient = await _patientRepository.GetPatientAsync(patientId);
-
-        void ShouldFoundPatient()
+        if (patient is null or { Id: <= 0 })
         {
-            if (patient is null)
-            {
-                _logger.LogWarning("Patient with ID {Id} was not found.", id);
-                throw new BusinessException(ApiCode.NoDataFound, "Patient not found.");
-            }
+            _logger.LogWarning("Patient with ID {Id} was not found.", id);
+            throw new BusinessException(ApiCode.NoDataFound, "Patient not found.");
         }
+
+        return SuccessResult(patient!.ToDto());
     }
 
     /// <inheritdoc />

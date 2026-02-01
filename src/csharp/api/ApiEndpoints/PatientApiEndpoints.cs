@@ -67,11 +67,20 @@ public static class PatientApiEndpoints
         .Produces<ApiResult>(StatusCodes.Status200OK)
         .Produces<ApiResult>(StatusCodes.Status400BadRequest)
         .Produces<ApiResult>(StatusCodes.Status500InternalServerError)
-        .WithName("GetPatientsByTimeRange")
-        .WithDescription("Get patients created within a specified time range.")
+        .WithName("GetPatients")
+        .WithDescription("Get patients with filters.")
         .CacheOutput(policy => policy
             .Expire(TimeSpan.FromMinutes(2))
-            .SetVaryByQuery("startTime", "endTime", "pageNumber", "pageSize")
+            .SetVaryByQuery(
+                "name",
+                "isPrefix",
+                "email",
+                "phoneNumber",
+                "status",
+                "startTime",
+                "endTime",
+                "pageNumber",
+                "pageSize")
             .Tag("patients"));
     }
 

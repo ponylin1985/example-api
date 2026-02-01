@@ -34,11 +34,49 @@ public sealed class PatientOrderRepository : IPatientOrderRepository
     }
 
     /// <inheritdoc />
-    public async Task<PatientOrder?> GetOrderAsync(long id)
+    public async Task<(IEnumerable<PatientOrder> Data, long TotalCount)> GetPatientOrdersAsync(
+        int pageNumber,
+        int pageSize,
+        long? patientId = default,
+        OrderType? orderType = default,
+        OrderStatus? orderStatus = default)
+    {
+        var query = _dbContext.Orders
+            .AsNoTracking();
+
+        if (patientId.HasValue)
+        {
+            query = query.Where(o => o.PatientId == patientId.Value);
+        }
+
+        if (orderType.HasValue)
+        {
+            query = query.Where(o => o.Type == orderType.Value);
+        }
+
+        if (orderStatus.HasValue)
+        {
+            query = query.Where(o => o.Status == orderStatus.Value);
+        }
+
+        var totalCount = await query.LongCountAsync();
+        var data = await query
+            .OrderByDescending(o => o.CreatedAt)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .Include(o => o.Prescriptions.OrderByDescending(p => p.Id))
+            .AsSplitQuery()
+            .ToListAsync();
+
+        return (data, totalCount);
+    }
+
+    /// <inheritdoc />
+    public async Task<PatientOrder?> GetPatientOrderAsync(long id)
     {
         return await _dbContext.Orders
             .AsNoTracking()
-            .Include(o => o.Prescriptions)
+            .Include(o => o.Prescriptions.OrderByDescending(p => p.Id))
             .FirstOrDefaultAsync(o => o.Id == id);
     }
 
