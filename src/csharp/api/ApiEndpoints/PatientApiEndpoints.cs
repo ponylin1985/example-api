@@ -71,16 +71,7 @@ public static class PatientApiEndpoints
         .WithDescription("Get patients with filters.")
         .CacheOutput(policy => policy
             .Expire(TimeSpan.FromMinutes(2))
-            .SetVaryByQuery(
-                "name",
-                "isPrefix",
-                "email",
-                "phoneNumber",
-                "status",
-                "startTime",
-                "endTime",
-                "pageNumber",
-                "pageSize")
+            .SetVaryByQuery("*")
             .Tag("patients"));
     }
 

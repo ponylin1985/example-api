@@ -70,7 +70,7 @@ public static class OrderApiEndpoints
         .WithDescription("Get patient orders with filters.")
         .CacheOutput(policy => policy
             .Expire(TimeSpan.FromMinutes(2))
-            .SetVaryByQuery("patientId", "type", "status", "pageNumber", "pageSize")
+            .SetVaryByQuery("*")
             .Tag("orders"));
 
         group.MapGet("/{id:long:min(1)}", async Task<RestApiResult> (long id, IPatientOrderService orderService) =>
