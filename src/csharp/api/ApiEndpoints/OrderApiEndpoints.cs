@@ -29,18 +29,18 @@ public static class OrderApiEndpoints
     {
         var group = app
             .MapGroup("/api/orders")
-            .WithTags("Orders");
-        MapGetOrder(group);
-        MapCreateOrder(group);
-        MapUpdateOrderInstructions(group);
+            .WithTags("PatientOrders");
+        MapGetPatientOrder(group);
+        MapCreatePatientOrder(group);
+        MapUpdatePatientOrderInstructions(group);
         return app;
     }
 
     /// <summary>
-    /// Maps the GetOrder endpoint.
+    /// Maps the GetPatientOrder endpoint.
     /// </summary>
     /// <param name="group"></param>
-    private static void MapGetOrder(RouteGroupBuilder group)
+    private static void MapGetPatientOrder(RouteGroupBuilder group)
     {
         group.MapGet("/", async Task<RestApiResult> (
             [AsParameters] GetPatientOrdersRequest request,
@@ -90,10 +90,10 @@ public static class OrderApiEndpoints
     }
 
     /// <summary>
-    /// Maps the CreateOrder endpoint.
+    /// Maps the CreatePatientOrder endpoint.
     /// </summary>
     /// <param name="group"></param>
-    private static void MapCreateOrder(RouteGroupBuilder group)
+    private static void MapCreatePatientOrder(RouteGroupBuilder group)
     {
         group.MapPost("/", async Task<RestApiResult> (
             CreatePatientOrderRequest request,
@@ -127,10 +127,10 @@ public static class OrderApiEndpoints
     }
 
     /// <summary>
-    /// Maps the UpdateOrderInstructions endpoint.
+    /// Maps the UpdatePatientOrderInstructions endpoint.
     /// </summary>
     /// <param name="group"></param>
-    private static void MapUpdateOrderInstructions(RouteGroupBuilder group)
+    private static void MapUpdatePatientOrderInstructions(RouteGroupBuilder group)
     {
         group.MapPut("/{id:long:min(1)}", async Task<RestApiResult> (
             long id,

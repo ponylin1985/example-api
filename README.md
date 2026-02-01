@@ -122,7 +122,8 @@ src/python/
 - `POST /api/patients` - 新增病患
 - `PUT /api/patients/{id}` - 更新病患基本資料
 
-### Order Management (病患訂單管理)
+### Patient Order Management (病患訂單管理)
+- `GET /api/orders` - 查詢病患訂單列表（支援分頁與篩選）
 - `GET /api/orders/{id}` - 查詢單一病患訂單
 - `POST /api/orders` - 新增病患訂單
 - `PUT /api/orders/{id}` - 更新病患訂單的「醫囑指示」
