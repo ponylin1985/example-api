@@ -20,7 +20,7 @@ public static class ValidatorsProvider
         services.AddSingleton<IValidator<GetPatientOrdersRequest>, GetPatientOrdersRequestValidator>();
         services.AddSingleton<IValidator<CreatePatientRequest>, CreatePatientRequestValidator>();
         services.AddSingleton<IValidator<CreatePatientOrderRequest>, CreatePatientOrderRequestValidator>();
-        services.AddSingleton<IValidator<UpdateOrderInstructionseRequest>, UpdateOrderInstructionseRequestValidator>();
+        services.AddSingleton<IValidator<UpdatePatientOrderRequest>, UpdatePatientOrderRequestValidator>();
         services.AddSingleton<IValidator<UpdatePatientRequest>, UpdatePatientRequestValidator>();
         services.AddSingleton<IHtmlSanitizer, HtmlSanitizer>();
     }

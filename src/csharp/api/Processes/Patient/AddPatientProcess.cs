@@ -5,12 +5,9 @@ using Example.Api.Infrastructure;
 using Example.Api.Models;
 using Example.Api.Repositories;
 using Example.Api.Services.DomainServices;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace Example.Api.Processes;
-
-/// <summary>
-/// Encapsulates the process for adding a new patient, including validation and persistence steps.
-/// </summary>
 
 /// <summary>
 /// Process for adding a patient.
@@ -31,6 +28,11 @@ public sealed class AddPatientProcess
     /// Repository for patient data access.
     /// </summary>
     private readonly IPatientRepository _patientRepository;
+
+    /// <summary>
+    /// Patient order history data repository.
+    /// </summary>
+    private readonly IPatientOrderHistoryRepository _patientOrderHistoryRepository;
 
     /// <summary>
     /// Policy for validating order prescriptions.
@@ -58,18 +60,21 @@ public sealed class AddPatientProcess
     /// <param name="logger">The application logger.</param>
     /// <param name="request">The request DTO containing patient creation data.</param>
     /// <param name="patientRepository">Repository for patient data access.</param>
+    /// <param name="patientOrderHistoryRepository">Repository for patient order history data access.</param>
     /// <param name="orderPrescriptionPolicy">Policy for validating order prescriptions.</param>
     /// <param name="dateTimeOffsetProvider">Provider for current date and time.</param>
     public AddPatientProcess(
         ILogger<AddPatientProcess> logger,
         CreatePatientRequest request,
         IPatientRepository patientRepository,
+        IPatientOrderHistoryRepository patientOrderHistoryRepository,
         IOrderPrescriptionPolicy orderPrescriptionPolicy,
         IDateTimeOffsetProvider dateTimeOffsetProvider)
     {
         _logger = logger;
         _request = request;
         _patientRepository = patientRepository;
+        _patientOrderHistoryRepository = patientOrderHistoryRepository;
         _orderPrescriptionPolicy = orderPrescriptionPolicy;
         _dateTimeOffsetProvider = dateTimeOffsetProvider;
     }
@@ -129,19 +134,37 @@ public sealed class AddPatientProcess
     /// Executes the process to add the patient to the repository.
     /// </summary>
     /// <returns>The current <see cref="AddPatientProcess"/> instance.</returns>
-    public async Task<AddPatientProcess> ExecuteAsync()
+    public async Task<AddPatientProcess> ExecuteAsync(IUnitOfWork unitOfWork)
     {
         CreatedPatient = await _patientRepository.AddAsync(Patient!);
-        return this;
-    }
+        await unitOfWork.SaveChangesAsync();
 
-    /// <summary>
-    /// Commits the changes to the database using the provided unit of work.
-    /// </summary>
-    /// <param name="unitOfWork">The unit of work for transaction management.</param>
-    /// <returns>The current <see cref="AddPatientProcess"/> instance.</returns>
-    public async Task<AddPatientProcess> CommitAsync(IUnitOfWork unitOfWork)
-    {
+        if (CreatedPatient is null)
+        {
+            _logger.LogError("Failed to add patient to repository: {Patient}", Patient);
+            throw new BusinessException(ApiCode.OperationFailed, "Failed to add patient.");
+        }
+
+        var patientOrder = CreatedPatient.Orders.FirstOrDefault();
+
+        if (patientOrder is null)
+        {
+            _logger.LogError("Failed to add patient order for patient: {PatientId}", CreatedPatient.Id);
+            throw new BusinessException(ApiCode.OperationFailed, "Failed to add patient order.");
+        }
+
+        var orderHistory = new PatientOrderHistory
+        {
+            Type = LogType.Add,
+            OrderId = patientOrder.Id,
+            PatientId = CreatedPatient.Id,
+            Status = patientOrder.Status,
+            LogBy = CreatedPatient.CreatedBy,
+            LogAt = CreatedPatient.CreatedAt,
+            Remarks = patientOrder.Instructions,
+        };
+
+        await _patientOrderHistoryRepository.AddHistoryAsync(orderHistory);
         await unitOfWork.SaveChangesAsync();
         return this;
     }
@@ -167,6 +190,8 @@ public sealed class AddPatientProcess
     private Patient MapToEntity(CreatePatientRequest request)
     {
         var userId = request.UserId!.Trim();
+        var utcNow = _dateTimeOffsetProvider.UtcNow;
+
         var patient = new Patient
         {
             Name = request.Name!.Trim(),
@@ -176,7 +201,7 @@ public sealed class AddPatientProcess
             PhoneNumber = request.PhoneNumber!.Trim(),
             DateOfBirth = request.DateOfBirth!.Value,
             Address = request.Address,
-            FirstVisitDate = _dateTimeOffsetProvider.UtcNow,
+            FirstVisitDate = utcNow,
             Status = PatientStatus.Active,
             Remarks = request.Remarks,
             CreatedBy = userId,
@@ -207,6 +232,7 @@ public sealed class AddPatientProcess
                 },
             ],
         };
+
         return patient;
     }
 }

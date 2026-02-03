@@ -24,6 +24,30 @@ public interface IPatientOrderService
     Task<ApiResult<PatientOrderDto>> GetPatientOrderAsync(long id);
 
     /// <summary>
+    /// Retrieves order history for a specific patient.
+    /// </summary>
+    /// <param name="patientId">The unique identifier of the patient.</param>
+    /// <param name="pageNumber">The page number for pagination.</param>
+    /// <param name="pageSize">The number of items per page.</param>
+    /// <returns>A paginated list of patient order history DTOs.</returns>
+    Task<ApiResult<PagedResult<PatientOrderHistoryDto>>> GetOrderHistoryByPatientIdAsync(
+        long patientId,
+        int pageNumber,
+        int pageSize);
+
+    /// <summary>
+    /// Retrieves order history for a specific order.
+    /// </summary>
+    /// <param name="orderId">The unique identifier of the order.</param>
+    /// <param name="pageNumber">The page number for pagination.</param>
+    /// <param name="pageSize">The number of items per page.</param>
+    /// <returns>A paginated list of patient order history DTOs.</returns>
+    Task<ApiResult<PagedResult<PatientOrderHistoryDto>>> GetOrderHistoryByOrderIdAsync(
+        long orderId,
+        int pageNumber,
+        int pageSize);
+
+    /// <summary>
     /// Creates a new order.
     /// </summary>
     /// <param name="request">The creation request.</param>
@@ -31,11 +55,23 @@ public interface IPatientOrderService
     Task<ApiResult<PatientOrderDto>> AddPatientOrderAsync(CreatePatientOrderRequest request);
 
     /// <summary>
-    /// Updates the instructions of an existing patient order.
+    /// Dispenses an existing order.
     /// </summary>
-    /// <param name="id">The unique identifier of the patient order.</param>
-    /// <param name="instructions">The new instructions.</param>
-    /// <param name="userId">The ID of the user updating the order.</param>
+    /// <param name="request">The update request.</param>
     /// <returns>The updated patient order DTO.</returns>
-    Task<ApiResult<PatientOrderDto>> UpdateInstructionsAsync(long id, string instructions, string userId);
+    Task<ApiResult<PatientOrderDto>> DispenseOrderAsync(UpdatePatientOrderRequest request);
+
+    /// <summary>
+    /// Executes an existing order.
+    /// </summary>
+    /// <param name="request">The update request.</param>
+    /// <returns>The updated patient order DTO.</returns>
+    Task<ApiResult<PatientOrderDto>> ExecuteOrderAsync(UpdatePatientOrderRequest request);
+
+    /// <summary>
+    /// Cancels an existing order.
+    /// </summary>
+    /// <param name="request">The update request.</param>
+    /// <returns>The updated patient order DTO.</returns>
+    Task<ApiResult<PatientOrderDto>> CancelOrderAsync(UpdatePatientOrderRequest request);
 }

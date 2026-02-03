@@ -4,14 +4,14 @@ using FluentValidation;
 namespace Example.Api.Validators;
 
 /// <summary>
-/// Request validator for UpdateOrderInstructionseRequest.
+/// Request validator for UpdatePatientOrderRequest.
 /// </summary>
-public class UpdateOrderInstructionseRequestValidator : AbstractValidator<UpdateOrderInstructionseRequest>
+public class UpdatePatientOrderRequestValidator : AbstractValidator<UpdatePatientOrderRequest>
 {
     /// <summary>
-    /// Constructor for UpdateOrderInstructionseRequestValidator.
+    /// Constructor for UpdatePatientOrderRequestValidator.
     /// </summary>
-    public UpdateOrderInstructionseRequestValidator()
+    public UpdatePatientOrderRequestValidator()
     {
         RuleFor(x => x.Instructions)
             .NotEmpty().WithMessage("Instructions are required.")

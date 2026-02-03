@@ -18,21 +18,22 @@ namespace Example.Api.Endpoints;
 /// <summary>
 /// API endpoints extensions for patient's orders.
 /// </summary>
-public static class OrderApiEndpoints
+public static class PatientOrderApiEndpoints
 {
     /// <summary>
     /// Maps order-related API endpoints.
     /// </summary>
     /// <param name="app"></param>
     /// <returns></returns>
-    public static IEndpointRouteBuilder MapOrderApiEndpoints(this IEndpointRouteBuilder app)
+    public static IEndpointRouteBuilder MapPatientOrderApiEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app
             .MapGroup("/api/orders")
             .WithTags("PatientOrders");
         MapGetPatientOrder(group);
+        MapGetPatientOrderHistory(group);
         MapCreatePatientOrder(group);
-        MapUpdatePatientOrderInstructions(group);
+        MapPatchPatientOrder(group);
         return app;
     }
 
@@ -79,7 +80,7 @@ public static class OrderApiEndpoints
             return result.ToHttpResult();
         })
         .WithName("GetPatientOrderById")
-        .WithDescription("Get an patient order by its identifier.")
+        .WithDescription("Get a patient order by its identifier.")
         .Produces<ApiResult>(StatusCodes.Status200OK)
         .Produces<ApiResult>(StatusCodes.Status400BadRequest)
         .Produces<ApiResult>(StatusCodes.Status500InternalServerError)
@@ -87,6 +88,30 @@ public static class OrderApiEndpoints
             .Expire(TimeSpan.FromMinutes(5))
             .SetVaryByRouteValue("id")
             .Tag("order-detail"));
+    }
+
+    /// <summary>
+    /// Maps the GetPatientOrderHistory endpoint.
+    /// </summary>
+    /// <param name="group"></param>
+    private static void MapGetPatientOrderHistory(RouteGroupBuilder group)
+    {
+        group.MapGet("/{id:long:min(1)}/histories", async Task<RestApiResult> (
+            [FromRoute(Name = "id")] long orderId,
+            [AsParameters] PagedRequest pagedRequest,
+            IPatientOrderService orderService) =>
+        {
+            var result = await orderService.GetOrderHistoryByOrderIdAsync(
+                orderId,
+                pagedRequest.PageNumber,
+                pagedRequest.PageSize);
+            return result.ToHttpResult();
+        })
+        .WithName("GetPatientOrderHistoryByOrderId")
+        .WithDescription("Get patient order history by order identifier.")
+        .Produces<ApiResult>(StatusCodes.Status200OK)
+        .Produces<ApiResult>(StatusCodes.Status400BadRequest)
+        .Produces<ApiResult>(StatusCodes.Status500InternalServerError);
     }
 
     /// <summary>
@@ -127,17 +152,17 @@ public static class OrderApiEndpoints
     }
 
     /// <summary>
-    /// Maps the UpdatePatientOrderInstructions endpoint.
+    /// Maps the PatchPatientOrder endpoint.
     /// </summary>
     /// <param name="group"></param>
-    private static void MapUpdatePatientOrderInstructions(RouteGroupBuilder group)
+    private static void MapPatchPatientOrder(RouteGroupBuilder group)
     {
-        group.MapPut("/{id:long:min(1)}", async Task<RestApiResult> (
+        group.MapPost("/{id:long:min(1)}/dispense", async Task<RestApiResult> (
             long id,
-            [FromBody] UpdateOrderInstructionseRequest request,
+            [FromBody] UpdatePatientOrderRequest request,
             IPatientOrderService orderService,
             IOutputCacheStore cacheStore,
-            IValidator<UpdateOrderInstructionseRequest> validator) =>
+            IValidator<UpdatePatientOrderRequest> validator) =>
         {
             var validationResult = await validator.ValidateAsync(request);
 
@@ -152,16 +177,81 @@ public static class OrderApiEndpoints
                 }.ToHttpResult();
             }
 
+            request = request with { Id = id };
             var result = await orderService
-                .UpdateInstructionsAsync(id, request.Instructions!, request.UserId!)
+                .DispenseOrderAsync(request)
                 .TapOnSuccessAsync(async () => await EvictOrderRelatedCaches(cacheStore));
             return result.ToHttpResult();
         })
         .Produces<ApiResult>(StatusCodes.Status200OK)
         .Produces<ApiResult>(StatusCodes.Status400BadRequest)
         .Produces<ApiResult>(StatusCodes.Status500InternalServerError)
-        .WithName("UpdatePatientOrderInstructions")
-        .WithDescription("Update the instructions of an existing patient order.");
+        .WithName("DispensePatientOrder")
+        .WithDescription("Dispense an existing patient order.");
+
+        group.MapPost("/{id:long:min(1)}/execute", async Task<RestApiResult> (
+            long id,
+            [FromBody] UpdatePatientOrderRequest request,
+            IPatientOrderService orderService,
+            IOutputCacheStore cacheStore,
+            IValidator<UpdatePatientOrderRequest> validator) =>
+        {
+            var validationResult = await validator.ValidateAsync(request);
+
+            if (!validationResult.IsValid)
+            {
+                return new ApiResult<IDictionary<string, string[]>>
+                {
+                    Success = false,
+                    Code = ApiCode.InvalidRequest,
+                    Data = validationResult.ToDictionary(),
+                    Message = "Invalid request data.",
+                }.ToHttpResult();
+            }
+
+            request = request with { Id = id };
+            var result = await orderService
+                .ExecuteOrderAsync(request)
+                .TapOnSuccessAsync(async () => await EvictOrderRelatedCaches(cacheStore));
+            return result.ToHttpResult();
+        })
+        .Produces<ApiResult>(StatusCodes.Status200OK)
+        .Produces<ApiResult>(StatusCodes.Status400BadRequest)
+        .Produces<ApiResult>(StatusCodes.Status500InternalServerError)
+        .WithName("ExecutePatientOrder")
+        .WithDescription("Execute an existing patient order.");
+
+        group.MapPost("/{id:long:min(1)}/cancel", async Task<RestApiResult> (
+            long id,
+            [FromBody] UpdatePatientOrderRequest request,
+            IPatientOrderService orderService,
+            IOutputCacheStore cacheStore,
+            IValidator<UpdatePatientOrderRequest> validator) =>
+        {
+            var validationResult = await validator.ValidateAsync(request);
+
+            if (!validationResult.IsValid)
+            {
+                return new ApiResult<IDictionary<string, string[]>>
+                {
+                    Success = false,
+                    Code = ApiCode.InvalidRequest,
+                    Data = validationResult.ToDictionary(),
+                    Message = "Invalid request data.",
+                }.ToHttpResult();
+            }
+
+            request = request with { Id = id };
+            var result = await orderService
+                .CancelOrderAsync(request)
+                .TapOnSuccessAsync(async () => await EvictOrderRelatedCaches(cacheStore));
+            return result.ToHttpResult();
+        })
+        .Produces<ApiResult>(StatusCodes.Status200OK)
+        .Produces<ApiResult>(StatusCodes.Status400BadRequest)
+        .Produces<ApiResult>(StatusCodes.Status500InternalServerError)
+        .WithName("CancelPatientOrder")
+        .WithDescription("Cancel an existing patient order.");
     }
 
     /// <summary>

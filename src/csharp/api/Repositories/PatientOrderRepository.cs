@@ -88,53 +88,44 @@ public sealed class PatientOrderRepository : IPatientOrderRepository
     }
 
     /// <inheritdoc />
-    public async Task<PatientOrder> UpdateInstructionsAsync(PatientOrder order)
-    {
-        var existingOrder = await _dbContext.Orders.FindAsync(order.Id)
-            ?? throw new BusinessException(ApiCode.NoDataFound, $"OrderId {order.Id} not found.");
-        existingOrder.Instructions = order.Instructions;
-        return existingOrder;
-    }
-
-    /// <inheritdoc />
-    public async Task<PatientOrder?> UpdateAsync(
-        long id,
-        string instructions,
-        string userId,
-        DateTimeOffset updatedAt)
+    public async Task<PatientOrder?> PatchAsync(PatientOrder order)
     {
         var sql = @"
-            UPDATE ""patient_order""
+            UPDATE patient_order
             SET instructions = @Instructions,
-                updated_by = @UserId,
+                status = @Status,
+                updated_by = @UpdatedBy,
                 updated_at = @UpdatedAt
             WHERE id = @Id
-            RETURNING patient_id, created_at; ";
+            RETURNING *; ";
 
         var conn = await _dbSession.GetOpenConnectionAsync();
         var trans = await _dbSession.EnsureTransactionAsync();
 
         var result = await conn.QueryFirstOrDefaultAsync(sql, new
         {
-            Instructions = instructions,
-            UpdatedAt = updatedAt,
-            UserId = userId,
-            Id = id,
+            order.Instructions,
+            order.Status,
+            order.UpdatedBy,
+            order.UpdatedAt,
+            order.Id,
         }, trans);
 
-        if (result is null)
-        {
-            return default;
-        }
+        var updatedOrder = result is null
+            ? default
+            : new PatientOrder
+            {
+                Id = (long)result.id,
+                Instructions = (string)result.instructions,
+                Type = (OrderType)result.type,
+                Status = (OrderStatus)result.status,
+                PatientId = (long)result.patient_id,
+                UpdatedBy = (string)result.updated_by,
+                UpdatedAt = (DateTimeOffset)result.updated_at,
+                CreatedAt = (DateTimeOffset)result.created_at,
+                CreatedBy = (string)result.created_by,
+            };
 
-        return new PatientOrder
-        {
-            Id = id,
-            Instructions = instructions,
-            PatientId = (long)result.patient_id,
-            CreatedAt = (DateTimeOffset)result.created_at,
-            UpdatedBy = userId,
-            UpdatedAt = updatedAt,
-        };
+        return updatedOrder;
     }
 }

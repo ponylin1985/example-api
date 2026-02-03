@@ -143,30 +143,13 @@ public sealed class CachedPatientOrderRepository : IPatientOrderRepository
     }
 
     /// <inheritdoc />
-    public async Task<PatientOrder> UpdateInstructionsAsync(PatientOrder order)
+    public async Task<PatientOrder?> PatchAsync(PatientOrder order)
     {
-        var updatedOrder = await _innerRepository.UpdateInstructionsAsync(order);
+        var updatedOrder = await _innerRepository.PatchAsync(order);
 
         if (updatedOrder is { Id: > 0 })
         {
-            _ = RemoveFromCacheAsync(order.Id, updatedOrder.PatientId);
-        }
-
-        return updatedOrder!;
-    }
-
-    /// <inheritdoc />
-    public async Task<PatientOrder?> UpdateAsync(
-        long id,
-        string instructions,
-        string userId,
-        DateTimeOffset updatedAt)
-    {
-        var updatedOrder = await _innerRepository.UpdateAsync(id, instructions, userId, updatedAt);
-
-        if (updatedOrder is { Id: > 0 })
-        {
-            _ = RemoveFromCacheAsync(id, updatedOrder.PatientId);
+            _ = RemoveFromCacheAsync(updatedOrder.Id, updatedOrder.PatientId);
         }
 
         return updatedOrder;

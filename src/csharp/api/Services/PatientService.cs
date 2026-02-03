@@ -34,6 +34,11 @@ public class PatientService : BaseService, IPatientService
     private readonly IPatientRepository _patientRepository;
 
     /// <summary>
+    /// Repository for patient order history data access.
+    /// </summary>
+    private readonly IPatientOrderHistoryRepository _patientOrderHistoryRepository;
+
+    /// <summary>
     /// Medication data repository.
     /// </summary>
     private readonly IMedicationRepository _medicationRepository;
@@ -58,6 +63,7 @@ public class PatientService : BaseService, IPatientService
     /// </summary>
     /// <param name="logger">Application logger.</param>
     /// <param name="patientRepository">The patient repository.</param>
+    /// <param name="patientOrderHistoryRepository">The patient order history repository.</param>
     /// <param name="medicationRepository">The medication repository.</param>
     /// <param name="orderPrescriptionPolicy">The order prescription policy.</param>
     /// <param name="unitOfWork">The unit of work.</param>
@@ -65,6 +71,7 @@ public class PatientService : BaseService, IPatientService
     public PatientService(
         ILoggerFactory loggerFactory,
         IPatientRepository patientRepository,
+        IPatientOrderHistoryRepository patientOrderHistoryRepository,
         IMedicationRepository medicationRepository,
         IOrderPrescriptionPolicy orderPrescriptionPolicy,
         IUnitOfWork unitOfWork,
@@ -73,6 +80,7 @@ public class PatientService : BaseService, IPatientService
         _loggerFactory = loggerFactory;
         _logger = loggerFactory.CreateLogger<PatientService>();
         _patientRepository = patientRepository;
+        _patientOrderHistoryRepository = patientOrderHistoryRepository;
         _medicationRepository = medicationRepository;
         _orderPrescriptionPolicy = orderPrescriptionPolicy;
         _unitOfWork = unitOfWork;
@@ -141,17 +149,31 @@ public class PatientService : BaseService, IPatientService
             _loggerFactory.CreateLogger<AddPatientProcess>(),
             request,
             _patientRepository,
+            _patientOrderHistoryRepository,
             _orderPrescriptionPolicy,
             _dateTimeOffsetProvider);
 
-        await process
-            .Prepare()
-            .EnsureEmailUniqueAsync()
-            .ThenAsync(p => p.EnsurePhoneNumberUniqueAsync())
-            .ThenAsync(p => p.EnsurePrescriptionValidAsync())
-            .ThenAsync(p => p.ExecuteAsync())
-            .ThenAsync(p => p.CommitAsync(_unitOfWork))
-            .Then(p => p.ShouldSuccessfully());
+        await _unitOfWork.ExecuteStrategyAsync(async () =>
+        {
+            try
+            {
+                using var _ = await _unitOfWork.BeginTransactionAsync();
+                await process
+                    .Prepare()
+                    .EnsureEmailUniqueAsync()
+                    .ThenAsync(p => p.EnsurePhoneNumberUniqueAsync())
+                    .ThenAsync(p => p.EnsurePrescriptionValidAsync())
+                    .ThenAsync(p => p.ExecuteAsync(_unitOfWork))
+                    .Then(p => p.ShouldSuccessfully());
+                await _unitOfWork.CommitTransactionAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while adding a new patient. Request: {@Request}", request);
+                await _unitOfWork.RollbackTransactionAsync();
+                throw new BusinessException(ApiCode.OperationFailed, "Failed to add new patient.");
+            }
+        });
 
         return SuccessResult(process.CreatedPatient!.ToDto());
     }

@@ -40,19 +40,9 @@ public interface IPatientOrderRepository
     Task<PatientOrder> AddAsync(PatientOrder order);
 
     /// <summary>
-    /// Update the instructions of an existing order by id.
+    /// Updates an existing patient's order.
     /// </summary>
-    /// <param name="order">The order entity with updated instructions.</param>
-    /// <returns>The updated order entity.</returns>
-    Task<PatientOrder> UpdateInstructionsAsync(PatientOrder order);
-
-    /// <summary>
-    /// Update the instructions of an order.
-    /// </summary>
-    /// <param name="id">The id of the order to update.</param>
-    /// <param name="instructions">The new instructions for the order.</param>
-    /// <param name="userId">The ID of the user making the update.</param>
-    /// <param name="updatedAt">The timestamp of the update.</param>
+    /// <param name="order">The order entity with updated information.</param>
     /// <returns>The updated order entity, or null if not found.</returns>
-    Task<PatientOrder?> UpdateAsync(long id, string instructions, string userId, DateTimeOffset updatedAt);
+    Task<PatientOrder?> PatchAsync(PatientOrder order);
 }

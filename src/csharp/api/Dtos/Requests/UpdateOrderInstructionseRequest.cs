@@ -1,13 +1,26 @@
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
+using Example.Api.Enums;
 
 namespace Example.Api.Dtos.Requests;
 
 /// <summary>
-/// Request to update an order's instructions.
+/// Request to patch an existing patient order.
 /// </summary>
-public record UpdateOrderInstructionseRequest
+public record UpdatePatientOrderRequest
 {
+    /// <summary>
+    /// The ID of the order to be updated.
+    /// </summary>
+    /// <value></value>
+    internal long Id { get; init; }
+
+    /// <summary>
+    /// Status of the order.
+    /// </summary>
+    /// <value></value>
+    internal OrderStatus Status { get; init; }
+
     /// <summary>
     /// Instructions for the order.
     /// </summary>

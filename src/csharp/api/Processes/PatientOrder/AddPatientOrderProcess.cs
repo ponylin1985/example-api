@@ -34,6 +34,11 @@ public sealed class AddPatientOrderProcess
     private readonly IPatientOrderRepository _patientOrderRepository;
 
     /// <summary>
+    /// Patient order history data repository.
+    /// </summary>
+    private readonly IPatientOrderHistoryRepository _patientOrderHistoryRepository;
+
+    /// <summary>
     /// Patient order's prescription policy for validations.
     /// </summary>
     /// <value></value>
@@ -73,8 +78,9 @@ public sealed class AddPatientOrderProcess
     /// </summary>
     /// <param name="logger">The application logger.</param>
     /// <param name="request">The request dto for creating a patient order.</param>
-    /// <param name="patientRepository">The patient repository for accessing patient data.</param>
-    /// <param name="patientOrderRepository">The patient order repository for accessing order data.</param>
+    /// <param name="patientRepository">Patient information data repository.</param>
+    /// <param name="patientOrderRepository">Patient order data repository.</param>
+    /// <param name="patientOrderHistoryRepository">Patient order history data repository.</param>
     /// <param name="orderPrescriptionPolicy">The prescription policy for validating orders.</param>
     /// <param name="dateTimeOffsetProvider">The provider for current date and time.</param>
     public AddPatientOrderProcess(
@@ -82,6 +88,7 @@ public sealed class AddPatientOrderProcess
         CreatePatientOrderRequest request,
         IPatientRepository patientRepository,
         IPatientOrderRepository patientOrderRepository,
+        IPatientOrderHistoryRepository patientOrderHistoryRepository,
         IOrderPrescriptionPolicy orderPrescriptionPolicy,
         IDateTimeOffsetProvider dateTimeOffsetProvider)
     {
@@ -89,6 +96,7 @@ public sealed class AddPatientOrderProcess
         _request = request;
         _patientRepository = patientRepository;
         _patientOrderRepository = patientOrderRepository;
+        _patientOrderHistoryRepository = patientOrderHistoryRepository;
         _orderPrescriptionPolicy = orderPrescriptionPolicy;
         _dateTimeOffsetProvider = dateTimeOffsetProvider;
     }
@@ -157,17 +165,33 @@ public sealed class AddPatientOrderProcess
     /// Executes the process to add the patient order.
     /// </summary>
     /// <returns></returns>
-    public async Task<AddPatientOrderProcess> ExecuteAsync()
+    public async Task<AddPatientOrderProcess> ExecuteAsync(IUnitOfWork unitOfWork)
     {
         CreatedOrder = await _patientOrderRepository.AddAsync(Order!);
-        return this;
-    }
+        await unitOfWork.SaveChangesAsync();
 
-    /// <summary>
-    /// Commits the changes to the database using the provided Unit of Work.
-    /// </summary>
-    public async Task<AddPatientOrderProcess> CommitAsync(IUnitOfWork unitOfWork)
-    {
+        if (CreatedOrder is null or { Id: <= 0 })
+        {
+            _logger.LogError(
+                "Failed to add order for PatientId: {PatientId}",
+                Order!.PatientId);
+            throw new BusinessException(
+                ApiCode.OperationFailed,
+                $"Failed to add order for PatientId: {Order!.PatientId}.");
+        }
+
+        var orderHistory = new PatientOrderHistory
+        {
+            Type = LogType.Add,
+            OrderId = CreatedOrder.Id,
+            PatientId = CreatedOrder!.PatientId,
+            Status = CreatedOrder.Status,
+            LogBy = CreatedOrder.CreatedBy,
+            LogAt = CreatedOrder.CreatedAt,
+            Remarks = CreatedOrder.Instructions,
+        };
+
+        await _patientOrderHistoryRepository.AddHistoryAsync(orderHistory);
         await unitOfWork.SaveChangesAsync();
         return this;
     }
@@ -196,6 +220,7 @@ public sealed class AddPatientOrderProcess
     private PatientOrder MapToEntity(CreatePatientOrderRequest request)
     {
         var userId = request.UserId!.Trim();
+        var utcNow = _dateTimeOffsetProvider.UtcNow;
 
         var order = new PatientOrder
         {
@@ -208,18 +233,20 @@ public sealed class AddPatientOrderProcess
             Status = OrderStatus.Created,
             DispensedDate = request.DispensedDate?.UtcDateTime,
             CreatedBy = userId,
-            CreatedAt = _dateTimeOffsetProvider.UtcNow,
+            CreatedAt = utcNow,
             UpdatedBy = userId,
-            UpdatedAt = _dateTimeOffsetProvider.UtcNow,
+            UpdatedAt = utcNow,
             Prescriptions = request.Prescriptions!.Select(p => new Prescription
             {
                 MedicationId = p.MedicationId!.Value,
-                Dose = p.Dose!.Trim(),
-                Frequency = p.Frequency!.Trim(),
+                Dose = p.Dose?.Trim(),
+                Frequency = p.Frequency?.Trim(),
                 DurationInDays = p.DurationInDays!.Value,
                 Route = p.Route!.Value,
                 CreatedBy = userId,
+                CreatedAt = utcNow,
                 UpdatedBy = userId,
+                UpdatedAt = utcNow,
             }).ToList(),
         };
 

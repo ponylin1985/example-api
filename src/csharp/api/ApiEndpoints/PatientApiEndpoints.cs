@@ -32,6 +32,7 @@ public static class PatientApiEndpoints
             .WithTags("Patients");
         MapGetPatients(group);
         MapGetPatient(group);
+        MapGetPatientOrderHistory(group);
         MapCreatePatient(group);
         MapUpdatePatient(group);
         return app;
@@ -100,6 +101,30 @@ public static class PatientApiEndpoints
     }
 
     /// <summary>
+    /// Maps the GetPatientOrderHistory endpoint.
+    /// </summary>
+    /// <param name="group"></param>
+    private static void MapGetPatientOrderHistory(RouteGroupBuilder group)
+    {
+        group.MapGet("/{id:long:min(1)}/orders-histories", async Task<RestApiResult> (
+            [FromRoute(Name = "id")] long patientId,
+            [AsParameters] PagedRequest pagedRequest,
+            IPatientOrderService patientOrderService) =>
+        {
+            var result = await patientOrderService.GetOrderHistoryByPatientIdAsync(
+                patientId,
+                pagedRequest.PageNumber,
+                pagedRequest.PageSize);
+            return result.ToHttpResult();
+        })
+        .Produces<ApiResult>(StatusCodes.Status200OK)
+        .Produces<ApiResult>(StatusCodes.Status400BadRequest)
+        .Produces<ApiResult>(StatusCodes.Status500InternalServerError)
+        .WithName("GetPatientOrderHistoryByPatientId")
+        .WithDescription("Get patient order history by patient identifier.");
+    }
+
+    /// <summary>
     /// Maps the CreatePatient endpoint.
     /// </summary>
     /// <param name="group"></param>
@@ -162,7 +187,7 @@ public static class PatientApiEndpoints
                 }.ToHttpResult();
             }
 
-            request.Id = id;
+            request = request with { Id = id };
             var result = await patientService
                 .UpdatePatientAsync(request)
                 .TapOnSuccessAsync(async () => await EvictPatientRelatedCaches(cacheStore));

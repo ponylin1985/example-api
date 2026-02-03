@@ -6,7 +6,6 @@ using Example.Api.Enums;
 using Example.Api.Extensions;
 using Example.Api.Infrastructure;
 using Example.Api.Mappers;
-using Example.Api.Models;
 using Example.Api.Processes;
 using Example.Api.Repositories;
 using Example.Api.Services.DomainServices;
@@ -41,7 +40,12 @@ public class PatientOrderService : BaseService, IPatientOrderService
     /// <summary>
     /// Order data repository.
     /// </summary>
-    private readonly IPatientOrderRepository _orderRepository;
+    private readonly IPatientOrderRepository _patientOrderRepository;
+
+    /// <summary>
+    /// Order history data repository.
+    /// </summary>
+    private readonly IPatientOrderHistoryRepository _patientOrderHistoryRepository;
 
     /// <summary>
     /// Patient data repository.
@@ -59,14 +63,16 @@ public class PatientOrderService : BaseService, IPatientOrderService
     /// <param name="logger">Application logger.</param>
     /// <param name="dateTimeOffsetProvider">The date time offset provider.</param>
     /// <param name="orderPrescriptionPolicy">The order prescription policy.</param>
-    /// <param name="orderRepository">The order repository.</param>
+    /// <param name="patientOrderRepository">The order repository.</param>
+    /// <param name="patientOrderHistoryRepository">The patient order history repository.</param>
     /// <param name="patientRepository">The patient repository.</param>
     /// <param name="unitOfWork">The unit of work.</param>
     public PatientOrderService(
         ILoggerFactory loggerFactory,
         IDateTimeOffsetProvider dateTimeOffsetProvider,
         IOrderPrescriptionPolicy orderPrescriptionPolicy,
-        IPatientOrderRepository orderRepository,
+        IPatientOrderRepository patientOrderRepository,
+        IPatientOrderHistoryRepository patientOrderHistoryRepository,
         IPatientRepository patientRepository,
         IUnitOfWork unitOfWork)
     {
@@ -74,7 +80,8 @@ public class PatientOrderService : BaseService, IPatientOrderService
         _logger = loggerFactory.CreateLogger<PatientOrderService>();
         _dateTimeOffsetProvider = dateTimeOffsetProvider;
         _orderPrescriptionPolicy = orderPrescriptionPolicy;
-        _orderRepository = orderRepository;
+        _patientOrderRepository = patientOrderRepository;
+        _patientOrderHistoryRepository = patientOrderHistoryRepository;
         _patientRepository = patientRepository;
         _unitOfWork = unitOfWork;
     }
@@ -83,7 +90,7 @@ public class PatientOrderService : BaseService, IPatientOrderService
     public async Task<ApiResult<PagedResult<PatientOrderDto>>> GetPatientOrdersAsync(
         GetPatientOrdersRequest request)
     {
-        var queryResult = await _orderRepository.GetPatientOrdersAsync(
+        var queryResult = await _patientOrderRepository.GetPatientOrdersAsync(
             request.PageNumber,
             request.PageSize,
             request.PatientId,
@@ -114,7 +121,7 @@ public class PatientOrderService : BaseService, IPatientOrderService
     /// <inheritdoc />
     public async Task<ApiResult<PatientOrderDto>> GetPatientOrderAsync(long id)
     {
-        var patientOrder = await _orderRepository.GetPatientOrderAsync(id);
+        var patientOrder = await _patientOrderRepository.GetPatientOrderAsync(id);
 
         if (patientOrder is null or { Id: <= 0 })
         {
@@ -126,58 +133,159 @@ public class PatientOrderService : BaseService, IPatientOrderService
     }
 
     /// <inheritdoc />
+    public async Task<ApiResult<PagedResult<PatientOrderHistoryDto>>> GetOrderHistoryByPatientIdAsync(
+        long patientId,
+        int pageNumber,
+        int pageSize)
+    {
+        var queryResult = await _patientOrderHistoryRepository.GetHistoriesByPatientIdAsync(
+            patientId,
+            pageNumber,
+            pageSize);
+
+        if (!HasOrderHistoriesData())
+        {
+            _logger.LogInformation(
+                "No patient order histories found for PatientId: {PatientId}",
+                patientId);
+            return NoDataFoundPagedResult<PatientOrderHistoryDto>();
+        }
+
+        var dtos = queryResult.Data!.ToDtos();
+        return SuccessPagedResult(
+            dtos,
+            pageNumber,
+            pageSize,
+            queryResult.TotalCount);
+
+        bool HasOrderHistoriesData() =>
+            !queryResult.Data.IsNullOrEmpty() && queryResult.TotalCount > 0;
+    }
+
+    public async Task<ApiResult<PagedResult<PatientOrderHistoryDto>>> GetOrderHistoryByOrderIdAsync(
+        long orderId,
+        int pageNumber,
+        int pageSize)
+    {
+        var queryResult = await _patientOrderHistoryRepository.GetHistoriesByOrderIdAsync(
+            orderId,
+            pageNumber,
+            pageSize);
+
+        if (!HasOrderHistoriesData())
+        {
+            _logger.LogInformation(
+                "No patient order histories found for OrderId: {OrderId}",
+                orderId);
+            return NoDataFoundPagedResult<PatientOrderHistoryDto>();
+        }
+
+        var dtos = queryResult.Data!.ToDtos();
+        return SuccessPagedResult(
+            dtos,
+            pageNumber,
+            pageSize,
+            queryResult.TotalCount);
+
+        bool HasOrderHistoriesData() =>
+            !queryResult.Data.IsNullOrEmpty() && queryResult.TotalCount > 0;
+    }
+
+    /// <inheritdoc />
     public async Task<ApiResult<PatientOrderDto>> AddPatientOrderAsync(CreatePatientOrderRequest request)
     {
         var process = new AddPatientOrderProcess(
             _loggerFactory.CreateLogger<AddPatientOrderProcess>(),
             request,
             _patientRepository,
-            _orderRepository,
+            _patientOrderRepository,
+            _patientOrderHistoryRepository,
             _orderPrescriptionPolicy,
             _dateTimeOffsetProvider);
 
-        await process
-            .Prepare()
-            .EnsurePatientExistAsync()
-            .Then(p => p.EnsurePatientStatus())
-            .ThenAsync(p => p.EnsureMedicationIdExistAsync())
-            .ThenAsync(p => p.ExecuteAsync())
-            .ThenAsync(p => p.CommitAsync(_unitOfWork))
-            .Then(p => p.ShouldSuccessfully());
+        await _unitOfWork.ExecuteStrategyAsync(async () =>
+        {
+            try
+            {
+                await using var _ = await _unitOfWork.BeginTransactionAsync();
+                await process
+                    .Prepare()
+                    .EnsurePatientExistAsync()
+                    .Then(p => p.EnsurePatientStatus())
+                    .ThenAsync(p => p.EnsureMedicationIdExistAsync())
+                    .ThenAsync(p => p.ExecuteAsync(_unitOfWork))
+                    .Then(p => p.ShouldSuccessfully());
+                await _unitOfWork.CommitTransactionAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex,
+                    "An error occurred while adding a new patient order. Request: {@Request}", request);
+                await _unitOfWork.RollbackTransactionAsync();
+                throw new BusinessException(ApiCode.OperationFailed, "Failed to add new patient order.");
+            }
+        });
 
         return SuccessResult(process.CreatedOrder!.ToDto());
     }
 
     /// <inheritdoc />
-    public async Task<ApiResult<PatientOrderDto>> UpdateInstructionsAsync(
-        long id,
-        string instructions,
-        string userId)
+    public async Task<ApiResult<PatientOrderDto>> DispenseOrderAsync(UpdatePatientOrderRequest request)
     {
-        PatientOrder? updatedOrder = default;
-        await WhenUpdateOrderAsync();
-        ShouldUpdatedSuccessfully();
-        return SuccessResult(updatedOrder!.ToDto(includePrescriptions: false));
+        return await PatchPatientOrderAsync(
+            request with { Status = OrderStatus.Dispensed });
+    }
 
-        async Task WhenUpdateOrderAsync()
+    /// <inheritdoc />
+    public async Task<ApiResult<PatientOrderDto>> ExecuteOrderAsync(UpdatePatientOrderRequest request)
+    {
+        return await PatchPatientOrderAsync(
+            request with { Status = OrderStatus.Executed });
+    }
+
+    /// <inheritdoc />
+    public async Task<ApiResult<PatientOrderDto>> CancelOrderAsync(UpdatePatientOrderRequest request)
+    {
+        return await PatchPatientOrderAsync(
+            request with { Status = OrderStatus.Cancelled });
+    }
+
+    /// <summary>
+    /// Patches an existing patient order.
+    /// </summary>
+    /// <param name="request">Patch patient order request.</param>
+    /// <returns>The updated patient order DTO.</returns>
+    private async Task<ApiResult<PatientOrderDto>> PatchPatientOrderAsync(UpdatePatientOrderRequest request)
+    {
+        var process = new PatchPatientOrderProcess(
+            _loggerFactory.CreateLogger<PatchPatientOrderProcess>(),
+            request,
+            _patientOrderRepository,
+            _patientOrderHistoryRepository,
+            _dateTimeOffsetProvider);
+
+        await _unitOfWork.ExecuteStrategyAsync(async () =>
         {
-            await _unitOfWork.ExecuteStrategyAsync(async () =>
+            try
             {
-                var utcNow = _dateTimeOffsetProvider.UtcNow;
                 await using var _ = await _unitOfWork.BeginTransactionAsync();
-                updatedOrder = await _orderRepository.UpdateAsync(id, instructions.Trim(), userId, utcNow);
+                await process
+                    .Prepare()
+                    .ExecuteAsync(_unitOfWork)
+                    .Then(p => p.ShouldSuccessfully());
                 await _unitOfWork.CommitTransactionAsync();
-            });
-        }
-
-        void ShouldUpdatedSuccessfully()
-        {
-            if (updatedOrder is null or { Id: <= 0, PatientId: <= 0 })
-            {
-                _logger.LogWarning("Failed to update order instructions for order with OrderId: {Id}.", id);
-                throw new BusinessException(
-                    ApiCode.NoDataFound, $"Failed to update order instructions for order with OrderId: {id}.");
             }
-        }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex,
+                    "An error occurred while patching patient order with ID {OrderId}. Request: {@Request}",
+                    process.Order!.Id,
+                    request);
+                await _unitOfWork.RollbackTransactionAsync();
+                throw new BusinessException(ApiCode.OperationFailed, "Failed to update patient order.");
+            }
+        });
+
+        return SuccessResult(process.UpdatedOrder!.ToDto(includePrescriptions: false));
     }
 }

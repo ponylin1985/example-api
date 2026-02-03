@@ -31,9 +31,15 @@ public class ApplicationDbContext : DbContext
     public DbSet<Patient> Patients { get; set; } = default!;
 
     /// <summary>
-    /// Gets or sets the DbSet for Orders.
+    /// Gets or sets the DbSet for PatientOrders.
     /// </summary>
     public DbSet<PatientOrder> Orders { get; set; } = default!;
+
+    /// <summary>
+    /// Gets or sets the DbSet for Patient Order Histories.
+    /// </summary>
+    /// <value></value>
+    public DbSet<PatientOrderHistory> OrderHistories { get; set; } = default!;
 
     /// <summary>
     /// Gets or sets the DbSet for Prescriptions.
@@ -42,7 +48,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Prescription> Prescriptions { get; set; } = default!;
 
     /// <summary>
-    /// Gets or sets the DbSet for Prescriptions.
+    /// Gets or sets the DbSet for Medications.
     /// </summary>
     /// <value></value>
     public DbSet<Medication> Medications { get; set; } = default!;
@@ -55,6 +61,7 @@ public class ApplicationDbContext : DbContext
     {
         modelBuilder.ApplyConfiguration(new DbConfigurations.PatientDbConfiguration());
         modelBuilder.ApplyConfiguration(new DbConfigurations.PatientOrderDbConfiguration());
+        modelBuilder.ApplyConfiguration(new DbConfigurations.PatientOrderHistoryDbConfiguration());
         modelBuilder.ApplyConfiguration(new DbConfigurations.MedicationDbConfiguration());
         modelBuilder.ApplyConfiguration(new DbConfigurations.PrescriptionDbConfiguration());
         base.OnModelCreating(modelBuilder);
