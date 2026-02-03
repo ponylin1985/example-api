@@ -652,12 +652,20 @@ Services/                             ← 業務邏輯 (目前主要為應用程
 ├── PatientService
 └── OrderService
 
+Processes/                            ← 業務流程封裝 (Method Object Pattern)  
+├── Patient/
+    └── AddPatientProcess
+└── PatientOrder/
+    ├── AddPatientOrderProcess
+    └── PatchPatientOrderProcess
+
 Repositories/                         ← 資料倉儲抽象化 (Repository Pattern)
 ├── PatientRepository
-└── OrderRepository
+├── PatientOrderRepository
+└── PatientOrderHistoryRepository
 
 Mappers/                              ← 資料載體對應
-├── OrderMapper
+├── PatientOrderMapper
 └── PatientMapper
 
 Middlewares/                          ← Http 管道中介層 (Http Pipeline Middlewares)
@@ -668,7 +676,11 @@ Middlewares/                          ← Http 管道中介層 (Http Pipeline Mi
 
 Models/                               ← 貧血模型 (Entities/POCOs)
 ├── Patient
-└── Order
+└── PatientOrder
+
+Infrastructure/                       ← 基礎建設 (Infrastructure)
+├── IDbSession
+└── IUnitOfWork
 
 Migrations/                           ← 資料庫遷移 (dotnet ef migrations)
 ├── XxxMigration.cs
@@ -677,12 +689,13 @@ Migrations/                           ← 資料庫遷移 (dotnet ef migrations)
 
 Dtos/                                 ← 資料傳輸物件 (Data Transfer Objects)
 ├── PatientDto
-├── OrderDto
+├── PatientOrderDto
 └── Requests                          ← 請求資料載體 (Request DTOs)
-    ├── CreateOrderRequest
+    ├── CreatePatientOrderRequest
     ├── CreatePatientRequest
     ├── GetPatientsRequest
-    ├── UpdateOrderMessageRequest
+    ├── UpdatePatientRequest
+    ├── UpdatePatientOrderRequest
     └── PagedRequest
 └── Responses                         ← 回應資料載體 (Response DTOs)
     ├── ApiResult
@@ -749,24 +762,32 @@ public async Task<ApiResult<PatientDto>> AddPatientAsync(CreatePatientRequest re
 ```csharp
 public async Task<ApiResult<PatientDto>> AddPatientAsync(CreatePatientRequest request)
 {
-    var process = new AddPatientProcess(
-        _loggerFactory.CreateLogger<AddPatientProcess>(),
-        request,
-        _patientRepository,
-        _orderPrescriptionPolicy,
-        _dateTimeOffsetProvider);
+    public async Task<ApiResult<PatientDto>> AddPatientAsync(CreatePatientRequest request)
+    {
+        var process = new AddPatientProcess(
+            _loggerFactory.CreateLogger<AddPatientProcess>(),
+            request,
+            _patientRepository,
+            _patientOrderHistoryRepository,
+            _orderPrescriptionPolicy,
+            _dateTimeOffsetProvider);
 
-    // BDD Style with Fluent API
-    await process
-        .Prepare()                                            // Given
-        .EnsureEmailUniqueAsync()                             // Given (Guard Clauses)
-        .ThenAsync(p => p.EnsurePhoneNumberUniqueAsync())     // Given (Guard Clauses)
-        .ThenAsync(p => p.EnsurePrescriptionValidAsync())     // Given (Guard Clauses)
-        .ThenAsync(p => p.ExecuteAsync())                     // When (Action)
-        .ThenAsync(p => p.CommitAsync(_unitOfWork))           // When (Action) 
-        .Then(p => p.ShouldSuccessfully());                   // Then (Assertions)
+        await _unitOfWork.ExecuteStrategyAsync(async () =>
+        {
+            
+            using var _ = await _unitOfWork.BeginTransactionAsync();
+            await process
+                .Prepare()                                              // Given
+                .EnsureEmailUniqueAsync()                               // Given (Guard Clause)
+                .ThenAsync(p => p.EnsurePhoneNumberUniqueAsync())       // Given (Guard Clause)
+                .ThenAsync(p => p.EnsurePrescriptionValidAsync())       // Given (Guard Clause)
+                .ThenAsync(p => p.ExecuteAsync(_unitOfWork))            // When (Action)
+                .Then(p => p.ShouldSuccessfully());                     // Then (Assertions)
+            await _unitOfWork.CommitTransactionAsync();
+        });
 
-    return SuccessResult(process.CreatedPatient!.ToDto());
+        return SuccessResult(process.CreatedPatient!.ToDto());
+    }
 }
 ```
 
