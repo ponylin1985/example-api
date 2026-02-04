@@ -119,14 +119,18 @@ src/python/
 ### Patient Management (病患管理)
 - `GET /api/patients?` - 查詢病患列表（支援日期範圍與分頁）
 - `GET /api/patients/{id}` - 查詢單一的病患
+- `GET /api/patients/{id}/order-histories` - 更新病患的訂單歷史紀錄
 - `POST /api/patients` - 新增病患
 - `PUT /api/patients/{id}` - 更新病患基本資料
 
 ### Patient Order Management (病患訂單管理)
 - `GET /api/orders?` - 查詢病患訂單列表（支援分頁與篩選）
 - `GET /api/orders/{id}` - 查詢單一病患訂單
+- `GET /api/orders/{id}/histories` - 查詢病患訂單歷史紀錄
 - `POST /api/orders` - 新增病患訂單
-- `PUT /api/orders/{id}` - 更新病患訂單的「醫囑指示」
+- `POST /api/orders/{id}/dispense` - 對病患訂單執行配藥動作
+- `POST /api/orders/{id}/execute` - 對病患訂單執行治療動作
+- `POST /api/orders/{id}/cancel` - 對病患訂單執行取消動作
 
 ---
 
@@ -582,13 +586,19 @@ flowchart TD
     M5["SlowRequestLoggingMiddleware"]
     M6["RequestResponseLoggingMiddleware"]
 
-    Endpoint["Minimal API Endpoint<br/>ApiEndpoints"]
+    Endpoint["Minimal API Endpoint<br/>(ApiEndpoints)"]
 
     %% Business Logic Layer
     subgraph Business_Logic_Layer["Business Logic Layer"]
         subgraph Application_Services["Application Services"]
             S1["PatientService"]
             S2["PatientOrderService"]
+        end
+
+        subgraph Processes["Business&nbsp;Processes&nbsp;(BDD&nbsp;Style)"]
+            direction LR
+            P1["AddPatientOrderProcess"]
+            P2["PatchPatientOrderProcess"]
         end
         
         subgraph Domain_Services["Domain Services"]
@@ -598,48 +608,37 @@ flowchart TD
 
     %% Data Access Layer
     subgraph Data_Access_Layer["Data Access Layer"]
-        RedisCache["Cached Repository<br/>(Redis Decorator)"]
-        Repository["Repository<br/>Patient, Order, Med, Rx"]
-        
-        DB[/"Database<br/>PostgreSQL"/]
-        
-        T1[["Table: patient"]]
-        T2[["Table: patient_order"]]
-        T3[["Table: medication"]]
-        T4[["Table: prescription"]]
+        RedisCache["Cached Repository<br/>(Scrutor Decorator)"]
+        Repository["Repository<br/>(EF Core / Dapper)"]
+        DB[/"Database (PostgreSQL)"/]
     end
 
-    %% HTTP Pipeline
+    %% HTTP Pipeline & API Flow
     Client --> M1 --> M2 --> M3 --> M4
     M4 -- "Cache Hit" --> Client
     M4 --> M5 --> M6 --> Endpoint
+    
     Endpoint --> S1
     Endpoint --> S2
+    S2 --> P1
+    S2 --> P2
 
-    %% Logic Dependency
-    S1 --> DS1
-    S2 --> DS1
-    Application_Services --> RedisCache
+    %% Simplified Dependencies as requested
+    Application_Services ----> Domain_Services
+    
+    %% Representational connection to Data Access Layer
+    Application_Services ==> Data_Access_Layer
+    Processes ==> Data_Access_Layer
+    Domain_Services ==> Data_Access_Layer
 
-    %% Data Flow
-    RedisCache --> Repository
-    Repository --> DB
-
-    %% DB Tables Relationship
-    DB --> T1
-    DB --> T2
-    DB --> T3
-    DB --> T4
+    RedisCache --> Repository --> DB
 
     %% Styles
+    style Processes fill:#1a3a3a,stroke:#00ffcc,stroke-width:2px
     style Domain_Services fill:#2d2d2d,stroke:#f9f,stroke-width:2px,stroke-dasharray: 5 5
-    style T1 fill:#333,stroke:#fff
-    style T2 fill:#333,stroke:#fff
-    style T3 fill:#333,stroke:#fff
-    style T4 fill:#333,stroke:#fff
 ```
 
-### 目錄結構範例 (以 C# ASP.NET Core 的 Patient 與 Order 為例)
+### 目錄結構範例 (以 C# ASP.NET Core Minimal API Project 為例)
 
 ```
 ApiEndpoints/                         ← Minimal APIs 端點
