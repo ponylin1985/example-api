@@ -38,6 +38,11 @@ public class PatientOrderService : BaseService, IPatientOrderService
     private readonly IOrderPrescriptionPolicy _orderPrescriptionPolicy;
 
     /// <summary>
+    /// Order status policy for validations.
+    /// </summary>
+    private readonly IOrderStatusPolicy _orderStatusPolicy;
+
+    /// <summary>
     /// Order data repository.
     /// </summary>
     private readonly IPatientOrderRepository _patientOrderRepository;
@@ -63,6 +68,7 @@ public class PatientOrderService : BaseService, IPatientOrderService
     /// <param name="logger">Application logger.</param>
     /// <param name="dateTimeOffsetProvider">The date time offset provider.</param>
     /// <param name="orderPrescriptionPolicy">The order prescription policy.</param>
+    /// <param name="orderStatusPolicy">The order status policy.</param>
     /// <param name="patientOrderRepository">The order repository.</param>
     /// <param name="patientOrderHistoryRepository">The patient order history repository.</param>
     /// <param name="patientRepository">The patient repository.</param>
@@ -71,6 +77,7 @@ public class PatientOrderService : BaseService, IPatientOrderService
         ILoggerFactory loggerFactory,
         IDateTimeOffsetProvider dateTimeOffsetProvider,
         IOrderPrescriptionPolicy orderPrescriptionPolicy,
+        IOrderStatusPolicy orderStatusPolicy,
         IPatientOrderRepository patientOrderRepository,
         IPatientOrderHistoryRepository patientOrderHistoryRepository,
         IPatientRepository patientRepository,
@@ -80,6 +87,7 @@ public class PatientOrderService : BaseService, IPatientOrderService
         _logger = loggerFactory.CreateLogger<PatientOrderService>();
         _dateTimeOffsetProvider = dateTimeOffsetProvider;
         _orderPrescriptionPolicy = orderPrescriptionPolicy;
+        _orderStatusPolicy = orderStatusPolicy;
         _patientOrderRepository = patientOrderRepository;
         _patientOrderHistoryRepository = patientOrderHistoryRepository;
         _patientRepository = patientRepository;
@@ -232,6 +240,10 @@ public class PatientOrderService : BaseService, IPatientOrderService
     /// <inheritdoc />
     public async Task<ApiResult<PatientOrderDto>> DispenseOrderAsync(UpdatePatientOrderRequest request)
     {
+        await _orderStatusPolicy
+            .EnsurePatientOrderExistsAsync(request.Id)
+            .Then(s => s.EnsureCanBeDispensed());
+
         return await PatchPatientOrderAsync(
             request with { Status = OrderStatus.Dispensed });
     }
@@ -239,6 +251,10 @@ public class PatientOrderService : BaseService, IPatientOrderService
     /// <inheritdoc />
     public async Task<ApiResult<PatientOrderDto>> ExecuteOrderAsync(UpdatePatientOrderRequest request)
     {
+        await _orderStatusPolicy
+            .EnsurePatientOrderExistsAsync(request.Id)
+            .Then(s => s.EnsureCanBeExecuted());
+
         return await PatchPatientOrderAsync(
             request with { Status = OrderStatus.Executed });
     }
@@ -246,6 +262,10 @@ public class PatientOrderService : BaseService, IPatientOrderService
     /// <inheritdoc />
     public async Task<ApiResult<PatientOrderDto>> CancelOrderAsync(UpdatePatientOrderRequest request)
     {
+        await _orderStatusPolicy
+            .EnsurePatientOrderExistsAsync(request.Id)
+            .Then(s => s.EnsureCanBeCancelled());
+
         return await PatchPatientOrderAsync(
             request with { Status = OrderStatus.Cancelled });
     }
