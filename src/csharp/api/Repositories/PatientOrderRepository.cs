@@ -88,7 +88,7 @@ public sealed class PatientOrderRepository : IPatientOrderRepository
     }
 
     /// <inheritdoc />
-    public async Task<PatientOrder?> PatchAsync(PatientOrder order)
+    public async Task<PatientOrder?> PatchAsync(PatientOrder order, OrderStatus originalStatus)
     {
         var sql = @"
             UPDATE patient_order
@@ -97,35 +97,52 @@ public sealed class PatientOrderRepository : IPatientOrderRepository
                 updated_by = @UpdatedBy,
                 updated_at = @UpdatedAt
             WHERE id = @Id
+              AND status = @OriginalStatus
             RETURNING *; ";
 
         var conn = await _dbSession.GetOpenConnectionAsync();
         var trans = await _dbSession.EnsureTransactionAsync();
 
-        var result = await conn.QueryFirstOrDefaultAsync(sql, new
+        var result = await conn.QueryFirstOrDefaultAsync<PatientOrderRecord>(sql, new
         {
             order.Instructions,
             order.Status,
             order.UpdatedBy,
             order.UpdatedAt,
             order.Id,
+            OriginalStatus = originalStatus,
         }, trans);
 
         var updatedOrder = result is null
             ? default
             : new PatientOrder
             {
-                Id = (long)result.id,
-                Instructions = (string)result.instructions,
-                Type = (OrderType)result.type,
-                Status = (OrderStatus)result.status,
-                PatientId = (long)result.patient_id,
-                UpdatedBy = (string)result.updated_by,
-                UpdatedAt = (DateTimeOffset)result.updated_at,
-                CreatedAt = (DateTimeOffset)result.created_at,
-                CreatedBy = (string)result.created_by,
+                Id = result.id,
+                Instructions = result.instructions,
+                Type = result.type,
+                Status = result.status,
+                PatientId = result.patient_id,
+                UpdatedBy = result.updated_by,
+                UpdatedAt = result.updated_at,
+                CreatedAt = result.created_at,
+                CreatedBy = result.created_by,
             };
 
         return updatedOrder;
     }
+
+#pragma warning disable IDE1006 // Naming Styles
+    private class PatientOrderRecord
+    {
+        public long id { get; init; }
+        public string? instructions { get; init; }
+        public OrderType type { get; init; }
+        public OrderStatus status { get; init; }
+        public long patient_id { get; init; }
+        public required string updated_by { get; init; }
+        public DateTimeOffset updated_at { get; init; }
+        public DateTimeOffset created_at { get; init; }
+        public required string created_by { get; init; }
+    }
+#pragma warning restore IDE1006 // Naming Styles
 }

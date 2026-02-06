@@ -84,10 +84,16 @@ public sealed class PatchPatientOrderProcess
     /// <summary>
     /// Executes the patch operation to update the patient order.
     /// </summary>
+    /// <param name="unitOfWork">The unit of work for managing transactions.</param>
+    /// <param name="originalStatus">
+    /// The original status of the order before update, 
+    /// used for optimistic concurrency control.</param>
     /// <returns></returns>
-    public async Task<PatchPatientOrderProcess> ExecuteAsync(IUnitOfWork unitOfWork)
+    public async Task<PatchPatientOrderProcess> ExecuteAsync(
+        IUnitOfWork unitOfWork,
+        OrderStatus originalStatus)
     {
-        UpdatedOrder = await _patientOrderRepository.PatchAsync(Order!);
+        UpdatedOrder = await _patientOrderRepository.PatchAsync(Order!, originalStatus);
 
         if (UpdatedOrder is null)
         {

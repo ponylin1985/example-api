@@ -255,7 +255,8 @@ public class PatientOrderService : BaseService, IPatientOrderService
             .EnsureCanBeDispensed();
 
         return await PatchPatientOrderAsync(
-            request with { Status = OrderStatus.Dispensed });
+            request with { Status = OrderStatus.Dispensed },
+            patientOrder!.Status);
     }
 
     /// <inheritdoc />
@@ -267,7 +268,8 @@ public class PatientOrderService : BaseService, IPatientOrderService
             .EnsureCanBeExecuted();
 
         return await PatchPatientOrderAsync(
-            request with { Status = OrderStatus.Executed });
+            request with { Status = OrderStatus.Executed },
+            patientOrder!.Status);
     }
 
     /// <inheritdoc />
@@ -279,15 +281,19 @@ public class PatientOrderService : BaseService, IPatientOrderService
             .EnsureCanBeCancelled();
 
         return await PatchPatientOrderAsync(
-            request with { Status = OrderStatus.Cancelled });
+            request with { Status = OrderStatus.Cancelled },
+            patientOrder!.Status);
     }
 
     /// <summary>
     /// Patches an existing patient order.
     /// </summary>
     /// <param name="request">Patch patient order request.</param>
+    /// <param name="originalStatus">The original status of the order before update, used for optimistic concurrency control.</param>
     /// <returns>The updated patient order DTO.</returns>
-    private async Task<ApiResult<PatientOrderDto>> PatchPatientOrderAsync(UpdatePatientOrderRequest request)
+    private async Task<ApiResult<PatientOrderDto>> PatchPatientOrderAsync(
+        UpdatePatientOrderRequest request,
+        OrderStatus originalStatus)
     {
         var process = new PatchPatientOrderProcess(
             _loggerFactory.CreateLogger<PatchPatientOrderProcess>(),
@@ -303,7 +309,7 @@ public class PatientOrderService : BaseService, IPatientOrderService
                 await using var _ = await _unitOfWork.BeginTransactionAsync();
                 await process
                     .Prepare()
-                    .ExecuteAsync(_unitOfWork)
+                    .ExecuteAsync(_unitOfWork, originalStatus)
                     .Then(p => p.ShouldSuccessfully());
                 await _unitOfWork.CommitTransactionAsync();
             }

@@ -152,6 +152,7 @@ public sealed class AddPatientProcess
     /// <summary>
     /// Executes the process to add the patient to the repository.
     /// </summary>
+    /// <param name="unitOfWork">The unit of work for managing transactions.</param>
     /// <returns>The current <see cref="AddPatientProcess"/> instance.</returns>
     public async Task<AddPatientProcess> ExecuteAsync(IUnitOfWork unitOfWork)
     {

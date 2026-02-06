@@ -182,6 +182,7 @@ public sealed class AddPatientOrderProcess
     /// <summary>
     /// Executes the process to add the patient order.
     /// </summary>
+    /// <param name="unitOfWork">The unit of work for managing transactions.</param>
     /// <returns></returns>
     public async Task<AddPatientOrderProcess> ExecuteAsync(IUnitOfWork unitOfWork)
     {

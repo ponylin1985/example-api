@@ -66,6 +66,7 @@ public sealed class UpdatePatientProcess
     /// <summary>
     /// Executes the process to update the patient in the repository.
     /// </summary>
+    /// <param name="unitOfWork">The unit of work for managing transactions.</param>
     public async Task<UpdatePatientProcess> ExecuteAsync(IUnitOfWork unitOfWork)
     {
         UpdatedPatient = await _patientRepository.UpdateAsync(Patient!);

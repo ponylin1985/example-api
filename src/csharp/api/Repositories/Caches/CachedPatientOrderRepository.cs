@@ -143,9 +143,9 @@ public sealed class CachedPatientOrderRepository : IPatientOrderRepository
     }
 
     /// <inheritdoc />
-    public async Task<PatientOrder?> PatchAsync(PatientOrder order)
+    public async Task<PatientOrder?> PatchAsync(PatientOrder order, OrderStatus originalStatus)
     {
-        var updatedOrder = await _innerRepository.PatchAsync(order);
+        var updatedOrder = await _innerRepository.PatchAsync(order, originalStatus);
 
         if (updatedOrder is { Id: > 0 })
         {

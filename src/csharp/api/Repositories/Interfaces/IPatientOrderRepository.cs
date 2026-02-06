@@ -40,9 +40,11 @@ public interface IPatientOrderRepository
     Task<PatientOrder> AddAsync(PatientOrder order);
 
     /// <summary>
-    /// Updates an existing patient's order.
+    /// Updates an existing patient's order.<para/>
+    /// This is a patch atomic operation with the original order status.
     /// </summary>
     /// <param name="order">The order entity with updated information.</param>
+    /// <param name="originalStatus">The original status of the order before update.</param>
     /// <returns>The updated order entity, or null if not found.</returns>
-    Task<PatientOrder?> PatchAsync(PatientOrder order);
+    Task<PatientOrder?> PatchAsync(PatientOrder order, OrderStatus originalStatus);
 }
