@@ -1,7 +1,6 @@
 using Example.Api.Enums;
 using Example.Api.Infrastructure;
 using Example.Api.Models;
-using Example.Api.Repositories;
 
 namespace Example.Api.Services.DomainServices;
 
@@ -10,11 +9,6 @@ namespace Example.Api.Services.DomainServices;
 /// </summary>
 public class OrderStatusPolicy : IOrderStatusPolicy
 {
-    /// <summary>
-    /// The patient order repository.
-    /// </summary>
-    private readonly IPatientOrderRepository _patientOrderRepository;
-
     /// <summary>
     /// Application logger.
     /// </summary>
@@ -28,26 +22,23 @@ public class OrderStatusPolicy : IOrderStatusPolicy
     /// <summary>
     /// Constructor for OrderStatusPolicy.
     /// </summary>
-    /// <param name="patientOrderRepository">The patient order repository.</param>
     /// <param name="logger">The application logger.</param>
-    public OrderStatusPolicy(IPatientOrderRepository patientOrderRepository, ILogger<OrderStatusPolicy> logger)
+    public OrderStatusPolicy(ILogger<OrderStatusPolicy> logger)
     {
-        _patientOrderRepository = patientOrderRepository;
         _logger = logger;
     }
 
     /// <inheritdoc/>
-    public async Task<IOrderStatusPolicy> EnsurePatientOrderExistsAsync(long orderId)
+    public IOrderStatusPolicy EnsurePatientOrderExists(PatientOrder? patientOrder)
     {
-        _patientOrder = await _patientOrderRepository.GetPatientOrderAsync(orderId);
-
-        if (_patientOrder is null || _patientOrder.Id <= 0)
+        if (patientOrder is null || patientOrder.Id <= 0)
         {
-            _logger.LogWarning("Order with ID {Id} not found for patching.", orderId);
+            _logger.LogWarning("Order with ID {Id} not found for patching.", patientOrder?.Id);
             throw new BusinessException(
-                ApiCode.NoDataFound, $"Order with ID {orderId} not found.");
+                ApiCode.NoDataFound, $"Order with ID {patientOrder?.Id} not found.");
         }
 
+        _patientOrder = patientOrder;
         return this;
     }
 

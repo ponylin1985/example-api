@@ -57,18 +57,18 @@ public sealed class MedicationRepository : IMedicationRepository
     }
 
     /// <summary>
-    /// Gets the count of existing medications from a list of IDs.
+    /// Gets the medicationIds by the given medicationIds.
     /// </summary>
-    /// <param name="medicationIds"></param>
-    /// <returns></returns>
-    public async Task<int> GetExistingMedicationCountAsync(IEnumerable<long> medicationIds)
+    /// <param name="medicationIds">Request medicationIds.</param>
+    /// <returns>MedicationIds that exist in the database.</returns>
+    public async Task<IEnumerable<long>> GetExistingMedicationIdsAsync(IEnumerable<long> medicationIds)
     {
         const string sql = @"
-            SELECT COUNT(1) 
+            SELECT id
             FROM medication
             WHERE Id = ANY(@Ids); ";
 
         var connection = await _dbSession.GetOpenConnectionAsync();
-        return await connection.ExecuteScalarAsync<int>(sql, new { Ids = medicationIds, });
+        return await connection.QueryAsync<long>(sql, new { Ids = medicationIds.ToArray(), });
     }
 }

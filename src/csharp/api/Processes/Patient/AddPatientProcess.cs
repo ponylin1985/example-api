@@ -5,7 +5,6 @@ using Example.Api.Infrastructure;
 using Example.Api.Models;
 using Example.Api.Repositories;
 using Example.Api.Services.DomainServices;
-using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace Example.Api.Processes;
 
@@ -25,7 +24,7 @@ public sealed class AddPatientProcess
     private readonly CreatePatientRequest _request;
 
     /// <summary>
-    /// Repository for patient data access.
+    /// Patient data repository.
     /// </summary>
     private readonly IPatientRepository _patientRepository;
 
@@ -33,6 +32,11 @@ public sealed class AddPatientProcess
     /// Patient order history data repository.
     /// </summary>
     private readonly IPatientOrderHistoryRepository _patientOrderHistoryRepository;
+
+    /// <summary>
+    /// Medication data repository.
+    /// </summary>
+    private readonly IMedicationRepository _medicationRepository;
 
     /// <summary>
     /// Policy for validating order prescriptions.
@@ -59,8 +63,9 @@ public sealed class AddPatientProcess
     /// </summary>
     /// <param name="logger">The application logger.</param>
     /// <param name="request">The request DTO containing patient creation data.</param>
-    /// <param name="patientRepository">Repository for patient data access.</param>
-    /// <param name="patientOrderHistoryRepository">Repository for patient order history data access.</param>
+    /// <param name="patientRepository">Patient data repository.</param>
+    /// <param name="patientOrderHistoryRepository">Patient order history data repository.</param>
+    /// <param name="medicationRepository">Medication data repository.</param>
     /// <param name="orderPrescriptionPolicy">Policy for validating order prescriptions.</param>
     /// <param name="dateTimeOffsetProvider">Provider for current date and time.</param>
     public AddPatientProcess(
@@ -68,6 +73,7 @@ public sealed class AddPatientProcess
         CreatePatientRequest request,
         IPatientRepository patientRepository,
         IPatientOrderHistoryRepository patientOrderHistoryRepository,
+        IMedicationRepository medicationRepository,
         IOrderPrescriptionPolicy orderPrescriptionPolicy,
         IDateTimeOffsetProvider dateTimeOffsetProvider)
     {
@@ -75,6 +81,7 @@ public sealed class AddPatientProcess
         _request = request;
         _patientRepository = patientRepository;
         _patientOrderHistoryRepository = patientOrderHistoryRepository;
+        _medicationRepository = medicationRepository;
         _orderPrescriptionPolicy = orderPrescriptionPolicy;
         _dateTimeOffsetProvider = dateTimeOffsetProvider;
     }
@@ -102,6 +109,7 @@ public sealed class AddPatientProcess
             _logger.LogWarning("Email {Email} is already in use.", Patient.Email);
             throw new BusinessException(ApiCode.OperationFailed, "Email is already in use.");
         }
+
         return this;
     }
 
@@ -117,6 +125,7 @@ public sealed class AddPatientProcess
             _logger.LogWarning("Phone number {PhoneNumber} is already in use.", Patient.PhoneNumber);
             throw new BusinessException(ApiCode.OperationFailed, "Phone number is already in use.");
         }
+
         return this;
     }
 
@@ -126,7 +135,17 @@ public sealed class AddPatientProcess
     /// <returns>The current <see cref="AddPatientProcess"/> instance.</returns>
     public async Task<AddPatientProcess> EnsurePrescriptionValidAsync()
     {
-        await _orderPrescriptionPolicy.EnsureMedicationIdsValidAsync(Patient!.Orders.FirstOrDefault()!);
+        var requestedMedicationIds = Patient!.Orders.FirstOrDefault()!
+            .Prescriptions
+            .Select(p => p.MedicationId);
+
+        var existingMedicationIds =
+            await _medicationRepository.GetExistingMedicationIdsAsync(requestedMedicationIds);
+
+        _orderPrescriptionPolicy.EnsureMedicationIdsValid(
+            requestedMedicationIds,
+            existingMedicationIds);
+
         return this;
     }
 

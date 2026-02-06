@@ -1,7 +1,6 @@
 using Example.Api.Enums;
+using Example.Api.Extensions;
 using Example.Api.Infrastructure;
-using Example.Api.Models;
-using Example.Api.Repositories;
 
 namespace Example.Api.Services.DomainServices;
 
@@ -16,58 +15,46 @@ public class OrderPrescriptionPolicy : IOrderPrescriptionPolicy
     private readonly ILogger<OrderPrescriptionPolicy> _logger;
 
     /// <summary>
-    /// Medication data repository.
-    /// </summary>
-    private readonly IMedicationRepository _medicationRepository;
-
-    /// <summary>
     /// Constructor for OrderPrescriptionPolicy.
     /// </summary>
     /// <param name="logger">Application logger.</param>
-    /// <param name="medicationRepository">Medication data repository.</param>
     public OrderPrescriptionPolicy(
-        ILogger<OrderPrescriptionPolicy> logger,
-        IMedicationRepository medicationRepository)
+        ILogger<OrderPrescriptionPolicy> logger)
     {
         _logger = logger;
-        _medicationRepository = medicationRepository;
     }
 
     /// <inheritdoc/>
-    public async Task EnsureMedicationIdsValidAsync(PatientOrder order)
+    public void EnsureMedicationIdsValid(
+        IEnumerable<long> requestedMedicationIds,
+        IEnumerable<long> existingMedicationIds)
     {
-        IReadOnlyCollection<long> medicationIds = default!;
-        int existingCount = default;
-
-        ArgumentNullException.ThrowIfNull(order, nameof (order));
-        ArgumentOutOfRangeException.ThrowIfLessThan(order.Prescriptions.Count, 1, nameof (order.Prescriptions));
-
-        GivenMedicationIds();
-        await WhenGetExistingMedicationCountAsync();
-        ShouldAllMedicationIdsValid();
-
-        void GivenMedicationIds()
+        if (requestedMedicationIds.IsNullOrEmpty())
         {
-            medicationIds = order.Prescriptions
-                .Select(p => p.MedicationId)
-                .Distinct()
-                .ToList();
+            _logger.LogWarning("No medication IDs provided in prescriptions.");
+            throw new BusinessException(
+                ApiCode.OperationFailed, "No medication IDs provided in prescriptions.");
         }
 
-        async Task WhenGetExistingMedicationCountAsync()
+        if (existingMedicationIds.IsNullOrEmpty())
         {
-            existingCount = await _medicationRepository.GetExistingMedicationCountAsync(medicationIds);
+            _logger.LogWarning("No existing medication IDs found for validation.");
+            throw new BusinessException(
+                ApiCode.OperationFailed, "One or more prescriptions have invalid medicationIds.");
         }
 
-        void ShouldAllMedicationIdsValid()
+        requestedMedicationIds = requestedMedicationIds.Distinct().ToHashSet();
+        existingMedicationIds = existingMedicationIds.Distinct().ToHashSet();
+
+        var missingIds = requestedMedicationIds.Except(existingMedicationIds).ToList();
+
+        if (!missingIds.IsNullOrEmpty())
         {
-            if (existingCount != medicationIds.Count)
-            {
-                _logger.LogWarning(
-                    "One or more medication IDs in prescriptions are invalid. Provided IDs: {MedicationIds}",
-                    string.Join(", ", medicationIds));
-                throw new BusinessException(
-                    ApiCode.OperationFailed, "One or more prescriptions have invalid medication IDs.");
-            }
-        }   
-    }}
+            _logger.LogWarning(
+                "One or more medication IDs in prescriptions are invalid. Missing MedicationIds: {MissingIds}",
+                string.Join(", ", missingIds));
+            throw new BusinessException(
+                ApiCode.OperationFailed, "One or more prescriptions have invalid medicationIds.");
+        }
+    }
+}

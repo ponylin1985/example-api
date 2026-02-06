@@ -38,7 +38,7 @@ public class PatientOrderService : BaseService, IPatientOrderService
     private readonly IOrderPrescriptionPolicy _orderPrescriptionPolicy;
 
     /// <summary>
-    /// Order status policy for validations.
+    /// Order status policy for validating order status transitions.
     /// </summary>
     private readonly IOrderStatusPolicy _orderStatusPolicy;
 
@@ -51,6 +51,11 @@ public class PatientOrderService : BaseService, IPatientOrderService
     /// Order history data repository.
     /// </summary>
     private readonly IPatientOrderHistoryRepository _patientOrderHistoryRepository;
+
+    /// <summary>
+    /// Medication data repository.
+    /// </summary>
+    private readonly IMedicationRepository _medicationRepository;
 
     /// <summary>
     /// Patient data repository.
@@ -71,6 +76,7 @@ public class PatientOrderService : BaseService, IPatientOrderService
     /// <param name="orderStatusPolicy">The order status policy.</param>
     /// <param name="patientOrderRepository">The order repository.</param>
     /// <param name="patientOrderHistoryRepository">The patient order history repository.</param>
+    /// <param name="medicationRepository">The medication repository.</param>
     /// <param name="patientRepository">The patient repository.</param>
     /// <param name="unitOfWork">The unit of work.</param>
     public PatientOrderService(
@@ -80,6 +86,7 @@ public class PatientOrderService : BaseService, IPatientOrderService
         IOrderStatusPolicy orderStatusPolicy,
         IPatientOrderRepository patientOrderRepository,
         IPatientOrderHistoryRepository patientOrderHistoryRepository,
+        IMedicationRepository medicationRepository,
         IPatientRepository patientRepository,
         IUnitOfWork unitOfWork)
     {
@@ -90,6 +97,7 @@ public class PatientOrderService : BaseService, IPatientOrderService
         _orderStatusPolicy = orderStatusPolicy;
         _patientOrderRepository = patientOrderRepository;
         _patientOrderHistoryRepository = patientOrderHistoryRepository;
+        _medicationRepository = medicationRepository;
         _patientRepository = patientRepository;
         _unitOfWork = unitOfWork;
     }
@@ -208,6 +216,7 @@ public class PatientOrderService : BaseService, IPatientOrderService
             _patientRepository,
             _patientOrderRepository,
             _patientOrderHistoryRepository,
+            _medicationRepository,
             _orderPrescriptionPolicy,
             _dateTimeOffsetProvider);
 
@@ -240,9 +249,10 @@ public class PatientOrderService : BaseService, IPatientOrderService
     /// <inheritdoc />
     public async Task<ApiResult<PatientOrderDto>> DispenseOrderAsync(UpdatePatientOrderRequest request)
     {
-        await _orderStatusPolicy
-            .EnsurePatientOrderExistsAsync(request.Id)
-            .Then(s => s.EnsureCanBeDispensed());
+        var patientOrder = await _patientOrderRepository.GetPatientOrderAsync(request.Id);
+        _orderStatusPolicy
+            .EnsurePatientOrderExists(patientOrder)
+            .EnsureCanBeDispensed();
 
         return await PatchPatientOrderAsync(
             request with { Status = OrderStatus.Dispensed });
@@ -251,9 +261,10 @@ public class PatientOrderService : BaseService, IPatientOrderService
     /// <inheritdoc />
     public async Task<ApiResult<PatientOrderDto>> ExecuteOrderAsync(UpdatePatientOrderRequest request)
     {
-        await _orderStatusPolicy
-            .EnsurePatientOrderExistsAsync(request.Id)
-            .Then(s => s.EnsureCanBeExecuted());
+        var patientOrder = await _patientOrderRepository.GetPatientOrderAsync(request.Id);
+        _orderStatusPolicy
+            .EnsurePatientOrderExists(patientOrder)
+            .EnsureCanBeExecuted();
 
         return await PatchPatientOrderAsync(
             request with { Status = OrderStatus.Executed });
@@ -262,9 +273,10 @@ public class PatientOrderService : BaseService, IPatientOrderService
     /// <inheritdoc />
     public async Task<ApiResult<PatientOrderDto>> CancelOrderAsync(UpdatePatientOrderRequest request)
     {
-        await _orderStatusPolicy
-            .EnsurePatientOrderExistsAsync(request.Id)
-            .Then(s => s.EnsureCanBeCancelled());
+        var patientOrder = await _patientOrderRepository.GetPatientOrderAsync(request.Id);
+        _orderStatusPolicy
+            .EnsurePatientOrderExists(patientOrder)
+            .EnsureCanBeCancelled();
 
         return await PatchPatientOrderAsync(
             request with { Status = OrderStatus.Cancelled });

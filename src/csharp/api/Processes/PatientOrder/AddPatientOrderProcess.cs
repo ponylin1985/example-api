@@ -39,6 +39,11 @@ public sealed class AddPatientOrderProcess
     private readonly IPatientOrderHistoryRepository _patientOrderHistoryRepository;
 
     /// <summary>
+    /// Medication data repository.
+    /// </summary>
+    private readonly IMedicationRepository _medicationRepository;
+
+    /// <summary>
     /// Patient order's prescription policy for validations.
     /// </summary>
     /// <value></value>
@@ -81,6 +86,7 @@ public sealed class AddPatientOrderProcess
     /// <param name="patientRepository">Patient information data repository.</param>
     /// <param name="patientOrderRepository">Patient order data repository.</param>
     /// <param name="patientOrderHistoryRepository">Patient order history data repository.</param>
+    /// <param name="medicationRepository">Medication data repository.</param>
     /// <param name="orderPrescriptionPolicy">The prescription policy for validating orders.</param>
     /// <param name="dateTimeOffsetProvider">The provider for current date and time.</param>
     public AddPatientOrderProcess(
@@ -89,6 +95,7 @@ public sealed class AddPatientOrderProcess
         IPatientRepository patientRepository,
         IPatientOrderRepository patientOrderRepository,
         IPatientOrderHistoryRepository patientOrderHistoryRepository,
+        IMedicationRepository medicationRepository,
         IOrderPrescriptionPolicy orderPrescriptionPolicy,
         IDateTimeOffsetProvider dateTimeOffsetProvider)
     {
@@ -97,6 +104,7 @@ public sealed class AddPatientOrderProcess
         _patientRepository = patientRepository;
         _patientOrderRepository = patientOrderRepository;
         _patientOrderHistoryRepository = patientOrderHistoryRepository;
+        _medicationRepository = medicationRepository;
         _orderPrescriptionPolicy = orderPrescriptionPolicy;
         _dateTimeOffsetProvider = dateTimeOffsetProvider;
     }
@@ -157,7 +165,17 @@ public sealed class AddPatientOrderProcess
     /// <returns></returns>
     public async Task<AddPatientOrderProcess> EnsureMedicationIdExistAsync()
     {
-        await _orderPrescriptionPolicy.EnsureMedicationIdsValidAsync(Order!);
+        var requestedMedicationIds = Order!.Prescriptions
+            .Select(p => p.MedicationId)
+            .Distinct();
+
+        var existingMedicationIds =
+            await _medicationRepository.GetExistingMedicationIdsAsync(requestedMedicationIds);
+
+        _orderPrescriptionPolicy.EnsureMedicationIdsValid(
+            requestedMedicationIds,
+            existingMedicationIds);
+
         return this;
     }
 

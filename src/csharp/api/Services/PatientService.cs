@@ -6,7 +6,6 @@ using Example.Api.Enums;
 using Example.Api.Extensions;
 using Example.Api.Infrastructure;
 using Example.Api.Mappers;
-using Example.Api.Models;
 using Example.Api.Processes;
 using Example.Api.Repositories;
 using Example.Api.Services.DomainServices;
@@ -150,6 +149,7 @@ public class PatientService : BaseService, IPatientService
             request,
             _patientRepository,
             _patientOrderHistoryRepository,
+            _medicationRepository,
             _orderPrescriptionPolicy,
             _dateTimeOffsetProvider);
 
@@ -181,50 +181,17 @@ public class PatientService : BaseService, IPatientService
     /// <inheritdoc />
     public async Task<ApiResult<PatientDto>> UpdatePatientAsync(UpdatePatientRequest request)
     {
-        Patient? updatedPatient = default;
-        var patient = MapToEntity(request);
+        var process = new UpdatePatientProcess(
+            _loggerFactory.CreateLogger<UpdatePatientProcess>(),
+            request,
+            _patientRepository
+        );
 
-        await WhenUpdatingPatientAsync();
-        ShouldUpdatedSuccessfully();
-        return SuccessResult(updatedPatient!.ToDto(includeOrders: false));
+        await process
+            .Prepare()
+            .ExecuteAsync(_unitOfWork)
+            .Then(p => p.ShouldSuccessfully());
 
-        async Task WhenUpdatingPatientAsync()
-        {
-            updatedPatient = await _patientRepository.UpdateAsync(patient);
-            await _unitOfWork.SaveChangesAsync();
-        }
-
-        void ShouldUpdatedSuccessfully()
-        {
-            if (updatedPatient is not { Id: > 0 })
-            {
-                _logger.LogError("Failed to update patient: {PatientId}", patient.Id);
-                throw new BusinessException(ApiCode.OperationFailed, "Failed to update patient.");
-            }
-        }
-    }
-
-    /// <summary>
-    /// Maps UpdatePatientRequest to Patient entity.
-    /// </summary>
-    /// <param name="request">The update patient request.</param>
-    /// <returns>Patient entity.</returns>
-    private static Patient MapToEntity(UpdatePatientRequest request)
-    {
-        var patient = new Patient
-        {
-            Id = request.Id,
-            Name = request.Name!.Trim(),
-            Age = request.Age!.Value,
-            Gender = request.Gender!.Value,
-            Email = string.IsNullOrWhiteSpace(request.Email) ? null : request.Email.Trim(),
-            PhoneNumber = request.PhoneNumber!.Trim(),
-            DateOfBirth = request.DateOfBirth!.Value,
-            Address = request.Address,
-            Remarks = request.Remarks,
-            UpdatedBy = request.UserId!.Trim(),
-        };
-
-        return patient;
+        return SuccessResult(process.UpdatedPatient!.ToDto(includeOrders: false));
     }
 }

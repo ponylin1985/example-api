@@ -1,3 +1,5 @@
+using Example.Api.Models;
+
 namespace Example.Api.Services.DomainServices;
 
 /// <summary>
@@ -6,11 +8,11 @@ namespace Example.Api.Services.DomainServices;
 public interface IOrderStatusPolicy
 {
     /// <summary>
-    /// Ensures that the patient order exists.
+    /// Ensure that the patient order exists.
     /// </summary>
-    /// <param name="orderId">The id of the patient order.</param>
+    /// <param name="patientOrder">The patient order.</param>
     /// <returns></returns>
-    Task<IOrderStatusPolicy> EnsurePatientOrderExistsAsync(long orderId);
+    IOrderStatusPolicy EnsurePatientOrderExists(PatientOrder? patientOrder);
 
     /// <summary>
     /// Ensures that the patient order can be dispensed.
