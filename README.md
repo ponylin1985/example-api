@@ -5,7 +5,7 @@
 - 三種程式語言的實作目前都採用 3-Layer 的程式架構，暫時不採用 DDD 或 CQRS 的架構，目的是希望 Keep it simple, keep it stupid. (KISS)。
 - 建議開發人員寫出 intention-level 的程式碼，而不是 code-level 的「代碼」。
   - C# 是高度現代化的高階程式語言，**讓「意圖」(What) 清晰才是重點，而不是「怎麼實作」(How)**。
-  - 只有語意化的程式碼才是高品質、高質量、高可閱讀性、高可維護性、高可擴出性、高可測試性的程式碼，即便要應付高併發與大流量的程式碼，仍應該要「語意化」。
+  - 只有語意化的程式碼才是高品質、高質量、高可閱讀性、高可維護性、高可擴充性、高可測試性的程式碼，即便要應付高併發與大流量的程式碼，仍應該要「語意化」。
   - 如果你的程式碼與程式架構不能讓只有 1 年工作經驗的人看得懂，代表你的程式碼品質就是 code-level 的代碼。
   - 如果你的程式碼停留在 code-level 代碼階段，基本上你也不用去考慮 DDD、CQRS 或者 Clean Architecture 了，**因為你完全不了解什麼叫做「程式設計」、「軟體開發工程」、「協作開發」的重要性和最基礎的 OOP (物件導向)**。
   - 要寫出能動的「代碼」此專案就沒有任何參考價值。
@@ -833,32 +833,29 @@ public async Task<ApiResult<PatientDto>> AddPatientAsync(CreatePatientRequest re
 ```csharp
 public async Task<ApiResult<PatientDto>> AddPatientAsync(CreatePatientRequest request)
 {
-    public async Task<ApiResult<PatientDto>> AddPatientAsync(CreatePatientRequest request)
+    var process = new AddPatientProcess(
+        _loggerFactory.CreateLogger<AddPatientProcess>(),
+        request,
+        _patientRepository,
+        _patientOrderHistoryRepository,
+        _orderPrescriptionPolicy,
+        _dateTimeOffsetProvider);
+
+    await _unitOfWork.ExecuteStrategyAsync(async () =>
     {
-        var process = new AddPatientProcess(
-            _loggerFactory.CreateLogger<AddPatientProcess>(),
-            request,
-            _patientRepository,
-            _patientOrderHistoryRepository,
-            _orderPrescriptionPolicy,
-            _dateTimeOffsetProvider);
+        
+        using var _ = await _unitOfWork.BeginTransactionAsync();
+        await process
+            .Prepare()                                              // Given
+            .EnsureEmailUniqueAsync()                               // Given (Guard Clause)
+            .ThenAsync(p => p.EnsurePhoneNumberUniqueAsync())       // Given (Guard Clause)
+            .ThenAsync(p => p.EnsurePrescriptionValidAsync())       // Given (Guard Clause)
+            .ThenAsync(p => p.ExecuteAsync(_unitOfWork))            // When (Action)
+            .Then(p => p.ShouldSuccessfully());                     // Then (Assertions)
+        await _unitOfWork.CommitTransactionAsync();
+    });
 
-        await _unitOfWork.ExecuteStrategyAsync(async () =>
-        {
-            
-            using var _ = await _unitOfWork.BeginTransactionAsync();
-            await process
-                .Prepare()                                              // Given
-                .EnsureEmailUniqueAsync()                               // Given (Guard Clause)
-                .ThenAsync(p => p.EnsurePhoneNumberUniqueAsync())       // Given (Guard Clause)
-                .ThenAsync(p => p.EnsurePrescriptionValidAsync())       // Given (Guard Clause)
-                .ThenAsync(p => p.ExecuteAsync(_unitOfWork))            // When (Action)
-                .Then(p => p.ShouldSuccessfully());                     // Then (Assertions)
-            await _unitOfWork.CommitTransactionAsync();
-        });
-
-        return SuccessResult(process.CreatedPatient!.ToDto());
-    }
+    return SuccessResult(process.CreatedPatient!.ToDto());
 }
 ```
 
