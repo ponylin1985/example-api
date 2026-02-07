@@ -170,7 +170,7 @@ public sealed class AddPatientOrderProcess
             .Distinct();
 
         var existingMedicationIds =
-            await _medicationRepository.GetExistingMedicationIdsAsync(requestedMedicationIds);
+            await _medicationRepository.GetExistingMedicationIdsAsync(requestedMedicationIds, isEnabled: true);
 
         _orderPrescriptionPolicy.EnsureMedicationIdsValid(
             requestedMedicationIds,

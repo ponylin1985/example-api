@@ -24,6 +24,9 @@ public interface IMedicationRepository
     /// Gets the medicationIds by the given medicationIds.
     /// </summary>
     /// <param name="medicationIds">Request medicationIds.</param>
+    /// <param name="isEnabled">Optional filter for enabled medications.</param>
     /// <returns>MedicationIds that exist in the database.</returns>
-    Task<IEnumerable<long>> GetExistingMedicationIdsAsync(IEnumerable<long> medicationIds);
+    Task<IEnumerable<long>> GetExistingMedicationIdsAsync(
+        IEnumerable<long> medicationIds,
+        bool? isEnabled = default);
 }

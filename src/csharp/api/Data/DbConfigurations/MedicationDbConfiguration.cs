@@ -24,21 +24,31 @@ public class MedicationDbConfiguration : IEntityTypeConfiguration<Medication>
             .ToTable("medication")
             .HasKey(m => m.Id);
 
-        entity.Property(m => m.Id)
+        entity
+            .Property(m => m.Id)
             .HasColumnName("id")
             .HasColumnType("bigint")
             .ValueGeneratedOnAdd()
             .IsRequired();
 
-        entity.Property(m => m.Name)
+        entity
+            .Property(m => m.Name)
             .HasColumnName("name")
             .IsRequired()
             .HasMaxLength(50);
 
-        entity.Property(m => m.Manufacturer)
+        entity
+            .Property(m => m.Manufacturer)
             .HasColumnName("manufacturer")
             .IsRequired()
             .HasMaxLength(50);
+
+        entity
+            .Property(m => m.IsEnabled)
+            .HasColumnName("is_enabled")
+            .HasColumnType("boolean")
+            .HasDefaultValue(true)
+            .IsRequired();
 
         entity
             .Property(p => p.CreatedBy)

@@ -1,4 +1,5 @@
 using Example.Api.Enums;
+using Example.Api.Infrastructure;
 using Example.Api.Models;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
@@ -224,7 +225,7 @@ public sealed class CachedPatientRepository : IPatientRepository
                 return true;
             });
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not BusinessException)
         {
             _logger.LogError(ex, "Error occurred while saving patient to cache with key {Key}", key);
         }
@@ -264,7 +265,7 @@ public sealed class CachedPatientRepository : IPatientRepository
 
             return await _retryPolicy.ExecuteAsync(cacheTask);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not BusinessException)
         {
             _logger.LogWarning(ex, "An error occurred during cache operation, bypassing to database.");
             return defaultValue;

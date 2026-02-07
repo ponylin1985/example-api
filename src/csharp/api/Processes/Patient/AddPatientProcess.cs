@@ -140,7 +140,7 @@ public sealed class AddPatientProcess
             .Select(p => p.MedicationId);
 
         var existingMedicationIds =
-            await _medicationRepository.GetExistingMedicationIdsAsync(requestedMedicationIds);
+            await _medicationRepository.GetExistingMedicationIdsAsync(requestedMedicationIds, isEnabled: true);
 
         _orderPrescriptionPolicy.EnsureMedicationIdsValid(
             requestedMedicationIds,

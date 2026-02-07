@@ -23,4 +23,10 @@ public record Medication : BaseEntity
     /// </summary>
     /// <value></value>
     public string Manufacturer { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Indicates whether the medication is currently enabled for use in the system.
+    /// </summary>
+    /// <value></value>
+    public bool IsEnabled { get; set; } = true;
 }

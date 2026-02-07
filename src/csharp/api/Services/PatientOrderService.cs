@@ -234,7 +234,7 @@ public class PatientOrderService : BaseService, IPatientOrderService
                     .Then(p => p.ShouldSuccessfully());
                 await _unitOfWork.CommitTransactionAsync();
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not BusinessException)
             {
                 _logger.LogError(ex,
                     "An error occurred while adding a new patient order. Request: {@Request}", request);
@@ -313,7 +313,7 @@ public class PatientOrderService : BaseService, IPatientOrderService
                     .Then(p => p.ShouldSuccessfully());
                 await _unitOfWork.CommitTransactionAsync();
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not BusinessException)
             {
                 _logger.LogError(ex,
                     "An error occurred while patching patient order with ID {OrderId}. Request: {@Request}",

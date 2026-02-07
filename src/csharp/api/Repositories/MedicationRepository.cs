@@ -60,15 +60,27 @@ public sealed class MedicationRepository : IMedicationRepository
     /// Gets the medicationIds by the given medicationIds.
     /// </summary>
     /// <param name="medicationIds">Request medicationIds.</param>
+    /// <param name="isEnabled">Optional filter for enabled medications.</param>
     /// <returns>MedicationIds that exist in the database.</returns>
-    public async Task<IEnumerable<long>> GetExistingMedicationIdsAsync(IEnumerable<long> medicationIds)
+    public async Task<IEnumerable<long>> GetExistingMedicationIdsAsync(
+        IEnumerable<long> medicationIds,
+        bool? isEnabled = default)
     {
-        const string sql = @"
+        var sql = @"
             SELECT id
             FROM medication
-            WHERE Id = ANY(@Ids); ";
+            WHERE Id = ANY(@Ids) ";
+
+        var parameters = new DynamicParameters();
+        parameters.Add("Ids", medicationIds.ToArray());
+
+        if (isEnabled.HasValue)
+        {
+            sql += " AND is_enabled = @IsEnabled ";
+            parameters.Add("IsEnabled", isEnabled.Value);
+        }
 
         var connection = await _dbSession.GetOpenConnectionAsync();
-        return await connection.QueryAsync<long>(sql, new { Ids = medicationIds.ToArray(), });
+        return await connection.QueryAsync<long>(sql, parameters);
     }
 }
