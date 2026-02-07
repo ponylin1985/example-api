@@ -708,6 +708,78 @@ Validators/                           ← 請求資料驗證器 (Request Validat
 └── CreatePatientOrderRequestValidator
 ```
 
+### Application Service & Domain Service ==> 意圖化
+
+- Application Service
+  - 角色定義：處理請求與回應的主流程 (Orchestrator)。
+  - 職責定義：
+    - 負責接收 API 請求，將 DTO 轉換為 Domain 需要的參數，並「編排」多個 Policy 與 Process 的執行順序。
+    - 不處理具體業務，而是負責交易的控制、日誌與錯誤處理。
+  - 依賴：
+    - 允許依賴一個或多個 Repository 物件。
+    - 允許依賴一個或多個 Process 物件。
+    - 允許依賴一個或多個 Policy 物件。
+    - 允許依賴 IO 或 Infrastructure 物件。
+    - 禁止各個 Application Service 互相依賴。
+ 
+- Process (Domain Service - Action)
+  - 角色定義：一個業務流程的單元封裝，業務流程的執行者。
+  - 職責定義：
+    - 執行狀態改變或計算。
+      - 允許更新 Entity 的狀態。
+      - 允許將 Entity 的狀態透過 IO 持久化。
+    - 應設計為原子操作。
+  - 依賴：
+    - 允許依賴一個或多個 Repository 物件。
+    - 允許依賴一個或多個 Policy 物件驗證規則或取得計算結果。
+    - 禁止各個 Process 互相依賴。
+    - 禁止反向依賴 Application Service 物件。
+   
+- Policy (Domain Service - Spec)
+  - 角色定義：一個業務邏輯判斷或規則。
+  - 職責定義：
+    - 獨立的業務規格，純業務邏輯判斷或計算，不應該涉及任何 IO 操作。
+    - 等冪性：相同的輸入保證相同的輸出。
+    - 無狀態：
+      - 內部應該是無狀態 (Stateless)。
+      - 嚴格**禁止更新 Entity 參數的狀態** --> 參數應該保持 **「唯獨」** 特性，無法被 Policy 改變。
+  - 依賴：
+    - 禁止各個 Policy 互相依賴。
+    - 禁止反向依賴 Application Service 或 Process 物件。
+    - 禁止依賴 Repository 物件。
+    - 禁止依賴任何 HttpClient、gRPCClient、RedisClient 或者任形式的 Data Source 客戶端程式碼。
+  
+```mermaid
+flowchart TD
+    %% 定義節點並強制設定文字為黑色
+    Svc{{"<font color='#000'><b>Application Service</b></font><br/><font color='#000'>(The Orchestrator)</font>"}}
+    
+    subgraph DomainLogic [Domain Service Layer]
+        Proc["<font color='#000'><b>Process</b></font><br/><font color='#000'>(Domain Service - Action)</font>"]
+        Pol[["<font color='#000'><b>Policy</b></font><br/><font color='#000'>(Domain Service - Spec)</font>"]]
+    end
+
+    %% 調度與依賴關係
+    Svc -->|Orchestrate| Pol
+    Svc -->|Orchestrate| Proc
+    Proc -.->|Reference| Pol
+
+    %% 職責描述並強制設定文字為黑色
+    Note1["<font color='#000'>請求回應的主流程順序<br/>管理交易<br/>決定如何調度 Policy 或 Process 物件</font>"] -.-> Svc
+    Note2["<font color='#000'>業務流程封裝<br/>一個業務流程單元<br/>執行原子化操作</font>"] -.-> Proc
+    Note3["<font color='#000'>業務邏輯封裝<br/>純業務邏輯規則或檢查</font>"] -.-> Pol
+
+    %% 樣式設定 (回復原本配色，並確保邊框清晰)
+    style Svc fill:#f9f,stroke:#333,stroke-width:2px
+    style Pol fill:#bbf,stroke:#333,stroke-width:2px,stroke-dasharray: 5 5
+    style Proc fill:#bfb,stroke:#333,stroke-width:2px
+    
+    %% 調整註釋框背景為白色以確保文字清晰
+    style Note1 fill:#fff,stroke:#ccc
+    style Note2 fill:#fff,stroke:#ccc
+    style Note3 fill:#fff,stroke:#ccc
+```
+
 ### 共同架構模式
 - **Repository Pattern** - 資料倉儲抽象化
 - **Unit of Work Pattern & IDbSession** - 交易管理與資料存取抽象化，並且透過 Polly 實現 Retry & Circuit Breaker (only for C# ASP.NET Core)
