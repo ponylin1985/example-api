@@ -119,14 +119,14 @@ src/python/
 ### Patient Management (病患管理)
 - `GET /api/patients?` - 查詢病患列表（支援日期範圍與分頁）
 - `GET /api/patients/{id}` - 查詢單一的病患
-- `GET /api/patients/{id}/order-histories` - 更新病患的訂單歷史紀錄
+- `GET /api/patients/{id}/order-histories` - 查詢病患的訂單歷史紀錄
 - `POST /api/patients` - 新增病患
 - `PUT /api/patients/{id}` - 更新病患基本資料
 
 ### Patient Order Management (病患訂單管理)
 - `GET /api/orders?` - 查詢病患訂單列表（支援分頁與篩選）
 - `GET /api/orders/{id}` - 查詢單一病患訂單
-- `GET /api/orders/{id}/histories` - 查詢病患訂單歷史紀錄
+- `GET /api/orders/{id}/histories` - 查詢病患的訂單歷史紀錄
 - `POST /api/orders` - 新增病患訂單
 - `POST /api/orders/{id}/dispense` - 對病患訂單執行配藥動作
 - `POST /api/orders/{id}/execute` - 對病患訂單執行治療動作
