@@ -23,4 +23,10 @@ public record MedicationDto : BaseDto
     /// </summary>
     /// <value></value>
     public string Manufacturer { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Indicates whether the medication is enabled for use.
+    /// </summary>
+    /// <value></value>
+    public bool IsEnabled { get; set; }
 }

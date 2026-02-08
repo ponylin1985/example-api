@@ -8,17 +8,23 @@ namespace Example.Api.Repositories;
 public interface IMedicationRepository
 {
     /// <summary>
-    /// Retrieves all medications.
+    /// Retrieves all medications with optional filtering and pagination.
     /// </summary>
-    /// <returns></returns>
-    Task<IEnumerable<Medication>> GetMedicationsAsync();
+    /// <param name="isEnabled">Optional filter for enabled medications.</param>
+    /// <param name="pageNumber">The page number for pagination. Default is 1.</param>
+    /// <param name="pageSize">The number of items per page. Default is 10.</param>
+    /// <returns>A collection of medications and the total count.</returns>
+    Task<(IEnumerable<Medication> Data, long TotalCount)> GetMedicationsAsync(
+        bool? isEnabled = default,
+        int pageNumber = 1,
+        int pageSize = 10);
 
     /// <summary>
     /// Checks if a medication exists by its ID.
     /// </summary>
-    /// <param name="id"></param>
-    /// <returns></returns>
-    Task<bool> IsExistMedicationAsync(long id);
+    /// <param name="id">The id of the medication.</param>
+    /// <returns>The medication if it exists, otherwise null.</returns>
+    Task<Medication?> GetMedicationAsync(long id);
 
     /// <summary>
     /// Gets the medicationIds by the given medicationIds.

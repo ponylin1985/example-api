@@ -13,5 +13,6 @@ public static class ApiEndpointsProvider
     {
         app.MapPatientApiEndpoints();
         app.MapPatientOrderApiEndpoints();
+        app.MapMedicationApiEndpoints();
     }
 }

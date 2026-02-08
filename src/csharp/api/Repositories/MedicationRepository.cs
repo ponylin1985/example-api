@@ -32,36 +32,39 @@ public sealed class MedicationRepository : IMedicationRepository
             ?? throw new ArgumentException("Invalid DbContext type in DbSession.");
     }
 
-    /// <summary>
-    /// Retrieves all medications.
-    /// </summary>
-    /// <returns>A list of all medications.</returns>
-    public async Task<IEnumerable<Medication>> GetMedicationsAsync()
+    /// <inheritdoc/>
+    public async Task<(IEnumerable<Medication> Data, long TotalCount)> GetMedicationsAsync(
+        bool? isEnabled = default,
+        int pageNumber = 1,
+        int pageSize = 10)
     {
-        return await _dbContext.Medications
-            .AsNoTracking()
+        var query = _dbContext.Medications.AsNoTracking();
+
+        if (isEnabled.HasValue)
+        {
+            query = query.Where(m => m.IsEnabled == isEnabled.Value);
+        }
+
+        var totalCount = await query.LongCountAsync();
+        var data = await query
+            .OrderBy(m => m.Id)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync();
+
+        return (Data: data, TotalCount: totalCount);
     }
 
-    /// <summary>
-    /// Checks if a medication exists by its ID.
-    /// </summary>
-    /// <param name="id">The ID of the medication.</param>
-    /// <returns>True if the medication exists, otherwise false.</returns>
-    public async Task<bool> IsExistMedicationAsync(long id)
+    /// <inheritdoc/>
+    public async Task<Medication?> GetMedicationAsync(long id)
     {
         return await _dbContext
             .Medications
             .AsNoTracking()
-            .AnyAsync(m => m.Id == id);
+            .FirstOrDefaultAsync(m => m.Id == id);
     }
 
-    /// <summary>
-    /// Gets the medicationIds by the given medicationIds.
-    /// </summary>
-    /// <param name="medicationIds">Request medicationIds.</param>
-    /// <param name="isEnabled">Optional filter for enabled medications.</param>
-    /// <returns>MedicationIds that exist in the database.</returns>
+    /// <inheritdoc/>
     public async Task<IEnumerable<long>> GetExistingMedicationIdsAsync(
         IEnumerable<long> medicationIds,
         bool? isEnabled = default)
