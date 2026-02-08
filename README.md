@@ -713,8 +713,8 @@ Validators/                           ← 請求資料驗證器 (Request Validat
 - Application Service
   - 角色定義：處理請求與回應的主流程 (Orchestrator)。
   - 職責定義：
-    - 負責接收 API 請求，將 DTO 轉換為 Domain 需要的參數，並「編排」多個 Policy 與 Process 的執行順序。
-    - 不處理具體業務，而是負責交易的控制、日誌與錯誤處理。
+    - 負責接收 API 請求，「編排」與「調度」一個或多個 Policy 與 Process 的執行順序，並且有權利決定何時中斷處理。
+    - 不處理具體業務，而是負責交易管理 (Unit of work)、日誌紀錄 (Logging)、錯誤處理 (Exception Handling) 以及高可用性 (Resilience) 策略。
   - 依賴：
     - 允許依賴一個或多個 Repository 物件。
     - 允許依賴一個或多個 Process 物件。
@@ -726,28 +726,31 @@ Validators/                           ← 請求資料驗證器 (Request Validat
   - 角色定義：一個業務流程的單元封裝，業務流程的執行者。
   - 職責定義：
     - 執行狀態改變或計算。
-      - 允許更新 Entity 的狀態。
+      - 允許在執行過程中改變 Entity 的狀態 (Stateful)，但 Process 物件本身應隨請求結束而銷毀，不跨請求保留狀態。
       - 允許將 Entity 的狀態透過 IO 持久化。
     - 應設計為原子操作。
   - 依賴：
+    - 允許依賴一個「請求資料載體」(Request DTO) 物件。
     - 允許依賴一個或多個 Repository 物件。
     - 允許依賴一個或多個 Policy 物件驗證規則或取得計算結果。
     - 禁止各個 Process 互相依賴。
     - 禁止反向依賴 Application Service 物件。
    
 - Policy (Domain Service - Spec)
-  - 角色定義：一個業務邏輯判斷或規則。
+  - 角色定義：一個業務邏輯判斷或規則的封裝。
   - 職責定義：
-    - 獨立的業務規格，純業務邏輯判斷或計算，不應該涉及任何 IO 操作。
-    - 等冪性：相同的輸入保證相同的輸出。
-    - 無狀態：
-      - 內部應該是無狀態 (Stateless)。
-      - 嚴格**禁止更新 Entity 參數的狀態** --> 參數應該保持 **「唯獨」** 特性，無法被 Policy 改變。
+    - 原子規格 (Atomic Spec)：獨立且最小單位的業務邏輯規則或計算。(代表此規則或計算不可以再被切割為更小的單位了！)
+      - 使用反向邏輯檢查 --> **當某個條件不成立，拋出業務邏輯異常**，並且夾帶錯誤資訊。
+      - 執行邏輯計算 --> 讓方法接受不可變的參數，讀取參數值後進行計算，最終將**計算後的結果以「回傳值」的方式返回**，不可直接修改參數 (Entity) 的狀態。
+    - 零副作用 (Side-effect Free)：禁止任何 IO 操作：包括 Network IO、Database IO、Disk IO 或 MemortStream IO 以及任何 Streaming IO。
+    - 參數不可變性 (Immutability)：參數應設計為 **「唯獨」** 特性。 **嚴禁更新 Entity 參數的狀態，僅具備「唯讀」權限，** 參數內容在傳入與傳出 Policy 時應保持完全一致。
+    - 無狀態 (Stateless)：內部應該是無狀態。
+    - 等冪性 (Idempotence)：相同的輸入保證相同的輸出。
   - 依賴：
     - 禁止各個 Policy 互相依賴。
     - 禁止反向依賴 Application Service 或 Process 物件。
-    - 禁止依賴 Repository 物件。
-    - 禁止依賴任何 HttpClient、gRPCClient、RedisClient 或者任形式的 Data Source 客戶端程式碼。
+    - 禁止依賴任何 Repository 物件。
+    - 禁止依賴任何 HttpClient、gRpcClient、RedisClient 或者任形式 Data Source 的客戶端程式碼。
   
 ```mermaid
 flowchart TD
