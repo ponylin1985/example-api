@@ -751,6 +751,7 @@ Validators/                           ← 請求資料驗證器 (Request Validat
     - 禁止反向依賴 Application Service 或 Process 物件。
     - 禁止依賴任何 Repository 物件。
     - 禁止依賴任何 HttpClient、gRpcClient、RedisClient 或者任形式 Data Source 的客戶端程式碼。
+  - 綜合以上原則，Policy 物件的生命週期應該被註冊為 Singleton。
   
 ```mermaid
 flowchart TD

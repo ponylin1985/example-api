@@ -17,8 +17,8 @@ public static class ServicesProvider
         services.AddScoped<IPatientService, PatientService>();
         services.AddScoped<IPatientOrderService, PatientOrderService>();
         services.AddScoped<IMedicationService, MedicationService>();
-        services.AddScoped<IOrderPrescriptionPolicy, OrderPrescriptionPolicy>();
-        services.AddScoped<IOrderStatusPolicy, OrderStatusPolicy>();
+        services.AddSingleton<IOrderPrescriptionPolicy, OrderPrescriptionPolicy>();
+        services.AddSingleton<IOrderStatusPolicy, OrderStatusPolicy>();
         return services;
     }
 }
