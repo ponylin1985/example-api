@@ -3,7 +3,7 @@
 import logging
 import redis.asyncio as redis
 from datetime import datetime
-from app.entities import Order
+from app.entities import PatientOrder
 from app.repositories import OrderRepository, PatientRepository
 from app.repositories.caches.cached_order_repository import CachedOrderRepository
 from app.repositories.caches.cached_patient_repository import CachedPatientRepository
@@ -73,7 +73,7 @@ class OrderService:
                     data=None,
                 )
 
-            order = Order(message=request.message, patient_id=request.patient_id)
+            order = PatientOrder(message=request.message, patient_id=request.patient_id)
 
             created_order = await self.order_repo.add(order)
             await self.db.commit()

@@ -6,7 +6,7 @@ import logging
 from datetime import datetime
 from typing import Optional
 import redis.asyncio as redis
-from app.entities import Order
+from app.entities import PatientOrder
 from app.repositories.order_repository import OrderRepository
 from app.configs.cache_config import cache_settings
 
@@ -38,7 +38,7 @@ class CachedOrderRepository:
         """Get cache key for a patient."""
         return f"patient:{patient_id}"
 
-    async def _save_to_cache(self, order: Order) -> None:
+    async def _save_to_cache(self, order: PatientOrder) -> None:
         """Save order to cache."""
         try:
             key = self._get_order_cache_key(order.id)
@@ -79,7 +79,7 @@ class CachedOrderRepository:
                 str(e),
             )
 
-    async def get_order(self, order_id: int) -> Optional[Order]:
+    async def get_order(self, order_id: int) -> Optional[PatientOrder]:
         """Get order by ID (with caching)."""
         key = self._get_order_cache_key(order_id)
 
@@ -88,7 +88,7 @@ class CachedOrderRepository:
             if cached_data:
                 logger.debug("Order %s retrieved from cache", order_id)
                 order_dict = json.loads(cached_data)
-                order = Order(
+                order = PatientOrder(
                     id=order_dict["id"],
                     message=order_dict["message"],
                     patient_id=order_dict["patient_id"],
@@ -104,19 +104,19 @@ class CachedOrderRepository:
             await self._save_to_cache(order)
         return order
 
-    async def add(self, order: Order) -> Order:
+    async def add(self, order: PatientOrder) -> PatientOrder:
         """Add new order (invalidates patient cache)."""
         created_order = await self._inner_repository.add(order)
         await self._remove_from_cache(0, created_order.patient_id)
         return created_order
 
-    async def update_message(self, order: Order) -> Order:
+    async def update_message(self, order: PatientOrder) -> PatientOrder:
         """Update order message (invalidates order and patient cache)."""
         updated_order = await self._inner_repository.update_message(order)
         await self._remove_from_cache(order.id, updated_order.patient_id)
         return updated_order
 
-    async def update(self, order_id: int, message: str, updated_at: datetime) -> Optional[Order]:
+    async def update(self, order_id: int, message: str, updated_at: datetime) -> Optional[PatientOrder]:
         """Update order with new message and timestamp (invalidates order and patient cache)."""
         updated_order = await self._inner_repository.update(order_id, message, updated_at)
 

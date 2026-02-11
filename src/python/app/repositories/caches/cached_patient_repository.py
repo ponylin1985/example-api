@@ -3,7 +3,7 @@
 import json
 import logging
 from app.configs.cache_config import cache_settings
-from app.entities import Order
+from app.entities import PatientOrder
 from app.entities import Patient
 from app.repositories.patient_repository import PatientRepository
 from datetime import datetime
@@ -75,7 +75,7 @@ class CachedPatientRepository:
                 )
 
                 patient.orders = [
-                    Order(
+                    PatientOrder(
                         id=order_dict["id"],
                         message=order_dict["message"],
                         patient_id=order_dict["patient_id"],

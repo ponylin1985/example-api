@@ -3,7 +3,7 @@
 import logging
 import math
 import redis.asyncio as redis
-from app.entities import Patient, Order
+from app.entities import Patient, PatientOrder
 from app.repositories import PatientRepository
 from app.repositories.caches.cached_patient_repository import CachedPatientRepository
 from app.schemas import PatientDto, GetPatientsRequest, CreatePatientRequest, ApiResultData, PagedResult, ApiCode
@@ -122,7 +122,7 @@ class PatientService:
         """
         try:
             patient = Patient(name=request.name)
-            order = Order(message=request.order_message)
+            order = PatientOrder(message=request.order_message)
             patient.orders.append(order)
 
             created_patient = await self.patient_repo.add(patient)
