@@ -741,8 +741,8 @@ Validators/                           ← 請求資料驗證器 (Request Validat
   - 職責定義：
     - 原子規格 (Atomic Spec)：獨立且最小單位的業務邏輯規則或計算。(代表此規則或計算不可以再被切割為更小的單位了！)
       - 使用反向邏輯檢查 --> **當某個條件不成立，拋出業務邏輯異常**，並且夾帶錯誤資訊。
-      - 執行邏輯計算 --> 讓方法接受不可變的參數，讀取參數值後進行計算，最終將**計算後的結果以「回傳值」的方式返回**，不可直接修改參數 (Entity) 的狀態。
-    - 零副作用 (Side-effect Free)：禁止任何 IO 操作：包括 Network IO、Database IO、Disk IO 或 MemortStream IO 以及任何 Streaming IO。
+      - 執行邏輯計算 --> 讓方法接受不可變 (唯獨) 的參數，讀取參數值後進行計算，最終將**計算後的結果以「回傳值」的方式返回**，不可直接修改參數 (Entity) 的狀態。
+    - 零副作用 (Side-effect Free)：禁止任何 IO 操作：包括 Network IO、Database IO、Disk IO 或 MemoryStream IO 以及任何 Streaming IO。
     - 參數不可變性 (Immutability)：參數應設計為 **「唯獨」** 特性。 **嚴禁更新 Entity 參數的狀態，僅具備「唯讀」權限，** 參數內容在傳入與傳出 Policy 時應保持完全一致。
     - 無狀態 (Stateless)：內部應該是無狀態。
     - 等冪性 (Idempotence)：相同的輸入保證相同的輸出。
@@ -751,7 +751,7 @@ Validators/                           ← 請求資料驗證器 (Request Validat
     - 禁止反向依賴 Application Service 或 Process 物件。
     - 禁止依賴任何 Repository 物件。
     - 禁止依賴任何 HttpClient、gRpcClient、RedisClient 或者任形式 Data Source 的客戶端程式碼。
-  - 綜合以上原則，Policy 物件的生命週期應該被註冊為 Singleton。
+  - 綜合以上原則，Policy 物件的生命週期應該被註冊為 Singleton，而且不依賴任何其他物件。
   
 ```mermaid
 flowchart TD
