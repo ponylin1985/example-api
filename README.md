@@ -132,6 +132,10 @@ src/python/
 - `POST /api/orders/{id}/execute` - 對病患訂單執行治療動作
 - `POST /api/orders/{id}/cancel` - 對病患訂單執行取消動作
 
+### Medication Management (藥品管理)
+- `GET /api/medications?` - 查詢藥品列表（支援分頁與篩選）
+- `GET /api/medications/{id}` - 查詢單一藥品
+
 ---
 
 ## 🐳 Docker Compose 說明
@@ -321,6 +325,7 @@ erDiagram
         varchar_50 created_by
         timestamptz updated_at
         varchar_50 updated_by
+        boolean is_enabled
     }
 
     prescription {
@@ -378,6 +383,7 @@ erDiagram
   - `id` (bigint, PK)
   - `name` (varchar(50), NOT NULL)
   - `manufacturer` (varchar(50), NOT NULL)
+  - `is_enabled` (boolean, NOT NULL, DEFAULT true)
   - `created_at` (timestamptz, NOT NULL, DEFAULT NOW())
   - `created_by` (varchar(50), NOT NULL)
   - `updated_at` (timestamptz, NOT NULL, DEFAULT NOW())
