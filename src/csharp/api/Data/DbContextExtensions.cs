@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
@@ -7,7 +8,8 @@ public static class DbContextExtensions
 {
     public static IServiceCollection AddApplicationDbContext(
             this IServiceCollection services,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            IHostEnvironment environment)
     {
         var connectionString = configuration.GetConnectionString("DefaultConnection");
 
@@ -16,16 +18,12 @@ public static class DbContextExtensions
             throw new InvalidOperationException("DefaultConnection connection string is not configured.");
         }
 
-        var npgsqlBuilder = new NpgsqlConnectionStringBuilder(connectionString)
+        services.AddNpgsqlDataSource(connectionString);
+        services.AddDbContext<ApplicationDbContext>((serviceProvider, options) =>
         {
-            Pooling = true,
-            MinPoolSize = 10,
-            MaxPoolSize = 100,
-        };
+            var dataSource = serviceProvider.GetRequiredService<NpgsqlDataSource>();
 
-        services.AddDbContext<ApplicationDbContext>(options =>
-        {
-            options.UseNpgsql(npgsqlBuilder.ToString(), npgsqlOptions =>
+            options.UseNpgsql(dataSource, npgsqlOptions =>
             {
                 npgsqlOptions.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
                 npgsqlOptions.EnableRetryOnFailure(
@@ -33,6 +31,13 @@ public static class DbContextExtensions
                     maxRetryDelay: TimeSpan.FromSeconds(5),
                     errorCodesToAdd: ["40001"]);
             });
+
+            if (environment.IsDevelopment())
+            {
+                options.EnableSensitiveDataLogging();
+                options.EnableDetailedErrors();
+                options.LogTo(Console.WriteLine, LogLevel.Information);
+            }
         });
 
         return services;

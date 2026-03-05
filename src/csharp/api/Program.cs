@@ -38,7 +38,7 @@ builder.Services.AddOptions(builder.Configuration);
 builder.Services.AddCacheOptions(builder.Configuration);
 builder.Services.AddJsonSerializationOptions();
 builder.Services.AddDateTimeOffsetProviders();
-builder.Services.AddApplicationDbContext(builder.Configuration);
+builder.Services.AddApplicationDbContext(builder.Configuration, builder.Environment);
 builder.Services.AddInfrastructures(builder.Configuration);
 builder.Services.AddRepositories();
 builder.Services.AddServices();
