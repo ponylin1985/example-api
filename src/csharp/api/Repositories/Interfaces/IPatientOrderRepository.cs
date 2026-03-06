@@ -18,7 +18,7 @@ public interface IPatientOrderRepository
     /// <param name="orderType"></param>
     /// <param name="orderStatus"></param>
     /// <returns></returns>
-    Task<(IEnumerable<PatientOrder> Data, long TotalCount)> GetPatientOrdersAsync(
+    Task<(IReadOnlyList<PatientOrder> Data, long TotalCount)> GetPatientOrdersAsync(
         int pageNumber,
         int pageSize,
         long? patientId = default,

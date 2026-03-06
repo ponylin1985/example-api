@@ -29,7 +29,7 @@ public sealed class PatientOrderHistoryRepository : IPatientOrderHistoryReposito
     }
 
     /// <inheritdoc />
-    public async Task<(IEnumerable<PatientOrderHistory> Data, long TotalCount)> GetHistoriesByPatientIdAsync(
+    public async Task<(IReadOnlyList<PatientOrderHistory> Data, long TotalCount)> GetHistoriesByPatientIdAsync(
         long patientId,
         int pageNumber,
         int pageSize)
@@ -50,7 +50,7 @@ public sealed class PatientOrderHistoryRepository : IPatientOrderHistoryReposito
     }
 
     /// <inheritdoc />
-    public async Task<(IEnumerable<PatientOrderHistory> Data, long TotalCount)> GetHistoriesByOrderIdAsync(
+    public async Task<(IReadOnlyList<PatientOrderHistory> Data, long TotalCount)> GetHistoriesByOrderIdAsync(
         long orderId,
         int pageNumber,
         int pageSize)

@@ -14,7 +14,7 @@ public interface IPatientOrderHistoryRepository
     /// <param name="pageNumber">The page number for pagination.</param>
     /// <param name="pageSize">The page size for pagination.</param>
     /// <returns>A collection of patient order histories.</returns>
-    Task<(IEnumerable<PatientOrderHistory> Data, long TotalCount)> GetHistoriesByPatientIdAsync(
+    Task<(IReadOnlyList<PatientOrderHistory> Data, long TotalCount)> GetHistoriesByPatientIdAsync(
         long patientId,
         int pageNumber,
         int pageSize);
@@ -26,7 +26,7 @@ public interface IPatientOrderHistoryRepository
     /// <param name="pageNumber">The page number for pagination.</param>
     /// <param name="pageSize">The page size for pagination.</param>
     /// <returns>A collection of patient order histories.</returns>
-    Task<(IEnumerable<PatientOrderHistory> Data, long TotalCount)> GetHistoriesByOrderIdAsync(
+    Task<(IReadOnlyList<PatientOrderHistory> Data, long TotalCount)> GetHistoriesByOrderIdAsync(
         long orderId,
         int pageNumber,
         int pageSize);

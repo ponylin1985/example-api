@@ -51,7 +51,7 @@ public abstract class BaseService
     /// <typeparam name="T">The type of the data.</typeparam>
     /// <returns>A successful ApiResult instance containing the paged data.</returns>
     protected ApiResult<PagedResult<T>> SuccessPagedResult<T>(
-        IEnumerable<T> data,
+        IReadOnlyList<T> data,
         int pageNumber,
         int pageSize,
         long totalCount)

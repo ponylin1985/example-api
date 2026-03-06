@@ -9,7 +9,7 @@ public record PagedResult<T>
     /// <summary>
     /// Gets the collection of items for the current page.
     /// </summary>
-    public IEnumerable<T> Data { get; init; } = [];
+    public IReadOnlyList<T> Data { get; init; } = [];
 
     /// <summary>
     /// Gets the current page number.

@@ -21,7 +21,7 @@ public interface IPatientRepository
     /// <param name="startTime">The start time of the range.</param>
     /// <param name="endTime">The end time of the range.</param>
     /// <returns>A tuple containing the list of patients and the total count.</returns>
-    Task<(IEnumerable<Patient> Data, long TotalCount)> GetPatientsAsync(
+    Task<(IReadOnlyList<Patient> Data, long TotalCount)> GetPatientsAsync(
         int pageNumber,
         int pageSize,
         string? name = default,

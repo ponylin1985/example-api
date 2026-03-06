@@ -1,3 +1,4 @@
+using Dapper;
 using Example.Api.Dtos;
 using Example.Api.Models;
 
@@ -16,7 +17,7 @@ public static class PatientOrderMapper
     /// <returns>The order DTO.</returns>
     public static PatientOrderDto ToDto(this PatientOrder patientOrder, bool includePrescriptions = true)
     {
-        var dto =  new PatientOrderDto
+        var dto = new PatientOrderDto
         {
             Id = patientOrder.Id,
             Instructions = patientOrder.Instructions,
@@ -47,8 +48,8 @@ public static class PatientOrderMapper
     /// </summary>
     /// <param name="patientOrders">The collection of order entities.</param>
     /// <returns>The collection of order DTOs.</returns>
-    public static IEnumerable<PatientOrderDto> ToDtos(this IEnumerable<PatientOrder> patientOrders)
+    public static IReadOnlyList<PatientOrderDto> ToDtos(this IEnumerable<PatientOrder> patientOrders)
     {
-        return patientOrders.Select(o => o.ToDto());
+        return patientOrders.Select(o => o.ToDto()).AsList();
     }
 }

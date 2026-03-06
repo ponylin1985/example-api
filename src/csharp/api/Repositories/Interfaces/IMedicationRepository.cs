@@ -14,7 +14,7 @@ public interface IMedicationRepository
     /// <param name="pageNumber">The page number for pagination. Default is 1.</param>
     /// <param name="pageSize">The number of items per page. Default is 10.</param>
     /// <returns>A collection of medications and the total count.</returns>
-    Task<(IEnumerable<Medication> Data, long TotalCount)> GetMedicationsAsync(
+    Task<(IReadOnlyList<Medication> Data, long TotalCount)> GetMedicationsAsync(
         bool? isEnabled = default,
         int pageNumber = 1,
         int pageSize = 10);
@@ -32,7 +32,7 @@ public interface IMedicationRepository
     /// <param name="medicationIds">Request medicationIds.</param>
     /// <param name="isEnabled">Optional filter for enabled medications.</param>
     /// <returns>MedicationIds that exist in the database.</returns>
-    Task<IEnumerable<long>> GetExistingMedicationIdsAsync(
+    Task<IReadOnlyList<long>> GetExistingMedicationIdsAsync(
         IEnumerable<long> medicationIds,
         bool? isEnabled = default);
 }

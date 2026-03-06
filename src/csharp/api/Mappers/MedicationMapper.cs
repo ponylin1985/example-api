@@ -1,7 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using Dapper;
 using Example.Api.Dtos;
 using Example.Api.Models;
 
@@ -37,8 +34,8 @@ public static class MedicationMapper
     /// </summary>
     /// <param name="medications">Collection of Medication entities.</param>
     /// <returns>Collection of Medication DTOs.</returns>
-    public static IEnumerable<MedicationDto> ToDtos(this IEnumerable<Medication> medications)
+    public static IReadOnlyList<MedicationDto> ToDtos(this IEnumerable<Medication> medications)
     {
-        return medications.Select(m => m.ToDto());
+        return medications.Select(m => m.ToDto()).AsList();
     }
 }

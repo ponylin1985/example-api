@@ -33,7 +33,7 @@ public sealed class MedicationRepository : IMedicationRepository
     }
 
     /// <inheritdoc/>
-    public async Task<(IEnumerable<Medication> Data, long TotalCount)> GetMedicationsAsync(
+    public async Task<(IReadOnlyList<Medication> Data, long TotalCount)> GetMedicationsAsync(
         bool? isEnabled = default,
         int pageNumber = 1,
         int pageSize = 10)
@@ -65,7 +65,7 @@ public sealed class MedicationRepository : IMedicationRepository
     }
 
     /// <inheritdoc/>
-    public async Task<IEnumerable<long>> GetExistingMedicationIdsAsync(
+    public async Task<IReadOnlyList<long>> GetExistingMedicationIdsAsync(
         IEnumerable<long> medicationIds,
         bool? isEnabled = default)
     {
@@ -84,6 +84,6 @@ public sealed class MedicationRepository : IMedicationRepository
         }
 
         var connection = await _dbSession.GetOpenConnectionAsync();
-        return await connection.QueryAsync<long>(sql, parameters);
+        return (await connection.QueryAsync<long>(sql, parameters)).AsList();
     }
 }

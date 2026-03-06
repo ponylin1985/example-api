@@ -1,3 +1,4 @@
+using Dapper;
 using Example.Api.Dtos;
 using Example.Api.Models;
 
@@ -33,8 +34,8 @@ public static class PatientOrderHistoryMapper
     /// </summary>
     /// <param name="models">The collection of PatientOrderHistory model instances.</param>
     /// <returns>A collection of PatientOrderHistoryDto instances.</returns>
-    public static IEnumerable<PatientOrderHistoryDto> ToDtos(this IEnumerable<PatientOrderHistory> models)
+    public static IReadOnlyList<PatientOrderHistoryDto> ToDtos(this IEnumerable<PatientOrderHistory> models)
     {
-        return models.Select(m => m.ToDto());
+        return models.Select(m => m.ToDto()).AsList();
     }
 }

@@ -94,7 +94,7 @@ public sealed class CachedPatientRepository : IPatientRepository
     }
 
     /// <inheritdoc />
-    public Task<(IEnumerable<Patient> Data, long TotalCount)> GetPatientsAsync(
+    public Task<(IReadOnlyList<Patient> Data, long TotalCount)> GetPatientsAsync(
         int pageNumber,
         int pageSize,
         string? name = default,

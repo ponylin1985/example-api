@@ -34,7 +34,7 @@ public sealed class PatientOrderRepository : IPatientOrderRepository
     }
 
     /// <inheritdoc />
-    public async Task<(IEnumerable<PatientOrder> Data, long TotalCount)> GetPatientOrdersAsync(
+    public async Task<(IReadOnlyList<PatientOrder> Data, long TotalCount)> GetPatientOrdersAsync(
         int pageNumber,
         int pageSize,
         long? patientId = default,
